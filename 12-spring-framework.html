@@ -71,7 +71,10 @@
 
             </div>
             <div class="diagram-block diagram-image">
-              <img src="spring-multi-module-project.png" alt="Spring Framework 多模块项目结构——父模块 spring-multi-module-demo 下含 common、service、web 三个子模块及依赖关系" loading="lazy" />
+              <picture>
+                <source srcset="spring-multi-module-project-dark.png" media="(prefers-color-scheme: dark)" />
+                <img src="spring-multi-module-project.png" alt="Spring Framework 多模块项目结构——父模块 spring-multi-module-demo 下含 common、service、web 三个子模块及依赖关系" loading="lazy" />
+              </picture>
               <p class="diagram-caption">图：Spring Framework 多模块项目结构图（示例）</p>
             </div>
             <p>上图是典型的 Maven 多模块 Spring 项目：<strong>父 pom 管聚合与版本，子 pom 管各自依赖与打包</strong>。父模块没有 <code>src/</code>，只负责把 <code>common</code>、<code>service</code>、<code>web</code> 三个子模块串成一次构建；依赖方向是 <code>web → service → common</code>，与图中箭头一致。</p>

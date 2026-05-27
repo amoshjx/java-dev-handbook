@@ -1013,7 +1013,7 @@ code {
   color: var(--text);
   border-radius: 0;
   overflow: visible;
-  font-size: 0.82rem;
+  font-size: 0.88rem;
   line-height: 1.4;
   text-align: center;
   min-width: min(100%, 480px);
@@ -1025,6 +1025,19 @@ code {
   height: auto;
 }
 
+.diagram-block pre.mermaid svg .titleText,
+.diagram-block pre.mermaid svg .pieTitleText,
+.diagram-block pre.mermaid svg .sectionTitle,
+.diagram-block pre.mermaid svg .taskText,
+.diagram-block pre.mermaid svg .taskTextOutsideRight,
+.diagram-block pre.mermaid svg .taskTextOutsideLeft {
+  font-weight: 600;
+}
+
+.diagram-block.diagram-image picture {
+  display: block;
+}
+
 .diagram-block.diagram-image img {
   display: block;
   max-width: 100%;
@@ -1034,8 +1047,15 @@ code {
   border-radius: 6px;
 }
 
-.diagram-block.diagram-quadrant-matrix svg g.label text {
-  fill: #ffffff;
+/* 象限图：深色底，全部文字统一浅色 */
+.diagram-block.diagram-quadrant-matrix {
+  background: var(--code-bg);
+}
+
+.diagram-block.diagram-quadrant-matrix pre.mermaid svg text,
+.diagram-block.diagram-quadrant-matrix pre.mermaid svg tspan {
+  fill: #f8fafc !important;
+  font-weight: 600;
 }
 
 .diagram-caption {
@@ -1064,12 +1084,7 @@ code {
   background: rgba(255, 255, 255, 0.55);
 }
 
-/* 象限图：深色底保障 X/Y 轴白字在深浅色主题下均可读 */
-.block-explain .diagram-block.diagram-quadrant-matrix {
-  background: var(--code-bg);
-}
-
-/* 里程碑时间轴：局部增强文字对比度，避免深色背景黑字不可读 */
+/* 里程碑时间轴：浅色主题下增强 gantt 文字对比度 */
 .diagram-block.diagram-milestone-timeline {
   border-color: rgba(148, 163, 184, 0.45);
   box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06);
@@ -1144,14 +1159,25 @@ code {
     background: rgba(15, 23, 42, 0.45);
   }
 
+  .diagram-block pre.mermaid svg .edgeLabel .label,
+  .diagram-block pre.mermaid svg .edgeLabel text,
+  .diagram-block pre.mermaid svg .label text,
+  .diagram-block pre.mermaid svg .legend text,
+  .diagram-block pre.mermaid svg .commit-label,
+  .diagram-block pre.mermaid svg .branch-label {
+    fill: #e5e7eb;
+  }
+
   .diagram-block.diagram-milestone-timeline {
     border-color: rgba(148, 163, 184, 0.38);
     box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.55);
   }
 
-  .diagram-block.diagram-milestone-timeline pre.mermaid svg text {
-    fill: #e5e7eb !important;
-    stroke: rgba(2, 6, 23, 0.95);
+  .diagram-block.diagram-milestone-timeline pre.mermaid svg text,
+  .diagram-block.diagram-milestone-timeline pre.mermaid svg tspan {
+    fill: #f8fafc !important;
+    stroke: rgba(2, 6, 23, 0.85);
+    stroke-width: 1.5px;
   }
 
   .diagram-block.diagram-milestone-timeline .diagram-caption {
@@ -1166,20 +1192,28 @@ code {
   }
 
   .block-explain .diagram-block.diagram-rest-chain {
-    background: rgba(248, 250, 252, 0.96);
+    background: rgba(15, 23, 42, 0.45);
   }
 
   .diagram-block.diagram-rest-chain pre.mermaid svg .messageText,
   .diagram-block.diagram-rest-chain pre.mermaid svg .messageText > tspan,
-  .diagram-block.diagram-rest-chain pre.mermaid svg .sequenceNumber {
-    fill: #0f172a !important;
-    stroke: rgba(248, 250, 252, 0.95);
+  .diagram-block.diagram-rest-chain pre.mermaid svg .sequenceNumber,
+  .diagram-block.diagram-rest-chain pre.mermaid svg .actor text,
+  .diagram-block.diagram-rest-chain pre.mermaid svg .actor tspan {
+    fill: #f8fafc !important;
+    stroke: rgba(2, 6, 23, 0.85);
+    stroke-width: 1.5px;
   }
 
   .diagram-block.diagram-rest-chain .diagram-caption {
     background: rgba(30, 41, 59, 0.65);
     border-color: rgba(148, 163, 184, 0.4);
     color: #cbd5e1;
+  }
+
+  .diagram-block.diagram-image {
+    background: transparent;
+    border-color: rgba(148, 163, 184, 0.35);
   }
 }
 

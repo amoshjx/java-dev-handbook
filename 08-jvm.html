@@ -49,7 +49,10 @@
         <h1>08 JVM</h1>
         <p>JVM 是 Java 工程的运行时操作系统：它把字节码装载、校验、执行、优化、分配、回收与诊断连成一条生产链路。下图按 HotSpot 五大子系统展开——类加载、运行时数据区、执行引擎、JNI 与 GC——帮助建立整体 mental model；学 JVM 不是背概念，而是能回答：对象在哪里、类为何冲突、GC 为什么停、CPU 为什么高、OOM 该拿什么证据。</p>
         <div class="diagram-block diagram-image">
-          <img src="jvm.png" alt="JVM 整体架构——类加载、运行时数据区、执行引擎、JNI 与 GC" loading="lazy" />
+          <picture>
+            <source srcset="JVM-dark.png" media="(prefers-color-scheme: dark)" />
+            <img src="JVM.png" alt="JVM 整体架构——类加载、运行时数据区、执行引擎、JNI 与 GC" loading="lazy" />
+          </picture>
           <p class="diagram-caption">图：JVM 整体架构——类加载、运行时数据区、执行引擎、JNI 与 GC</p>
         </div>
       </header>
@@ -127,7 +130,7 @@ jcmd &lt;pid&gt; VM.native_memory summary
               <li>RSS 远大于 <code>-Xmx</code>：看 Direct Memory、Metaspace、线程栈、Code Cache、malloc、mmap 与 glibc arena。
                 RSS 是 Resident Set Size（常驻内存大小）。
                 为什么 Java 进程的 RSS 总是比 -Xmx 大很多？RSS 包含了整个 Java 进程的方方面面：
-               <br> <img src="RSS_Count.png" width="500" height="300" alt="RSS构成" loading="lazy" />
+               <br> <picture><source srcset="RSS_Count-dark.png" media="(prefers-color-scheme: dark)" /><img src="RSS_Count.png" width="500" height="300" alt="RSS构成" loading="lazy" /></picture>
 
               </li>
               <li>Metaspace 持续涨：看动态代理、脚本引擎、热部署、类加载器是否能被卸载。</li>
@@ -264,31 +267,36 @@ jcmd &lt;pid&gt; JFR.start name=jit settings=profile duration=120s filename=/tmp
           <h3>从可达性与分代，到收集器选型，再到日志证据驱动调优</h3>
 
           <div class="card-block block-explain">
-            <h4>GC 心智模型</h4>
-            <p>面向生产的 GC 只有四个问题：<strong>谁活着</strong>、<strong>什么时候停</strong>、<strong>停多久</strong>、<strong>停完之后趋势健康吗</strong>。把 GC 拆成三层心智模型，比死记参数有用：</p>
+            <h4>GC 工作原理</h4>
+            <p>JVM 的 GC（垃圾回收）负责自动释放“已经没用的对象”占用的内存，避免内存泄漏和 OOM。</p>
+            <p>Java 对象主要存放在 Heap（堆）中，堆分为：</p>
             <ul>
-              <li><strong>存活判定层：可达性分析 + GC Roots</strong>。GC Roots 包括虚拟机栈/本地方法栈中的引用、静态字段与常量、JNI 引用、被同步锁持有的对象、活动线程、Class 对象自身等。从 Roots 出发可达的对象即 Live Set；其余为可回收对象。引用计数因循环引用问题 HotSpot 不采用。</li>
-              <li><strong>布局组织层：分代 / 分区</strong>。经典分代假设“多数对象朝生夕灭”（弱分代假设）与“老对象更不易死”（强分代假设）。G1/ZGC/Shenandoah 走分区（Region）路线，把堆切成大量等大区域，按回收价值优先回收（Garbage First）。分代仍然存在，只是表现为“逻辑分代 + 物理分区”。</li>
-              <li><strong>执行模型层：STW / 并发 / 增量</strong>。安全点（safepoint）与并发标记/转移是延迟的两个核心抓手——Young GC 通常仍 STW，但 ZGC/Shenandoah 把标记与转移大部分搬到并发阶段，把单次暂停压到亚毫秒。</li>
+              <li><strong>新生代（Young）</strong></li>
+              <li><strong>老年代（Old）</strong></li>
             </ul>
-            <p><strong>三大业务量纲</strong>必须心里有数：<code>allocation rate</code>（分配速率，MB/s——决定 Young GC 频率）、<code>promotion rate</code>（晋升速率，MB/s——决定老年代增长与 Full GC 风险）、<code>live set</code>（GC 后存活对象大小——决定堆下限）。<strong>吞吐 vs 延迟</strong>是永恒的取舍：低停顿要付出额外 CPU/读写屏障与浮动垃圾代价；高吞吐方案则可能在某次 Full GC 上吃掉一整个 SLO 预算。</p>
-            <div class="diagram-block">
-              <pre class="mermaid">flowchart TD
-    P["现象<br/>P99 抖动 / CPU 飙高 / OOMKilled"] --> M["对齐 RED + USE 指标<br/>QPS·错误率·延迟 / CPU·内存·队列"]
-    M --> L["GC 日志证据<br/>Pause·Frequency·Cause·After-GC Used"]
-    L --> J["JFR / Heap Dump<br/>分配热点·晋升链·Retained Size"]
-    J --> H{{"根因归类"}}
-    H -->|分配速率突增| T1["业务侧：缓存/序列化/批量"]
-    H -->|老年代持续涨| T2["泄漏/无界缓存/大对象"]
-    H -->|晋升失败/To-space| T3["堆容量/Region/暂停目标"]
-    H -->|Humongous 频繁| T4["对象切分/G1HeapRegionSize"]
-    T1 & T2 & T3 & T4 --> C["小步调参<br/>每次 ≤2 个参数"]
-    C --> G["灰度 + 压测对比<br/>变更前后 GC 日志 + P99"]
-    G --> V{"达标?"}
-    V -->|是| OK["固化基线 + Runbook"]
-    V -->|否| L</pre>
-              <p class="diagram-caption">图：GC 生产排障证据链（现象 → 指标 → 日志 → JFR → 小步调参 → 灰度回归）</p>
-            </div>
+            <p>新创建对象先进入 Eden 区，大部分对象会很快死亡，因此 JVM 会频繁执行 <strong>Minor GC</strong> 回收新生代。存活多次 GC 的对象会晋升到 Old 区，老年代满了会触发 <strong>Major GC / Full GC</strong>。</p>
+            <p>JVM 通过<strong>可达性分析</strong>判断对象是否还能被引用：</p>
+            <ul>
+              <li>能从 GC Roots 找到 → 存活</li>
+              <li>找不到 → 可回收</li>
+            </ul>
+            <p><strong>GC 常见算法</strong>：</p>
+            <ul>
+              <li>复制算法（新生代）</li>
+              <li>标记清除</li>
+              <li>标记整理（老年代）</li>
+            </ul>
+            <p>GC 时会发生 <strong>STW（Stop The World）</strong>：</p>
+            <ul>
+              <li>所有业务线程暂停</li>
+              <li>Full GC 停顿时间通常最长</li>
+            </ul>
+            <p><strong>常见 GC 收集器</strong>：</p>
+            <ul>
+              <li><strong>Parallel GC</strong>：高吞吐</li>
+              <li><strong>G1 GC</strong>：当前主流</li>
+              <li><strong>ZGC</strong>：超低停顿</li>
+            </ul>
           </div>
 
           <div class="card-block block-explain">
@@ -393,70 +401,6 @@ jstat -gcutil   &lt;pid&gt; 1000 20      # 百分比视图，便于一眼看趋�
 jcmd  &lt;pid&gt; GC.heap_info
 jcmd  &lt;pid&gt; VM.native_memory summary
 jcmd  &lt;pid&gt; JFR.start name=gc settings=profile duration=180s filename=/tmp/gc.jfr</code></pre>
-            <p><strong>参数口径速查</strong>：<code>-Xms/-Xmx</code> 在容器内建议被 <code>-XX:InitialRAMPercentage/MaxRAMPercentage</code> 取代（自动感知 cgroup）；<code>-XX:MaxGCPauseMillis</code> 是<strong>软目标</strong>不是硬上限；<code>-XX:GCTimeRatio=N</code> 表示业务时间 ≥ N×GC 时间（默认 99，即 GC 不超过 1%）；统一日志格式 <code>-Xlog:gc*,safepoint:file=...:t,uptime,level,tags:filecount=N,filesize=M</code> 是 JDK 9+ 唯一推荐写法，旧的 <code>-XX:+PrintGCDetails</code> 等已废弃。</p>
-          </div>
-
-          <div class="card-block block-example">
-            <h4>日志关键信号与样例解读</h4>
-            <pre><code># 样例 1：正常 Young GC（G1）
-[2.345s][info][gc] GC(12) Pause Young (Normal) (G1 Evacuation Pause) 512M-&gt;128M(2048M) 18.342ms
-# 解读：堆从 512M 降到 128M（差值即回收量）、堆总 2048M、暂停 18ms；频率 < 暂停目标即健康。
-
-# 样例 2：晋升失败（红灯，预示老年代或 Survivor 紧张）
-[3.210s][info][gc] GC(31) Pause Young (Concurrent Start) (G1 Evacuation Pause)
-[3.245s][info][gc] GC(31) To-space exhausted
-# 解读：Survivor/Old 容量不足导致 to-space exhausted；很可能下一步退化成 Full GC。
-# 处置：调大堆、调大 G1HeapRegionSize、降低 IHOP（提前并发标记）或排查大对象/泄漏。
-
-# 样例 3：Humongous 分配频繁（对象 > Region/2）
-[4.110s][debug][gc,heap] GC(42) Humongous regions: 17-&gt;14
-# 解读：单对象超半 Region 直接进 Old，频繁分配会撑爆老年代。
-# 处置：定位大对象（JFR Allocation 视图）、拆分批量、或调大 -XX:G1HeapRegionSize（仅 2/4/8/16/32M）。
-
-# 样例 4：ZGC Allocation Stall（应用线程因分配被挂起）
-[5.001s][warn ][gc] Allocation Stall (worker-7) 312.4ms
-# 解读：ZGC 来不及回收，业务线程被 stall——通常是分配速率突增或并发线程数不足。
-# 处置：增大堆/并发 GC 线程（-XX:ConcGCThreads），或开启 -XX:+ZGenerational。
-
-# 样例 5：Full GC（永远是红灯）
-[6.500s][info][gc] GC(99) Pause Full (G1 Compaction Pause) 1800M-&gt;1700M(2048M) 1245.6ms
-# 解读：GC 后老年代几乎没降 + 暂停秒级。强烈泄漏/无界缓存/Humongous 信号。
-# 处置：立刻保留 dump 与 GC 日志，先不要重启，jcmd GC.class_histogram 取证。</code></pre>
-            <p><strong>需要盯的 6 个信号</strong>：① 单次暂停 P99（是否超 SLO）；② Full GC 次数（理想 0/天）；③ <strong>GC 后老年代占用趋势</strong>（持续上升 = 泄漏嫌疑）；④ 晋升失败 / To-space exhausted / Evacuation Failure；⑤ Humongous 比例；⑥ Allocation Stall（ZGC）或 Concurrent Mode Failure。</p>
-          </div>
-
-          <div class="card-block block-tips">
-            <h4>诊断工具链（按取证开销排序）</h4>
-            <ul>
-              <li><strong>jstat</strong>：<code>jstat -gcutil &lt;pid&gt; 1000</code> 即时趋势、零依赖、零开销；先用它判断方向，再选重武器。</li>
-              <li><strong>jcmd</strong>：<code>GC.heap_info</code>、<code>GC.class_histogram</code>、<code>VM.native_memory summary</code>、<code>GC.run_finalization</code>、<code>JFR.start/dump/stop</code>——一站式入口，生产首选。</li>
-              <li><strong>JFR (Java Flight Recorder)</strong>：<code>-XX:StartFlightRecording=duration=180s,filename=/tmp/app.jfr,settings=profile</code>，开销 ~1%，可分析 GC 阶段、分配热点、晋升链、Safepoint。</li>
-              <li><strong>JDK Mission Control (JMC)</strong>：JFR 可视化首选，自动事件分类、自动建议（Automated Analysis）。</li>
-              <li><strong>GCViewer / GCeasy</strong>：离线 GC 日志可视化与趋势报告，PR/工单附图利器；GCeasy 还能给基础调参建议。</li>
-              <li><strong>async-profiler</strong>：<code>./profiler.sh -d 60 -e alloc -f alloc.html &lt;pid&gt;</code> 拿分配火焰图，定位“谁在制造垃圾”比看 GC 日志更直接。</li>
-              <li><strong>Heap Dump</strong>：<code>jcmd &lt;pid&gt; GC.heap_dump /tmp/app.hprof</code> + MAT 看 dominator/retained size，定位泄漏的“持有链”。</li>
-            </ul>
-          </div>
-
-          <div class="card-block block-pitfalls">
-            <h4>易错点 / 常见调参误区</h4>
-            <ul>
-              <li><strong>盲目加堆</strong>：堆越大 → 单次 Young GC 扫描越久 + Full GC 一旦发生越致命。<strong>先看 GC 后老年代是否回落</strong>，回落不下来是泄漏，加堆只是延后崩盘。</li>
-              <li><strong>滥用 <code>-XX:+DisableExplicitGC</code></strong>：会把 <code>System.gc()</code> 静默吃掉。但 NIO Direct Memory 的回收依赖 <code>System.gc()</code> 触发 <code>Cleaner</code>，禁用后 Direct 容易 OOM；正确做法是 <code>-XX:+ExplicitGCInvokesConcurrent</code>，把显式 GC 转为并发 GC。</li>
-              <li><strong>追求 0 GC</strong>：除非 Epsilon 这种特殊场景，否则“没有 GC”意味着分配=泄漏，是异常信号；目标是 <strong>GC 不影响 SLO</strong>，不是消灭 GC。</li>
-              <li><strong>容器内未感知 cgroup</strong>：JDK 8u191+ 已默认开启 <code>-XX:+UseContainerSupport</code>；但 <code>-Xmx</code> 硬编码会越过比例计算，容器 limit 提升后堆并不会跟着涨。生产首选 <code>-XX:MaxRAMPercentage</code>。</li>
-              <li><strong>容器内堆比例设到 90%+</strong>：忽略了 Metaspace、Direct Memory、线程栈、Code Cache、JIT、JNI、本地库——会被 OOMKilled。<strong>非堆需预留 25%~35%</strong>。</li>
-              <li><strong>沿用 CMS 时代参数</strong>：<code>-XX:+UseConcMarkSweepGC</code>（JDK 14 移除）、<code>-XX:CMSInitiatingOccupancyFraction</code> 等在 Java 21 上要么报错要么静默忽略，会带来“配了等于没配”的假安全。</li>
-              <li><strong>只看平均暂停</strong>：平均 50 ms、P99 800 ms 的服务就是事故；GC 评估必须看分布（P50/P95/P99/Max）+ 频率，单看均值会把尾延迟问题完全藏起来。</li>
-              <li><strong>把 <code>MaxGCPauseMillis</code> 当硬限</strong>：它是 G1 调度的<strong>软目标</strong>。调得太低（如 50 ms）会让 G1 把 Young 区切得过小，反而提高 GC 频率与 CPU 占比。</li>
-            </ul>
-          </div>
-
-          <div class="card-block block-memory">
-            <h4>速记</h4>
-            <p>一句口诀：<strong>「现象定性、指标定量、日志取证、参数小步、灰度回归」</strong>。GC 调优本质是“证据驱动的小步迭代”，不是参数调色板。<br>
-              三个数字别忘：<strong>allocation rate（多快在造）、promotion rate（多快进老）、live set（GC 后剩多少）</strong>——这三条线一画，绝大多数 GC 问题都能定位。<br>
-              一句价值观：<strong>收集器是策略选择，不是泄漏修复器</strong>。换 GC 不解决业务问题；日志时间线才是最终裁判。</p>
           </div>
 
           <div class="card-block block-reading">
@@ -467,37 +411,67 @@ jcmd  &lt;pid&gt; JFR.start name=gc settings=profile duration=180s filename=/tmp
 
       <section class="section" id="oom-troubleshooting">
         <h2>常见 OOM 与排障</h2>
-        <article class="knowledge-card">
-          <h3>Heap、Metaspace、Direct Memory、StackOverflow 与线程过多</h3>
-          <div class="card-block block-explain">
-            <h4>是什么</h4>
-            <p>OOM 不是一种问题，而是一组资源边界被打穿的信号。<code>Java heap space</code> 是堆对象无法分配；<code>GC overhead limit exceeded</code> 是大量时间用于 GC 但回收很少；<code>Metaspace</code> 是类元数据空间不足；<code>Direct buffer memory</code> 是直接内存不足；<code>unable to create native thread</code> 是 OS 线程、本地内存、进程限制或容器 pids 限制不足；<code>StackOverflowError</code> 通常是递归过深或调用链异常。</p>
-          </div>
-          <div class="card-block block-example">
-            <h4>怎么用</h4>
-            <pre><code># 建议默认配置：OOM 自动留证据，注意 dump 目录容量和权限
--XX:+HeapDumpOnOutOfMemoryError
--XX:HeapDumpPath=/var/log/app/dumps
--XX:ErrorFile=/var/log/app/hs_err_pid%p.log
-
-# 事后取证
-jcmd &lt;pid&gt; GC.class_histogram
-jcmd &lt;pid&gt; Thread.print
-jcmd &lt;pid&gt; VM.native_memory summary</code></pre>
-          </div>
-          <div class="card-block block-tips">
-            <h4>为什么</h4>
-            <p>堆 OOM 用 heap dump 和 dominator tree 找 retained size；Metaspace OOM 看类加载器数量、动态类和卸载失败；Direct Memory OOM 看 Netty pooled buffer、NIO DirectByteBuffer 和 <code>MaxDirectMemorySize</code>；线程过多看线程池无界创建、阻塞下游、<code>-Xss</code> 和 OS 限制。先保现场，再重启；重启后没有证据，只剩猜测。</p>
-          </div>
-          <div class="card-block block-pitfalls">
-            <h4>怎么看问题</h4>
-            <ul>
-              <li>Heap dump 可能 STW 且文件很大，生产要预留磁盘并明确触发策略。</li>
-              <li>堆没满但容器 OOMKilled：看 RSS、Direct、Metaspace、线程栈、Code Cache 和 cgroup 限额。</li>
-              <li>StackOverflow 不靠盲目调大 <code>-Xss</code>，先找递归终止条件、循环引用序列化、AOP 递归调用。</li>
-            </ul>
-          </div>
-        </article>
+        <table border="1" cellspacing="0" cellpadding="8">
+          <thead>
+            <tr>
+              <th>OOM 类型</th>
+              <th>现象</th>
+              <th>本质问题</th>
+              <th>常见原因</th>
+              <th>排查方向</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Java heap space</td>
+              <td>堆内存溢出</td>
+              <td>Heap 被对象占满</td>
+              <td>大对象、内存泄漏、缓存无限增长、一次性加载数据</td>
+              <td>jmap dump + MAT、GC log 看 Full GC</td>
+            </tr>
+        
+            <tr>
+              <td>GC overhead limit exceeded</td>
+              <td>系统卡顿 + OOM</td>
+              <td>GC 大量运行但回收极少</td>
+              <td>内存严重不足、对象存活率高、Old Gen 压力大</td>
+              <td>看 Full GC 频率、Old Gen 是否持续高占用</td>
+            </tr>
+        
+            <tr>
+              <td>Metaspace</td>
+              <td>类相关 OOM</td>
+              <td>类元数据区满</td>
+              <td>动态代理类过多、ClassLoader 泄漏、频繁热部署</td>
+              <td>jcmd / Arthas 查看 classloader、类数量</td>
+            </tr>
+        
+            <tr>
+              <td>Direct buffer memory</td>
+              <td>NIO OOM</td>
+              <td>堆外内存不足</td>
+              <td>Netty/ByteBuffer 未释放、MaxDirectMemorySize 太小</td>
+              <td>Netty leak 检测、堆外内存监控</td>
+            </tr>
+        
+            <tr>
+              <td>Unable to create new native thread</td>
+              <td>无法创建线程</td>
+              <td>OS 线程资源耗尽</td>
+              <td>线程池失控、线程过多、ulimit限制、-Xss过大</td>
+              <td>ps -eLf、线程池配置、OS限制</td>
+            </tr>
+        
+            <tr>
+              <td>Requested array size exceeds VM limit</td>
+              <td>数组创建失败</td>
+              <td>数组过大超限</td>
+              <td>new 超大数组、一次性加载超大数据</td>
+              <td>检查数组大小 / 改为分批处理</td>
+            </tr>
+          </tbody>
+        </table>
+        排查 = 定位内存区域 + 找最大对象 + 判断泄漏或峰值问题
       </section>
 
       <section class="section" id="jvm-flags">
@@ -515,7 +489,7 @@ jcmd &lt;pid&gt; VM.native_memory summary</code></pre>
             <p>
               内存大小的配置直接决定了 GC 的频率和耗时。
              <br> 1. 堆内存（Heap）设置-Xms：设置堆的初始内存大小。-Xmx：设置堆的最大内存大小。
-             <br>调优建议：必须将 -Xms 和 -Xmx 设置为相同的值。这样可以防止 JVM 在运行过程中因为内存不足不断向操作系统申请内存、扩容或收缩，从而避免由此带来的系统性能震荡。<br>
+             <br>调优建议：必须将 -Xms 和 -Xmx 设置为相同的值（通常用内存占比参数，-XX:InitialRAMPercentage=70.0 -XX:MaxRAMPercentage=75.0）。这样可以防止 JVM 在运行过程中因为内存不足不断向操作系统申请内存、扩容或收缩，从而避免由此带来的系统性能震荡。<br>
              <br>2. 新生代（Young Generation）设置-Xmn：直接设置新生代的大小。-XX:NewRatio：设置老年代与新生代的比例。例如 -XX:NewRatio=2 表示 老年代:新生代 = 2:1。-XX:SurvivorRatio：设置新生代中 Eden 区与单个 Survivor 区（S0/S1）的比例。默认是 8，即 Eden:S0:S1 = 8:1:1。
              <br>调优建议：高并发且对象生命周期短的业务（如 Web 接口），可适当调大新生代，让对象尽可能在 Minor GC 时被销毁，避免进入老年代。<br>
              <br> 3. 元空间（Metaspace，JDK 8 及以上）设置-XX:MetaspaceSize：触发元空间首次 Full GC 的初始阈值，而非初始大小。-XX:MaxMetaspaceSize：设置元空间的最大限制。
@@ -769,29 +743,105 @@ jcmd &lt;pid&gt; JFR.start name=latency settings=profile duration=180s filename=
       </section>
 
       <section class="section" id="interview-myths">
-        <h2>常见误区与面试高频点</h2>
+        <h2>常见误解</h2>
         <article class="knowledge-card">
-          <h3>把概念讲成工程判断</h3>
           <div class="card-block block-explain">
-            <h4>是什么</h4>
-            <p>JVM 高频问题本质是“概念 + 版本 + 场景 + 证据”。能背运行时数据区不够，要能解释 Java 21 下方法区和 Metaspace 的关系；能背双亲委派不够，要能解释 SPI 和 Web 容器为何需要不同加载策略；能背 G1/ZGC 不够，要能看 GC 日志判断问题。</p>
-          </div>
-          <div class="card-block block-tips">
-            <h4>为什么</h4>
-            <ul>
-              <li>误区：方法区等于永久代。纠正：方法区是规范概念，PermGen 是旧 HotSpot 实现，Java 8+ 主要是 Metaspace。</li>
-              <li>误区：对象一定在堆上分配。纠正：语义上对象是引用类型，HotSpot 可通过逃逸分析做标量替换等优化。</li>
-              <li>误区：Full GC 一定是堆不够。纠正：可能是晋升失败、Humongous、Metaspace、显式 GC 或收集器退化。</li>
-              <li>误区：ZGC 一定比 G1 好。纠正：ZGC 停顿低，但吞吐、CPU、内存成本要用压测验证。</li>
-            </ul>
-          </div>
-          <div class="card-block block-example">
-            <h4>怎么用</h4>
-            <p>面试或评审回答按四段组织：先定义边界，再说明机制，再说版本差异，最后落到排障证据。例如“Metaspace OOM”：它是类元数据本地内存不足；常见原因是动态生成类或类加载器泄漏；Java 21 没有 PermGen；线上用 GC 日志、<code>VM.classloader_stats</code>、heap dump 引用链和发布变更定位。</p>
-          </div>
-          <div class="card-block block-memory">
-            <h4>怎么看问题</h4>
-            <p>速记：JVM 问题先定区域，再定版本，再拿证据；内存看引用链，CPU 看时间占比，GC 看日志时间线，类加载看“谁加载了谁”。</p>
+            <table class="compare-table">
+              <thead>
+                <tr>
+                  <th>误区</th>
+                  <th>错误理解</th>
+                  <th>正确理解</th>
+                  <th>本质说明</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>GC 越频繁越差</td>
+                  <td>GC多就是性能问题</td>
+                  <td>Minor GC频繁是正常的</td>
+                  <td>关键看 Full GC 和停顿时间</td>
+                </tr>
+                <tr>
+                  <td>调大堆就不会 OOM</td>
+                  <td>增大 Xmx 就安全</td>
+                  <td>泄漏类问题调再大也会爆</td>
+                  <td>只是延迟 OOM</td>
+                </tr>
+                <tr>
+                  <td>Full GC 一定是异常</td>
+                  <td>Full GC = 系统有问题</td>
+                  <td>Full GC 是正常机制</td>
+                  <td>看频率和耗时</td>
+                </tr>
+                <tr>
+                  <td>对象都在堆中</td>
+                  <td>new 都在 Heap</td>
+                  <td>存在堆外 / Metaspace</td>
+                  <td>JVM 内存是分层结构</td>
+                </tr>
+                <tr>
+                  <td>对象一定进 Eden</td>
+                  <td>new 就进 Eden</td>
+                  <td>大对象可能直接进 Old</td>
+                  <td>有分配优化机制</td>
+                </tr>
+                <tr>
+                  <td>Survivor 越大越好</td>
+                  <td>空间越大越稳</td>
+                  <td>过大会影响吞吐</td>
+                  <td>需要平衡比例</td>
+                </tr>
+                <tr>
+                  <td>OOM = 内存不够</td>
+                  <td>堆太小导致 OOM</td>
+                  <td>泄漏/线程/类/堆外都可能</td>
+                  <td>OOM 是类型问题</td>
+                </tr>
+                <tr>
+                  <td>heap dump 能解决所有问题</td>
+                  <td>dump = 定位完成</td>
+                  <td>只能看堆内存</td>
+                  <td>看不到线程/堆外</td>
+                </tr>
+                <tr>
+                  <td>G1 一定比 CMS 好</td>
+                  <td>新GC一定更优</td>
+                  <td>没有绝对最优 GC</td>
+                  <td>看业务场景</td>
+                </tr>
+                <tr>
+                  <td>GC 调优能解决业务慢</td>
+                  <td>调GC就能优化性能</td>
+                  <td>GC只是症状</td>
+                  <td>根因通常在代码/SQL</td>
+                </tr>
+                <tr>
+                  <td>线程越多越快</td>
+                  <td>多线程=高性能</td>
+                  <td>线程过多会拖慢系统</td>
+                  <td>上下文切换成本</td>
+                </tr>
+                <tr>
+                  <td>线程池一定安全</td>
+                  <td>用了线程池就没问题</td>
+                  <td>无界队列可能导致 OOM</td>
+                  <td>仍需合理配置</td>
+                </tr>
+                <tr>
+                  <td>JVM 调优=改参数</td>
+                  <td>只改 -Xmx -GC 参数</td>
+                  <td>本质是减少对象压力</td>
+                  <td>架构级优化更关键</td>
+                </tr>
+                <tr>
+                  <td>吞吐越高越好</td>
+                  <td>TPS最大化最好</td>
+                  <td>吞吐 vs 延迟是权衡</td>
+                  <td>不能只看单指标</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </article>
       </section>
