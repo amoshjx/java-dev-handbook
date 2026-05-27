@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>16 安全开发 — Java项目手册</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/sidebar.js" defer></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">Java项目手册</div>
+      <nav>
+        <div class="nav-group">
+                    <ul class="nav-list">
+                                                                                                                                                <li><a href="index.html">目录首页</a></li>
+            <li><a href="01-requirements-analysis.html">01 需求分析</a></li>
+            <li><a href="02-prototype-design.html">02 原型设计</a></li>
+            <li><a href="03-architecture-design.html">03 架构设计</a></li>
+            <li><a href="04-project-scheduling.html">04 项目排期</a></li>
+            <li class="sidebar-group"><span class="sidebar-group-label"><a href="java-development.html">开发实现</a></span></li>
+            <li class="sidebar-subitem"><a href="05-dev-environment.html">05 开发环境搭建</a></li>
+            <li class="sidebar-subitem"><a href="06-java-basics.html">06 Java基础语法</a></li>
+            <li class="sidebar-subitem"><a href="07-oop.html">07 面向对象</a></li>
+            <li class="sidebar-subitem"><a href="08-jvm.html">08 JVM</a></li>
+            <li class="sidebar-subitem"><a href="09-concurrency.html">09 并发编程</a></li>
+            <li class="sidebar-subitem"><a href="10-io-nio-network.html">10 IO·NIO·网络</a></li>
+            <li class="sidebar-subitem"><a href="11-persistence.html">11 持久化</a></li>
+            <li class="sidebar-subitem"><a href="12-spring-framework.html">12 Spring Framework</a></li>
+            <li class="sidebar-subitem"><a href="13-build-packaging-deploy.html">13 构建·打包·部署</a></li>
+            <li class="sidebar-subitem"><a href="14-ruoyi-framework.html">14 RuoYi 框架</a></li>
+            <li class="sidebar-subitem"><a href="15-common-modules.html">15 常见功能模块</a></li>
+            <li class="sidebar-subitem"><a href="16-security-development.html">16 安全开发</a></li>
+            <li class="sidebar-subitem"><a href="17-test-driven-development.html">17 测试驱动开发</a></li>
+            <li><a href="18-testing-quality.html">18 测试·质量</a></li>
+            <li><a href="19-performance-tuning.html">19 性能调优</a></li>
+            <li><a href="20-devops-cloud-native.html">20 工程化·DevOps·CI/CD</a></li>
+            <li><a href="21-ai-development.html">21 AI 辅助开发</a></li>
+            <li><a href="22-business-intelligence.html">22 业务智能化</a></li>
+            <li><a href="glossary.html">术语字典</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="page-header">
+        <h1>16 安全开发</h1>
+        <p>面向 Spring Boot / Java 企业项目的<strong>安全原理、威胁模型与防护配置</strong>：Spring Security 架构、认证授权、密码与 Token、CSRF/CORS/Session 防护、OWASP 常见漏洞、密钥与 TLS、审计合规。业务侧 RBAC/SSO 落地见<a href="15-common-modules.html#rbac">第 15 章 RBAC</a>与<a href="15-common-modules.html#auth-sso">第 15 章统一登录鉴权</a>；本章侧重「为什么这样配、攻击面在哪、默认配置缺什么」。</p>
+      </header>
+
+      <section class="section" id="spring-security-architecture">
+        <h2>Spring Security 架构与 Filter Chain</h2>
+        <article class="knowledge-card">
+          <h3>DelegatingFilterProxy → SecurityFilterChain → 认证/授权决策</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>零信任架构</strong>（Never Trust, Always Verify）：默认不信任内网——每次请求都须认证授权，服务间 mTLS 或 Service Account Token，最小权限 RBAC。纵深防御分层：① 边界（WAF/API Gateway 鉴权、限流）；② 网络（VPC/安全组/egress 控制）；③ 应用（Filter 链 + 方法级授权，细节见<a href="15-common-modules.html#rbac">第 15 章</a>）；④ 数据（加密、脱敏、审计）。Spring Security 在此模型中负责<strong>应用层</strong>：多条 <code>SecurityFilterChain</code> 按路径分流——<code>/api/**</code> JWT Resource Server、<code>/actuator/**</code> 独立保护。401=未认证，403=已认证无权限。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart TD
+    REQ[HTTP Request] --> PROXY[DelegatingFilterProxy]
+    PROXY --> CHAIN[SecurityFilterChain]
+    CHAIN --> CTX[SecurityContextHolderFilter]
+    CTX --> AUTH[Authentication Filter]
+    AUTH --> AUTHZ[AuthorizationFilter]
+    AUTHZ --> APP[Controller @PreAuthorize]</pre>
+              <p class="diagram-caption">图：Spring Security Filter Chain 请求链路</p>
+            </div>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+  @Bean
+  @Order(1)
+  SecurityFilterChain apiChain(HttpSecurity http) throws Exception {
+    return http
+        .securityMatcher("/api/**")
+        .csrf(csrf -&gt; csrf.disable()) // 纯 JWT 无 Cookie 时可关，见 csrf-cors-session 卡片
+        .sessionManagement(s -&gt; s.sessionCreationPolicy(STATELESS))
+        .authorizeHttpRequests(auth -&gt; auth
+            .requestMatchers("/api/public/**").permitAll()
+            .anyRequest().authenticated())
+        .oauth2ResourceServer(oauth2 -&gt; oauth2.jwt(Customizer.withDefaults()))
+        .build();
+  }
+
+  @Bean
+  @Order(2)
+  SecurityFilterChain defaultChain(HttpSecurity http) throws Exception {
+    return http
+        .authorizeHttpRequests(auth -&gt; auth
+            .requestMatchers("/login", "/css/**").permitAll()
+            .anyRequest().authenticated())
+        .formLogin(Customizer.withDefaults())
+        .build();
+  }
+}</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>开启 <code>logging.level.org.springframework.security=DEBUG</code> 看 Filter 匹配与决策路径。</li>
+              <li>多链时用 <code>securityMatcher</code> 明确路径，避免一条链 <code>anyRequest</code> 吞掉全部规则。</li>
+              <li>自定义 Filter 用 <code>addFilterBefore/After</code> 插入，勿直接改内部 Filter 列表。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>以为 <code>@RestController</code> 自动安全——未引入 Security 或 <code>permitAll</code> 时接口全开放。</li>
+              <li>在 Filter 里写业务逻辑且不 <code>chain.doFilter</code>，导致后续鉴权被跳过。</li>
+              <li>Actuator 未单独链保护，<code>/actuator/env</code> 泄露配置。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「请求进 Proxy，多链按路径分；Security 6：ContextHolder → 认证 → AuthorizationFilter。」</p>
+          </div>
+          <div class="card-block block-reading">
+            <p>延伸阅读：Spring Security Reference — Servlet Architecture、Filter Chain</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="authentication">
+        <h2>认证机制选型</h2>
+        <article class="knowledge-card">
+          <h3>表单 / HTTP Basic / JWT / OAuth2 Resource Server</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>OAuth2 架构</strong>：Authorization Server（Keycloak / Spring Authorization Server）集中签发 Token；API Gateway 统一验签、限流、透传身份 Header；业务服务为 Resource Server，只验签不存 Session。BFF 持 Session + Cookie 时，Gateway 仍须校验下游 JWT/mTLS。选型：前后端分离 → JWT Bearer；企业 SSO → 授权码 + Refresh；内部服务 → Client Credentials / mTLS。<strong>与 Filter 细节分工</strong>：Gateway 做粗粒度鉴权与 WAF；Resource Server 做细粒度 <code>@PreAuthorize</code>（见<a href="15-common-modules.html#auth-sso">第 15 章 SSO</a>）。勿在 JWT 塞 PII；Access 短效 + Refresh 轮换。</p>
+            <div class="diagram-block diagram-rest-chain">
+              <pre class="mermaid">sequenceDiagram
+    participant U as 用户/客户端
+    participant AS as Authorization Server
+    participant APP as Resource Server
+    U->>AS: 授权码/密码换 Token
+    AS-->>U: Access Token + Refresh Token
+    U->>APP: API + Bearer Token
+    APP->>APP: JWK 验签 + 校验 exp/scope
+    APP-->>U: 200 资源响应</pre>
+              <p class="diagram-caption">图：OAuth2 授权码模式与 Resource Server 验签</p>
+            </div>
+          </div>
+          <div class="card-block block-example">
+            <h4>OAuth2 组件职责表</h4>
+            <pre><code>| 组件                  | 职责                          |
+|-----------------------|-------------------------------|
+| Authorization Server  | 签发/刷新/撤销 Token          |
+| API Gateway           | JWT 验签、限流、路由、mTLS    |
+| Resource Server       | 细粒度授权、业务 API          |
+| BFF（可选）           | 聚合 API、Session/Cookie 转换 |</code></pre>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code># application.yml — Resource Server
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://auth.example.com/realms/corp
+          # 或 jwk-set-uri 直接指定 JWK 端点
+
+// 自定义 JWT 转 Authentication（提取 roles）
+@Bean
+JwtAuthenticationConverter jwtAuthConverter() {
+  var conv = new JwtAuthenticationConverter();
+  conv.setJwtGrantedAuthoritiesConverter(jwt -&gt; {
+    var roles = jwt.getClaimAsStringList("roles");
+    return roles.stream()
+        .map(r -&gt; new SimpleGrantedAuthority("ROLE_" + r))
+        .collect(Collectors.toSet());
+  });
+  return conv;
+}
+
+// 统一 401 响应体（EntryPoint）
+@Component
+public class JsonAuthEntryPoint implements AuthenticationEntryPoint {
+  public void commence(HttpServletRequest req, HttpServletResponse resp,
+      AuthenticationException ex) throws IOException {
+    resp.setStatus(401);
+    resp.setContentType("application/json");
+    resp.getWriter().write("{\"code\":401,\"message\":\"Unauthorized\"}");
+  }
+}</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>Resource Server 优先 <code>issuer-uri</code> 自动发现 JWK，轮换密钥无感。</li>
+              <li>登录失败返回泛化文案「用户名或密码错误」，防账号枚举。</li>
+              <li>多端场景见<a href="15-common-modules.html#auth-sso">第 15 章统一登录</a>的 Refresh / 互踢实现。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>JWT 只 Base64 解码不验签——任何人可伪造 payload。</li>
+              <li>Basic 认证若未启用 HTTPS 则等同明文传输，抓包即泄露。</li>
+              <li>把 JWT 放 URL Query（<code>?token=</code>），Referer 日志泄露。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「Session 配 CSRF，JWT 验签+短效，Basic 仅内网 HTTPS。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="authorization">
+        <h2>授权：URL 级 vs 方法级</h2>
+        <article class="knowledge-card">
+          <h3>@PreAuthorize、RBAC 与分层授权策略</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>URL 级</strong>：<code>authorizeHttpRequests</code> 按路径/HTTP 方法放行或要求角色，配置集中、适合粗粒度（<code>/admin/**</code> → <code>ROLE_ADMIN</code>）。<strong>方法级</strong>：<code>@EnableMethodSecurity</code> + <code>@PreAuthorize("hasAuthority('order:export')")</code>，细到接口动作，与<a href="15-common-modules.html#rbac">第 15 章 RBAC 权限码</a>对齐。<strong>RBAC</strong>：角色聚合权限，Spring 里 <code>GrantedAuthority</code> 可映射为权限码或 <code>ROLE_*</code>；SpEL 支持 <code>@authzService.canEdit(#id)</code> 做数据级判断（与第 15 章数据权限配合）。<strong>原则</strong>：URL 拦大类，方法拦细粒度；公开路径白名单最小化；默认 deny。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>@Configuration
+@EnableMethodSecurity  // 替代旧 @EnableGlobalMethodSecurity
+public class MethodSecurityConfig {}
+
+@RestController
+@RequestMapping("/api/orders")
+public class OrderController {
+
+  @PreAuthorize("hasAuthority('order:read')")
+  @GetMapping("/{id}")
+  public OrderDTO get(@PathVariable Long id) { /* ... */ }
+
+  @PreAuthorize("@orderAuth.canDelete(authentication, #id)")
+  @DeleteMapping("/{id}")
+  public void delete(@PathVariable Long id) { /* ... */ }
+}
+
+@Service("orderAuth")
+public class OrderAuthorizationService {
+  public boolean canDelete(Authentication auth, Long orderId) {
+    // 结合 owner / 部门 / 角色
+    return /* ... */;
+  }
+}</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>权限码集中枚举，<code>@PreAuthorize</code> 引用常量，避免魔法字符串。</li>
+              <li>集成测试用 <code>@WithMockUser(authorities = "order:export")</code> 覆盖鉴权分支。</li>
+              <li>403 与 401 区分：未登录 401，已登录无权限 403，前端跳转逻辑不同。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>忘记 <code>@EnableMethodSecurity</code>，注解静默不生效。</li>
+              <li>内部 <code>@Scheduled</code> / 自调用绕过代理，方法级注解失效。</li>
+              <li>只配 URL 级，Service 被其他 Controller 复用时越权。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「URL 粗拦，方法细拦；EnableMethodSecurity 不开等于裸奔。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="password-encoding">
+        <h2>密码编码与策略</h2>
+        <article class="knowledge-card">
+          <h3>BCrypt、Argon2 与企业密码策略</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>存储原则</strong>：永不明文、可逆加密（AES）存密码；只用单向哈希 + 盐。<strong>BCrypt</strong>：Spring 默认 <code>BCryptPasswordEncoder</code>，内置盐与 cost 因子（推荐 10–12），够用且生态成熟。<strong>Argon2</strong>：2015 密码哈希竞赛赢家，抗 GPU/ASIC，Spring Security 5.8+ 支持 <code>Argon2PasswordEncoder</code>，内存硬度高，适合高安全场景。<strong>密码策略</strong>：最小长度、复杂度、历史密码禁止重用；是否定期轮换按合规要求与泄露风险评估执行。登录失败锁定与 CAPTCHA 见 <code>api-rate-limit</code> 卡片。传输层必须 HTTPS；重置密码用一次性 Token + 短 TTL。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>@Bean
+PasswordEncoder passwordEncoder() {
+  // 默认 BCrypt strength=10
+  return new BCryptPasswordEncoder(12);
+  // 高安全：return Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8();
+}
+
+// 注册 / 改密
+user.setPassword(passwordEncoder.encode(rawPassword));
+
+// 登录校验
+if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
+  throw new BadCredentialsException("Invalid credentials");
+}
+
+// 禁止弱口令（示意）
+if (!passwordPolicy.isStrong(rawPassword)) {
+  throw new ValidationException("密码需 12 位含大小写数字符号");
+}</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>升级 cost/算法时：<code>matches</code> 成功后若参数过旧则 <code>encode</code> 重写库。</li>
+              <li>管理员重置密码强制首次登录改密，标记 <code>mustChangePassword</code>。</li>
+              <li>日志与异常禁止打印明文密码或哈希。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>用 MD5/SHA1 无盐哈希——彩虹表秒破。</li>
+              <li>前后端同时「加密」密码（如固定 AES）——密钥泄露等于明文。</li>
+              <li>密码重置链接长期有效、可重复使用。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「存哈希不存密，BCrypt 默认够，Argon2 更高配。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="csrf-cors-session">
+        <h2>CSRF / CORS / Session 固定攻击</h2>
+        <article class="knowledge-card">
+          <h3>浏览器侧经典攻击面与 Spring Security 对策</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>CSRF</strong>：攻击者诱使已登录用户浏览器提交恶意请求；Session Cookie 自动携带导致越权操作。对策：同步器 Token（Spring 默认）、SameSite Cookie（<code>Lax/Strict</code>）、关键操作二次验证。纯 JWT Header 认证、无 Cookie 的 API 可关闭 CSRF，但若有 Cookie 混用仍要开。<strong>CORS</strong>：控制哪些源可跨域读响应；生产禁止 <code>allowedOrigins("*")</code> 且 <code>allowCredentials(true)</code>。前后端同域 Nginx 反代最优（见第 4 章）。<strong>Session 固定</strong>：攻击者固定 SessionId 诱用户登录后劫持；登录成功必须 <code>sessionFixation().changeSessionId()</code>（Spring 默认）或新建 Session。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>@Bean
+SecurityFilterChain sessionApp(HttpSecurity http) throws Exception {
+  return http
+      .csrf(csrf -&gt; csrf
+          .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+          .ignoringRequestMatchers("/api/webhook/**")) // 外部回调需签名替代 CSRF
+      .sessionManagement(session -&gt; session
+          .sessionFixation().changeSessionId()
+          .maximumSessions(1)
+          .maxSessionsPreventsLogin(false)) // true=踢后者
+      .cors(cors -&gt; cors.configurationSource(corsSource()))
+      .build();
+}
+
+@Bean
+CorsConfigurationSource corsSource() {
+  var config = new CorsConfiguration();
+  config.setAllowedOrigins(List.of("https://admin.example.com"));
+  config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
+  config.setAllowCredentials(true);
+  var source = new UrlBasedCorsConfigurationSource();
+  source.registerCorsConfiguration("/api/**", config);
+  return source;
+}</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>SPA + Session：前端从 Cookie 读 CSRF Token 放 Header <code>X-XSRF-TOKEN</code>。</li>
+              <li>Webhook 用 HMAC 签名 + 时间戳，而非关闭 CSRF 裸奔。</li>
+              <li>Cookie 设 <code>Secure; HttpOnly; SameSite=Lax</code>。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>JWT API 关 CSRF 但登录仍用 Cookie Session——CSRF 窗口仍在。</li>
+              <li>CORS 只拦浏览器，Postman/curl 不受限——后端鉴权不能省。</li>
+              <li>把 CSRF Token 放 localStorage 与 XSS 风险叠加。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「Cookie 会话防 CSRF，CORS 白名单源，登录换 SessionId。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="security-context">
+        <h2>SecurityContext 与多租户</h2>
+        <article class="knowledge-card">
+          <h3>ThreadLocal 上下文、异步传递与环境隔离</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>SecurityContextHolder</strong>：默认 <code>ThreadLocal</code> 存 <code>Authentication</code>；Filter 入口写入，请求结束清理。<strong>异步</strong>：<code>@Async</code>、线程池、MQ 消费线程默认<strong>无</strong>上下文——需 <code>DelegatingSecurityContextRunnable</code> / <code>SecurityContextHolder.MODE_INHERITABLETHREADLOCAL</code> 或手动传播。<strong>多租户</strong>：租户 ID 从 JWT claim / Header 解析，写入 TenantContext（与第 15 章<a href="15-common-modules.html#data-scope">数据权限</a>配合）；禁止信任前端传的 <code>tenantId</code> 参数。<strong>多环境</strong>：dev 禁止用生产密钥；Profile 隔离 <code>application-prod.yml</code>，Actuator 生产最小暴露。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>// 获取当前用户
+Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+String userId = auth.getName();
+
+// @Async 传播 SecurityContext
+@Configuration
+@EnableAsync
+public class AsyncConfig implements AsyncConfigurer {
+  @Override
+  public Executor getAsyncExecutor() {
+    ThreadPoolTaskExecutor ex = new ThreadPoolTaskExecutor();
+    ex.initialize();
+    return new DelegatingSecurityContextAsyncTaskExecutor(ex);
+  }
+}
+
+// 租户解析 Filter（JWT 内 tenant_id）
+@Component
+public class TenantFilter extends OncePerRequestFilter {
+  protected void doFilterInternal(HttpServletRequest req, ...) {
+    String tenantId = resolveFromJwt(req);
+    TenantContext.set(tenantId);
+    try { chain.doFilter(req, resp); }
+    finally { TenantContext.clear(); }
+  }
+}</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>封装 <code>SecurityUtils.currentUserId()</code> 统一取值，避免散落 <code>getPrincipal()</code> 强转。</li>
+              <li>集成测试 <code>@WithUserDetails</code> 或 MockMvc JWT 测租户隔离。</li>
+              <li>定时任务无用户上下文时显式设系统账号，审计日志标注 <code>SYSTEM</code>。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>线程池复用导致 ThreadLocal 泄漏或串租户——<code>finally</code> 必须 clear。</li>
+              <li>Reactive WebFlux 用 ThreadLocal 取用户——应换 <code>ReactiveSecurityContextHolder</code>。</li>
+              <li>测试环境 <code>permitAll</code> 忘改回生产规则。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「Context 跟线程走，异步要委托传；租户信 Token，不信前端参。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="owasp-injection-xss-ssrf">
+        <h2>注入、XSS 与 SSRF</h2>
+        <article class="knowledge-card">
+          <h3>OWASP Top 10 中的输入与出站请求</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>SQL 注入</strong>：拼接 SQL 导致任意查询；对策——参数化查询（JPA/MyBatis <code>#{}</code>）、ORM 绑定、最小权限 DB 账号；动态排序白名单字段名。<strong>XSS</strong>：存储型/反射型脚本注入；后端 JSON 输出时前端转义，富文本用 OWASP Java HTML Sanitizer 白名单过滤；设置 <code>Content-Security-Policy</code> Header。<strong>SSRF</strong>：服务端根据用户 URL 发起请求（导入、预览、Webhook 校验），可打内网 <code>169.254.169.254</code>；对策——URL 协议/host 白名单、禁止私有 IP 段、禁用重定向跟随或限次数。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart TB
+    L1[网络层 WAF/防火墙] --> L2[传输层 TLS]
+    L2 --> L3[应用层 Filter Chain]
+    L3 --> L4[输入校验/参数化 SQL]
+    L4 --> L5[输出编码防 XSS]
+    L5 --> L6[授权与数据脱敏]
+    L6 --> L7[审计日志与监控]</pre>
+              <p class="diagram-caption">图：OWASP 纵深防护层次</p>
+            </div>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>// ? MyBatis 参数化
+@Select("SELECT * FROM user WHERE name = #{name}")
+User findByName(String name);
+
+// ? 禁止 ${name} 拼接用户输入
+
+// 动态 ORDER BY 白名单
+private static final Set&lt;String&gt; SORT_COLS = Set.of("created_at", "amount");
+public String safeSort(String col) {
+  if (!SORT_COLS.contains(col)) throw new BadRequestException("invalid sort");
+  return col;
+}
+
+// SSRF 防护：校验 URL
+public void fetchUserUrl(String urlStr) throws Exception {
+  URI uri = URI.create(urlStr);
+  if (!List.of("http", "https").contains(uri.getScheme())) throw forbidden();
+  InetAddress addr = InetAddress.getByName(uri.getHost());
+  if (addr.isAnyLocalAddress() || addr.isLoopbackAddress() || addr.isSiteLocalAddress())
+    throw forbidden();
+  // 使用 RestClient，限制 timeout、禁止自动 redirect
+}</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>启用 SpotBugs/FindSecBugs、Sonar 规则扫描 SQL 拼接。</li>
+              <li>导出 CSV 时对公式注入字段前缀 <code>'</code> 防 Excel 宏执行。</li>
+              <li>SSRF 场景走独立 egress 代理，网络层再拦 RFC1918 私网地址段。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>MyBatis <code>${}</code> 用于动态表名时未白名单。</li>
+              <li>认为 JSON API 无 XSS——前端 <code>v-html</code> 仍可利用存储型 payload。</li>
+              <li>PDF/图片「转 URL 抓取」功能成为 SSRF 入口。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「SQL 用 #{}，XSS 白名单滤，SSRF 拦内网 IP。」</p>
+          </div>
+          <div class="card-block block-reading">
+            <p>延伸阅读：OWASP Top 10、OWASP Cheat Sheet Series</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="sensitive-data-deserialization">
+        <h2>敏感数据与反序列化</h2>
+        <article class="knowledge-card">
+          <h3>日志脱敏、加密存储与不安全反序列化</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>敏感数据泄露</strong>：日志打印手机号、身份证、Token、卡号；对策——Logback 自定义 Converter 脱敏（中间位 *）、结构化日志字段分级、生产关闭 SQL 参数明文。<strong>存储加密</strong>：PII 字段 AES-GCM 列级加密，密钥来自 KMS/Vault（见 secrets-config 卡片）；密码学分离——传输 TLS、存储加密、哈希分场景。<strong>不安全反序列化</strong>：Java 原生 <code>ObjectInputStream</code>、JSON 全局多态（如历史 <code>enableDefaultTyping</code>）可触发 RCE；对策——禁用原生反序列化、禁用全局 Default Typing，确需多态时用白名单 <code>PolymorphicTypeValidator</code> / <code>@JsonTypeInfo</code> 限定子类，并升级 Commons Collections 等历史 Gadget 依赖。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>// 日志脱敏（示意）
+public static String maskPhone(String phone) {
+  if (phone == null || phone.length() &lt; 7) return "***";
+  return phone.substring(0, 3) + "****" + phone.substring(phone.length() - 4);
+}
+
+// Jackson 安全：禁止 default typing
+@Bean
+ObjectMapper objectMapper() {
+  ObjectMapper mapper = JsonMapper.builder()
+      .build(); // 默认不启用全局 Default Typing
+  // 历史代码若启用过 default typing，应显式调用 mapper.deactivateDefaultTyping();
+  return mapper;
+}
+
+// JPA 属性转换器加密 PII
+@Converter
+public class EncryptedStringConverter implements AttributeConverter&lt;String, String&gt; {
+  public String convertToDatabaseColumn(String attr) {
+    return cryptoService.encrypt(attr);
+  }
+  public String convertToEntityAttribute(String db) {
+    return cryptoService.decrypt(db);
+  }
+}</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>定义「禁止入日志字段」清单：password、token、idCard、bankCard。</li>
+              <li>Exception 全局处理返回对外泛化 message，细节只写 server log。</li>
+              <li>依赖扫描（OWASP Dependency-Check、Snyk）纳入 CI，并结合 SBOM 做供应链治理。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>把 JWT Secret 打进日志或 Actuator <code>/env</code>。</li>
+              <li>Redis 存 Session 序列化对象可被污染链利用。</li>
+              <li>错误配置 <code>logging.level.org.hibernate.SQL=DEBUG</code> 在生产泄露参数。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「日志脱敏、PII 加密存、反序列化能不用就不用。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="file-upload-api-security">
+        <h2>文件上传与 API 限流</h2>
+        <article class="knowledge-card">
+          <h3>上传校验、防暴力破解与速率限制</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>文件上传</strong>：校验扩展名 + MIME（Tika 嗅探）+ 大小限制；随机文件名存对象存储，禁止用户控制路径（路径遍历）；病毒扫描（ClamAV）与图片重编码去 EXIF。可执行类型（jsp、html、svg with script）禁止或隔离桶。<strong>API 限流</strong>：网关（Sentinel、Redis 滑动窗口）或 Bucket4j 按 IP/用户/API Key 限 QPS；登录、短信、验证码接口严限防暴力破解。<strong>账户锁定</strong>：连续失败 N 次锁定 M 分钟，Redis 计数；与 CAPTCHA 联动。业务模块上传细节见第 17 章文件上传卡片，本章强调<strong>威胁面</strong>。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>// Spring 上传限制
+spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+
+// Bucket4j 限流（示意）
+@Bean
+public Supplier&lt;Bucket&gt; loginBucket() {
+  return () -&gt; Bucket.builder()
+      .addLimit(Bandwidth.classic(10, Refill.intervally(10, Duration.ofMinutes(1))))
+      .build();
+}
+
+@PostMapping("/api/auth/login")
+public Token login(@RequestBody LoginReq req, HttpServletRequest http) {
+  if (!loginBucket.get().tryConsume(1)) throw new TooManyRequestsException();
+  if (loginFailService.isLocked(req.username())) throw new LockedException();
+  // ...
+}
+
+// 上传：白名单 + 随机名
+String ext = FilenameUtils.getExtension(original).toLowerCase();
+if (!ALLOWED_EXT.contains(ext)) throw badRequest();
+String key = UUID.randomUUID() + "." + ext;
+ossClient.putObject(bucket, "upload/" + key, stream);</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>下载接口 <code>Content-Disposition: attachment</code>，防浏览器嗅探执行。</li>
+              <li>限流返回 429 + <code>Retry-After</code> Header。</li>
+              <li>管理端上传与公网用户分桶、分权限。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>只校验客户端扩展名，双扩展名 <code>evil.jsp.jpg</code> 绕过。</li>
+              <li>限流只限 IP，攻击者轮换代理；关键接口加账号维度。</li>
+              <li>Zip 炸弹未限制解压后总大小。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「上传白名单+随机名，登录限流+锁定，429 要带 Retry-After。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="secrets-config-tls">
+        <h2>密钥、配置与 TLS</h2>
+        <article class="knowledge-card">
+          <h3>环境变量、Vault/K8s Secret 与 HTTPS</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>密钥管理</strong>：09-Factor 配置与密钥分离；本地 <code>.env</code> 不入库，生产用环境变量、HashiCorp Vault、云 KMS 或 K8s Secret（配合 External Secrets 同步）。Spring <code>${DB_PASSWORD}</code> 注入，禁止硬编码在 <code>application.yml</code> 提交 Git。<strong>HTTPS/TLS</strong>：全链路 TLS 1.2+，Nginx/Ingress 终止或 Boot 内置 SSL；HSTS Header 强制浏览器 HTTPS。<strong>证书 Pinning</strong>：移动端 App 可 Pin 服务端公钥防中间人，需规划证书轮换；Web 一般依赖系统 CA。详见第 21 章密钥与配置管理。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code># application-prod.yml — 占位符，值来自环境/K8s
+spring:
+  datasource:
+    password: ${DB_PASSWORD}
+  data:
+    redis:
+      password: ${REDIS_PASSWORD}
+
+custom:
+  jwt:
+    private-key-location: ${JWT_PRIVATE_KEY_PATH}
+
+# K8s Secret 挂载为文件
+# env:
+#   - name: DB_PASSWORD
+#     valueFrom:
+#       secretKeyRef:
+#         name: app-db
+#         key: password
+
+# Nginx TLS 片段
+# ssl_protocols TLSv1.2 TLSv1.3;
+# add_header Strict-Transport-Security "max-age=31536000" always;</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>密钥轮换：双密钥并行验签窗口，再下线旧钥。</li>
+              <li>Git 提交前 gitleaks/trufflehog 扫描历史密钥。</li>
+              <li>Boot Actuator 生产只开 <code>health</code>、<code>info</code>，且需认证。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>把 AK/SK 写进前端或移动端包体。</li>
+              <li>K8s Secret Base64 非加密，etcd 权限不当仍泄露。</li>
+              <li>内网 HTTP 「反正隔离」——横向移动后明文可嗅探。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「密钥不进 Git，生产走 Vault/Env；全站 HTTPS，HSTS 要开。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="jwt-best-practices">
+        <h2>JWT 最佳实践</h2>
+        <article class="knowledge-card">
+          <h3>过期、刷新、黑名单与算法选择</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>结构</strong>：Header.Payload.Signature；Payload 只放 sub、roles、tenant 等必要声明，禁止密码/PII。<strong>算法</strong>：Resource Server 应显式限制可信 <code>iss/aud</code> 与允许算法（如 <code>RS256/ES256</code>）；拒绝 <code>alg:none</code> 与 HS256 弱密钥（&lt;256 bit）。<strong>生命周期</strong>：Access 15–30 min；Refresh 7–30 天存 HttpOnly Cookie 或 Redis，<strong>Refresh 轮换</strong>（用后作废旧 jti）。<strong>黑名单</strong>：登出/改密/踢人将 <code>jti</code> 入 Redis，TTL=剩余 exp；网关与服务双重校验更稳。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>// 签发（Authorization Server 或自建）
+JwtEncoderParameters params = JwtEncoderParameters.from(
+    JwtClaimsSet.builder()
+        .issuer("https://auth.example.com")
+        .subject(userId)
+        .expiresAt(Instant.now().plus(30, ChronoUnit.MINUTES))
+        .claim("jti", UUID.randomUUID().toString())
+        .claim("roles", roles)
+        .build());
+String accessToken = jwtEncoder.encode(params).getTokenValue();
+
+// 验签 + 黑名单
+public void validate(String token) {
+  Jwt jwt = jwtDecoder.decode(token);
+  if (blacklist.exists(jwt.getId())) throw new JwtException("revoked");
+}
+
+// Resource Server：issuer 自动拉 JWK + 校验 aud/iss
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://auth.example.com
+          audiences: order-service  # 防 Token 挪用到其他微服务
+
+@Bean
+JwtDecoder jwtDecoder(OAuth2ResourceServerProperties props) {
+  NimbusJwtDecoder decoder = JwtDecoders.fromIssuerLocation(props.getJwt().getIssuerUri());
+  OAuth2TokenValidator&lt;Jwt&gt; aud = new JwtClaimValidator&lt;List&lt;String&gt;&gt;(
+      "aud", aud -&gt; aud != null &amp;&amp; aud.contains("order-service"));
+  decoder.setJwtValidator(new DelegatingOAuth2TokenValidator&lt;&gt;(JwtValidators.createDefault(), aud));
+  return decoder;
+}</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>时钟偏移容忍 <code>clockSkew</code> 30s，多节点 NTP 同步。</li>
+              <li>短 Access + Refresh 优于长 Access——泄露窗口更小。</li>
+              <li>网关统一验签，下游可信任内网 Header 但需 mTLS 防伪造。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>JWT 当 Session 存大量状态——体积膨胀且无法服务端撤销（无黑名单时）。</li>
+              <li>HS256 密钥 &lt; 256 bit 或硬编码在代码库。</li>
+              <li>不校验 <code>aud</code>，Token 被挪用到其他服务。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「Access 短、Refresh 轮换，jti 黑名单；RS256 优先，none 必拒。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="audit-compliance">
+        <h2>安全审计与合规</h2>
+        <article class="knowledge-card">
+          <h3>审计日志、等保与开发注意点</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>安全审计日志</strong>：谁、何时、从何 IP、对何资源、何操作、结果（成功/失败）；登录/登出、权限变更、敏感数据导出、配置修改必记；日志防篡改（独立存储、WORM、SIEM 对接）。与第 17 章操作审计业务字段互补，本章强调<strong>不可抵赖与留存周期</strong>（常 ≥6 个月）。<strong>等保 2.0 / 合规</strong>（简要）：身份鉴别、访问控制、安全审计、通信完整性/保密性、恶意代码防范；开发侧对应——多因素认证（高危操作）、三权分立（系统/安全/审计管理员）、密码策略、漏洞修复 SLA、渗透测试。数据分类分级：公开/内部/敏感/机密，不同加密与脱敏策略。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>@Aspect
+@Component
+public class SecurityAuditAspect {
+  @AfterReturning("@annotation(Audited)")
+  public void logSuccess(JoinPoint jp) { writeAudit(jp, "SUCCESS"); }
+
+  @AfterThrowing(value = "@annotation(Audited)", throwing = "ex")
+  public void logFail(JoinPoint jp, Exception ex) { writeAudit(jp, "FAIL"); }
+
+  void writeAudit(JoinPoint jp, String result) {
+    auditLogger.info(AuditEvent.builder()
+        .userId(SecurityUtils.userId())
+        .ip(RequestContext.clientIp())
+        .action(jp.getSignature().toShortString())
+        .resource(extractResource(jp))
+        .result(result)
+        .timestamp(Instant.now())
+        .build().toJson());
+  }
+}
+
+// 等保：管理员操作二次验证（示意）
+@PreAuthorize("hasRole('ADMIN')")
+@PostMapping("/api/admin/users/{id}/role")
+public void changeRole(@PathVariable Long id, @RequestBody RoleReq req,
+    @RequestHeader("X-MFA-Token") String mfa) {
+  mfaService.verify(SecurityUtils.userId(), mfa);
+  userService.changeRole(id, req.role());
+}</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>审计日志与用户业务日志分 Logger、分索引，防误删。</li>
+              <li>定期导出权限矩阵与 API 鉴权清单做合规自查。</li>
+              <li>上线前安全 checklist：依赖 CVE、渗透项、配置基线。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>只记成功操作，登录失败不记——暴力破解无迹可寻。</li>
+              <li>审计日志含明文密码或 Token。</li>
+              <li>等保测评临时改配置，测评后未固化。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「审计记成败、记 IP；等保重鉴别、审计、加密；测评配置要常态化。」</p>
+          </div>
+          <div class="card-block block-reading">
+            <p>延伸阅读：GB/T 22239 等保基本要求、OWASP ASVS、NIST SP 800-53</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="sbom-supply-chain">
+        <h2>供应链安全（SBOM）</h2>
+        <article class="knowledge-card">
+          <h3>依赖漏洞扫描与 CVE 响应</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>SBOM</strong>（Software Bill of Materials）列出应用全部依赖及版本。CI 集成 <strong>OWASP Dependency-Check</strong>、Snyk 或 GitHub Dependabot；blocker 级 CVE 阻断发布。响应流程：发现 → 评估可利用性 → 升级版本 / 临时缓解 → 验证 → 关闭。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>Maven 插件示例</h4>
+            <pre><code>&lt;plugin&gt;
+  &lt;groupId&gt;org.owasp&lt;/groupId&gt;
+  &lt;artifactId&gt;dependency-check-maven&lt;/artifactId&gt;
+  &lt;executions&gt;
+    &lt;execution&gt;&lt;goals&gt;&lt;goal&gt;check&lt;/goal&gt;&lt;/goals&gt;&lt;/execution&gt;
+  &lt;/executions&gt;
+&lt;/plugin&gt;</code></pre>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="chapter-execution-checklist">
+        <h2>章末实战闭环</h2>
+        <article class="knowledge-card">
+          <h3>安全开发落地清单</h3>
+          <div class="card-block block-deliverable">
+            <h4>输入</h4>
+            <ul>
+              <li>威胁模型与攻击面清单</li>
+              <li>鉴权链路与密钥管理现状</li>
+              <li>合规要求（等保/隐私）</li>
+              <li>历史安全事件复盘结论</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>输出</h4>
+            <ul>
+              <li>安全控制基线（认证/授权/加固）</li>
+              <li>漏洞扫描与修复闭环流程</li>
+              <li>密钥轮换与应急响应预案</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>验收标准</h4>
+            <ul>
+              <li>关键接口具备最小权限控制</li>
+              <li>高危漏洞有 SLA 与追踪闭环</li>
+              <li>日志与审计满足取证要求</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>失败信号</h4>
+            <ul>
+              <li>安全策略只停留在文档</li>
+              <li>敏感配置硬编码入仓库</li>
+              <li>上线前缺少渗透与演练</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <nav class="chapter-nav">
+        <a href="15-common-modules.html">← 上一章：常见功能模块</a>
+        <a href="17-test-driven-development.html">下一章：测试驱动开发 →</a>
+      </nav>
+    </main>
+  </div>  <script src="assets/diagram.js" defer></script>
+  <script src="assets/explain-format.js" defer></script>
+  <script src="assets/chapter-toc.js" defer></script>
+</body>
+</html>

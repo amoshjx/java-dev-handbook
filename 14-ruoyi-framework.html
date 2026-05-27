@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>14 RuoYi 框架 — Java项目手册</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/sidebar.js" defer></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">Java项目手册</div>
+      <nav>
+        <div class="nav-group">
+          <ul class="nav-list">
+                                    <li><a href="index.html">目录首页</a></li>
+            <li><a href="01-requirements-analysis.html">01 需求分析</a></li>
+            <li><a href="02-prototype-design.html">02 原型设计</a></li>
+            <li><a href="03-architecture-design.html">03 架构设计</a></li>
+            <li><a href="04-project-scheduling.html">04 项目排期</a></li>
+            <li class="sidebar-group"><span class="sidebar-group-label"><a href="java-development.html">开发实现</a></span></li>
+            <li class="sidebar-subitem"><a href="05-dev-environment.html">05 开发环境搭建</a></li>
+            <li class="sidebar-subitem"><a href="06-java-basics.html">06 Java基础语法</a></li>
+            <li class="sidebar-subitem"><a href="07-oop.html">07 面向对象</a></li>
+            <li class="sidebar-subitem"><a href="08-jvm.html">08 JVM</a></li>
+            <li class="sidebar-subitem"><a href="09-concurrency.html">09 并发编程</a></li>
+            <li class="sidebar-subitem"><a href="10-io-nio-network.html">10 IO·NIO·网络</a></li>
+            <li class="sidebar-subitem"><a href="11-persistence.html">11 持久化</a></li>
+            <li class="sidebar-subitem"><a href="12-spring-framework.html">12 Spring Framework</a></li>
+            <li class="sidebar-subitem"><a href="13-build-packaging-deploy.html">13 构建·打包·部署</a></li>
+            <li class="sidebar-subitem"><a href="14-ruoyi-framework.html">14 RuoYi 框架</a></li>
+            <li class="sidebar-subitem"><a href="15-common-modules.html">15 常见功能模块</a></li>
+            <li class="sidebar-subitem"><a href="16-security-development.html">16 安全开发</a></li>
+            <li class="sidebar-subitem"><a href="17-test-driven-development.html">17 测试驱动开发</a></li>
+            <li><a href="18-testing-quality.html">18 测试·质量</a></li>
+            <li><a href="19-performance-tuning.html">19 性能调优</a></li>
+            <li><a href="20-devops-cloud-native.html">20 工程化·DevOps·CI/CD</a></li>
+            <li><a href="21-ai-development.html">21 AI 辅助开发</a></li>
+            <li><a href="22-business-intelligence.html">22 业务智能化</a></li>
+            <li><a href="glossary.html">术语字典</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="page-header">
+        <h1>14 RuoYi 框架</h1>
+        <p>RuoYi（若依）是常见的 Java 企业后台管理系统与快速开发框架，适合用来快速搭建管理后台、权限系统、CRUD 页面、代码生成和基础运维能力。本章只做入门导读：先认识它能解决什么问题，再跳转<a href="https://doc.ruoyi.vip/" target="_blank" rel="noopener">官方文档</a>完成安装、启动和深入学习。建议在掌握<a href="12-spring-framework.html">第 12 章 Spring Framework</a>之后再阅读本章。</p>
+        <p class="footer-note"><strong>官方文档：</strong><a href="https://doc.ruoyi.vip/" target="_blank" rel="noopener">https://doc.ruoyi.vip/</a></p>
+      </header>
+
+      <section class="section" id="module-guide">
+        <h2>模块导览</h2>
+        <article class="knowledge-card">
+          <h3>本章阅读路径</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>本页保留原章节锚点，方便旧链接继续跳转；内容从详细教程改为简洁导读。建议按「定位 → 能力概览 → 使用建议 → 注意点」阅读，实际搭建和配置以官方文档为准。</p>
+            <ul>
+              <li><a href="#overview">框架定位</a> · <a href="#version-selection">版本选型</a> · <a href="#tech-stack">技术栈</a> · <a href="#project-structure">项目结构</a></li>
+              <li><a href="#quick-start">快速上手</a> · <a href="#rbac">权限能力</a> · <a href="#codegen">代码生成</a> · <a href="#dict-params-log-job">系统能力</a></li>
+              <li><a href="#multi-tenant">前后端分工</a> · <a href="#api-conventions">接口联调</a> · <a href="#customization">二次开发</a> · <a href="#security-prod">生产注意</a> · <a href="#checklist">学习清单</a></li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="overview">
+        <h2>框架定位</h2>
+        <article class="knowledge-card">
+          <h3>RuoYi 是什么</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>RuoYi</strong> 是基于 Java / Spring Boot 生态的后台管理系统脚手架，预置登录认证、用户角色、菜单权限、系统配置、日志、定时任务和代码生成等企业后台常用能力。它的价值不是替代业务架构设计，而是把后台项目的大量重复基础设施先搭起来，让团队更快进入业务开发。</p>
+          </div>
+          <div class="card-block block-tips">
+            <h4>适用场景</h4>
+            <ul>
+              <li>企业内部管理后台、运营平台、权限系统和报表维护页面。</li>
+              <li>以 CRUD 为主、需要快速交付的业务模块。</li>
+              <li>学习 Spring Boot 分层、权限、日志、代码生成等后台工程实践。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="version-selection">
+        <h2>版本选型</h2>
+        <article class="knowledge-card">
+          <h3>先从官方文档和主线版本入手</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>RuoYi 生态存在单体版、前后端分离版、微服务版以及社区增强版。初学者建议先按官方文档跑通一个 demo，再根据团队技术栈、是否需要微服务、是否需要增强特性决定版本。多数管理后台不必一开始就选择复杂架构。</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="scaffold-comparison">
+        <h2>脚手架选型对比</h2>
+        <article class="knowledge-card">
+          <h3>RuoYi vs JeecgBoot vs 自研</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <pre><code>| 维度       | RuoYi           | JeecgBoot        | 自研脚手架        |
+|------------|-----------------|------------------|-------------------|
+| 权限模型   | RBAC 菜单按钮   | RBAC + 数据权限  | 按域定制          |
+| 代码生成   | 表→CRUD 强      | 在线表单+代码生成| 无/自建           |
+| 云原生     | 单体/Cloud 版   | 微服务可选       | 完全自控          |
+| 学习曲线   | 低，文档多      | 中，功能多       | 高，无现成文档    |
+| 适用       | 标准后台 CRUD   | 低代码+报表需求  | 强定制/合规隔离   |</code></pre>
+            <p>选型写 ADR，勿因「熟悉某脚手架」绑定长期架构。与<a href="03-architecture-design.html#architecture-patterns">第 03 章模块化单体</a>对齐：脚手架只解决基础设施，业务边界仍按 DDD 划分。</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="tech-stack">
+        <h2>技术栈与架构</h2>
+        <article class="knowledge-card">
+          <h3>典型组成</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>常见组合为 Spring Boot + Spring Security + MyBatis（或 MyBatis-Plus）+ Redis + MySQL，前端多为 Vue（RuoYi-Vue）或独立 API（RuoYi-Vue-Plus / Cloud）。与<a href="16-security-development.html">第 16 章安全开发</a>、<a href="11-persistence.html">第 11 章持久化</a>内容可对照学习。</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="project-structure">
+        <h2>项目结构</h2>
+        <article class="knowledge-card">
+          <h3>前后端分离时的目录约定</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>后端通常按 admin / system / common / framework 等模块划分；前端独立仓库维护 views、api、components。二次开发时优先在业务模块扩展，避免直接修改框架核心代码。</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="quick-start">
+        <h2>快速上手</h2>
+        <article class="knowledge-card">
+          <h3>环境准备与启动顺序</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>按<a href="05-dev-environment.html">第 05 章开发环境</a>准备 JDK、Maven、MySQL、Redis，导入官方 SQL，配置 application.yml 后启动后端，再启动前端 dev server。首次登录使用官方默认账号，立即修改密码并关闭演示环境的外网暴露。</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="rbac">
+        <h2>权限能力（RBAC）</h2>
+        <article class="knowledge-card">
+          <h3>用户 · 角色 · 菜单 · 按钮</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>RuoYi 通过菜单树与权限标识（perms）控制页面与按钮可见性，后端使用 @PreAuthorize 等注解校验。与<a href="15-common-modules.html#rbac">第 15 章 RBAC</a>概念一致，可直接映射到企业权限模型。</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="codegen">
+        <h2>代码生成</h2>
+        <article class="knowledge-card">
+          <h3>由表结构生成 CRUD</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>代码生成器根据数据库表生成 Entity、Mapper、Service、Controller 与前端页面，适合标准 CRUD 模块。生成代码需人工 Review，补充业务校验、事务边界与测试，避免直接上线未审查代码。</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="dict-params-log-job">
+        <h2>系统能力</h2>
+        <article class="knowledge-card">
+          <h3>字典 · 参数 · 日志 · 定时任务</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>字典与参数配置支撑运行时可调整的业务枚举与开关；操作日志与登录日志满足审计需求；定时任务模块可对接 Quartz。与<a href="15-common-modules.html">第 15 章常见功能模块</a>中对应专题可交叉阅读。</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="multi-tenant">
+        <h2>前后端分工</h2>
+        <article class="knowledge-card">
+          <h3>联调与职责边界</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>前端负责交互与路由，后端提供 REST API 与权限校验。多租户（若启用）通常在数据层增加 tenant_id 过滤，需与业务表设计一并规划。</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="api-conventions">
+        <h2>接口联调</h2>
+        <article class="knowledge-card">
+          <h3>统一响应与 Token</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>接口通常返回统一 JSON 包装（code/msg/data），登录后前端携带 Token 访问受保护资源。联调时对照 Swagger/官方接口文档，与<a href="03-architecture-design.html">第 03 章 API 契约</a>实践保持一致。</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="customization">
+        <h2>二次开发</h2>
+        <article class="knowledge-card">
+          <h3>扩展规范</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>新业务放在独立业务包/模块，通过接口与框架层解耦；避免修改 ruoyi-common、ruoyi-framework 核心类。升级官方版本前备份自定义 diff，使用 Git 分支管理框架升级。</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="security-prod">
+        <h2>生产注意</h2>
+        <article class="knowledge-card">
+          <h3>安全与运维</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>生产环境必须修改默认口令、限制 Swagger/ Druid 暴露、启用 HTTPS、配置备份与监控。详见<a href="16-security-development.html">第 16 章安全开发</a>与<a href="20-devops-cloud-native.html">第 20 章 DevOps</a>。</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="troubleshooting">
+        <h2>常见问题与排障</h2>
+        <article class="knowledge-card">
+          <h3>先查配置与权限链路</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>登录失败通常先检查数据库脚本、Redis、验证码与 Token 配置；页面无按钮或接口 403 先查菜单权限标识、角色授权和后端注解；生成代码异常先查表结构、包名、模块名和编码。细节排障以官方文档和项目日志为准。</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="checklist">
+        <h2>学习 Checklist</h2>
+        <article class="knowledge-card">
+          <h3>从会用到理解原理</h3>
+          <div class="card-block block-deliverable">
+            <h4>建议顺序</h4>
+            <ul>
+              <li>按<a href="https://doc.ruoyi.vip/" target="_blank" rel="noopener">官方文档</a>跑通 demo。</li>
+              <li>体验用户/角色/菜单权限、代码生成、字典参数、日志和定时任务。</li>
+              <li>结合本手册 Spring Boot、数据库、安全、常见模块章节理解实现原理。</li>
+              <li>做真实业务前，先完成权限、数据范围、生产安全和业务边界评估。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <nav class="chapter-nav">
+        <a href="13-build-packaging-deploy.html">← 上一章：项目构建、打包与部署</a>
+        <a href="15-common-modules.html">下一章：常见功能模块 →</a>
+      </nav>
+    </main>
+  </div>
+  <script src="assets/diagram.js" defer></script>
+</body>
+</html>

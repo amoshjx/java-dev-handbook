@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>18 测试·质量 — Java项目手册</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/sidebar.js" defer></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">Java项目手册</div>
+      <nav>
+        <div class="nav-group">
+                    <ul class="nav-list">
+                                                                                                                                                <li><a href="index.html">目录首页</a></li>
+            <li><a href="01-requirements-analysis.html">01 需求分析</a></li>
+            <li><a href="02-prototype-design.html">02 原型设计</a></li>
+            <li><a href="03-architecture-design.html">03 架构设计</a></li>
+            <li><a href="04-project-scheduling.html">04 项目排期</a></li>
+            <li class="sidebar-group"><span class="sidebar-group-label"><a href="java-development.html">开发实现</a></span></li>
+            <li class="sidebar-subitem"><a href="05-dev-environment.html">05 开发环境搭建</a></li>
+            <li class="sidebar-subitem"><a href="06-java-basics.html">06 Java基础语法</a></li>
+            <li class="sidebar-subitem"><a href="07-oop.html">07 面向对象</a></li>
+            <li class="sidebar-subitem"><a href="08-jvm.html">08 JVM</a></li>
+            <li class="sidebar-subitem"><a href="09-concurrency.html">09 并发编程</a></li>
+            <li class="sidebar-subitem"><a href="10-io-nio-network.html">10 IO·NIO·网络</a></li>
+            <li class="sidebar-subitem"><a href="11-persistence.html">11 持久化</a></li>
+            <li class="sidebar-subitem"><a href="12-spring-framework.html">12 Spring Framework</a></li>
+            <li class="sidebar-subitem"><a href="13-build-packaging-deploy.html">13 构建·打包·部署</a></li>
+            <li class="sidebar-subitem"><a href="14-ruoyi-framework.html">14 RuoYi 框架</a></li>
+            <li class="sidebar-subitem"><a href="15-common-modules.html">15 常见功能模块</a></li>
+            <li class="sidebar-subitem"><a href="16-security-development.html">16 安全开发</a></li>
+            <li class="sidebar-subitem"><a href="17-test-driven-development.html">17 测试驱动开发</a></li>
+            <li><a href="18-testing-quality.html">18 测试·质量</a></li>
+            <li><a href="19-performance-tuning.html">19 性能调优</a></li>
+            <li><a href="20-devops-cloud-native.html">20 工程化·DevOps·CI/CD</a></li>
+            <li><a href="21-ai-development.html">21 AI 辅助开发</a></li>
+            <li><a href="22-business-intelligence.html">22 业务智能化</a></li>
+            <li><a href="glossary.html">术语字典</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="page-header">
+        <h1>18 测试·质量</h1>
+        <p>测试是设计反馈环；质量门禁比事后救火便宜几个数量级。</p>
+      </header>
+
+      <section class="section" id="junit5">
+        <h2>JUnit 5</h2>
+        <article class="knowledge-card">
+          <h3>单元测试结构与参数化</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>JUnit 5 由 Jupiter（测试 API）、Platform（测试平台）、Vintage（JUnit 4 兼容层，可选）组成。测试命名应表达行为：<code>shouldRejectWhenBalanceInsufficient</code>。AAA 模式：Arrange-Act-Assert。参数化测试 <code>@ParameterizedTest</code> 用于覆盖边界与等价类组合。避免依赖测试执行顺序与共享可变状态。</p>
+            <div class="diagram-block">
+              <code class="language-xml">
+                springframework 测试依赖默认有带：<br>
+&lt;dependency&gt;<br>
+    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;<br>
+    &lt;artifactId&gt;spring-boot-starter-test&lt;/artifactId&gt;<br>
+    &lt;scope&gt;test&lt;/scope&gt;<br>
+&lt;/dependency&gt;<br>
+            </code>
+            </div>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>@DisplayName("TransferService")
+class TransferServiceTest {
+    TransferService service = new TransferService(mockRepo(), mockGateway());
+
+    @Test
+    void shouldRejectWhenBalanceInsufficient() {
+        var from = accountWithBalance("100.00");
+        assertThrows(InsufficientFundsException.class,
+            () -&gt; service.transfer(from.id(), UUID.randomUUID(), new BigDecimal("200")));
+    }
+
+    @ParameterizedTest
+    @CsvSource({ "0, false", "0.01, true", "999999.99, true" })
+    void shouldValidateAmount(String amount, boolean valid) {
+        assertEquals(valid, validator.isValid(new BigDecimal(amount)));
+    }
+}</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li><code>@Nested</code> 按场景分组；<code>@Tag("slow")</code> 区分 CI 快/慢套件。</li>
+              <li>AssertJ 流式断言可读性优于 JUnit 原生 <code>assertEquals</code>。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="mockito">
+        <h2>Mockito</h2>
+        <article class="knowledge-card">
+          <h3>Mock、Spy 与验证交互</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>Mock 用于隔离被测单元的外部依赖；Spy 用于包装真实对象并按需替换部分行为。只 mock 跨边界协作者（Repository、HTTP Client），不 mock 值对象。验证行为 <code>verify(mock, times(1)).save(...)</code>；避免过度约束（over-specification，绑死实现细节）。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart LR
+    SUT[被测单元] --> MOCK[Mock 外部依赖]
+    SUT --> REAL[真实值对象/纯逻辑]
+    MOCK -->|verify 交互| BOUNDARY[跨边界协作者]
+    AVOID[避免] --> IMPL[Mock 内部实现细节]</pre>
+              <p class="diagram-caption">图：Mockito 边界——只隔离跨边界依赖</p>
+            </div>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>@ExtendWith(MockitoExtension.class)
+class CreateOrderHandlerTest {
+    @Mock OrderRepository repo;
+    @Mock PaymentGateway gateway;
+    @InjectMocks CreateOrderHandler handler;
+
+    @Test
+    void shouldPersistAndCharge() {
+        when(gateway.charge(any())).thenReturn(PaymentResult.ok("pay_1"));
+        when(repo.save(any())).thenAnswer(inv -&gt; inv.getArgument(0));
+
+        var order = handler.handle(new CreateOrderCommand(...));
+
+        assertThat(order.status()).isEqualTo(Status.PAID);
+        verify(gateway).charge(argThat(c -&gt; c.amount().signum() &gt; 0));
+    }
+}</code></pre>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>mock 过多导致测试与实现耦合，重构全红。</li>
+              <li><code>when(voidMethod())</code> 应用 <code>doThrow().when()</code> 语法。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="testcontainers">
+        <h2>Testcontainers</h2>
+        <article class="knowledge-card">
+          <h3>集成测试与真实依赖</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>Testcontainers 在 Docker 中启动 PostgreSQL、Redis、Kafka 等依赖，使集成测试更贴近生产。Spring Boot 3.1+ 原生支持 <code>@ServiceConnection</code>。测试数据可用 <code>@Sql</code> 或 fixture builder 管理；测试之间需保证数据隔离（事务回滚或显式清理）。容器复用适合本地提速，CI 通常应关闭复用以避免状态污染。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>@SpringBootTest
+@Testcontainers
+class OrderIntegrationTest {
+    @Container
+    static PostgreSQLContainer&lt;?&gt; postgres = new PostgreSQLContainer&lt;&gt;("postgres:14-alpine");
+
+    @DynamicPropertySource
+    static void props(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", postgres::getJdbcUrl);
+        registry.add("spring.datasource.username", postgres::getUsername);
+        registry.add("spring.datasource.password", postgres::getPassword);
+    }
+
+    @Autowired TestRestTemplate rest;
+
+    @Test
+    void shouldCreateOrder() {
+        var resp = rest.postForEntity("/api/v1/orders", request, OrderResponse.class);
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+    }
+}</code></pre>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="uat-environment">
+        <span id="uat"></span>
+        <h2>UAT 环境搭建 — 预发布验收与数据策略</h2>
+        <article class="knowledge-card">
+          <h3>业务验收环境与上线前 Gate</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>UAT 定位</strong>：User Acceptance Testing 环境是<strong>上线前最后一道业务验收关</strong>——PO、业务方、QA 在接近生产的拓扑上验证需求是否「做对」。与 dev/test/staging/prod 分工：dev 本地联调；test（CI）跑自动化；staging 常作技术预发/性能；<strong>UAT 强调业务场景与签字</strong>；prod 承载真实流量。与<a href="17-test-driven-development.html#test-pyramid-tdd">第 17 章 TDD/测试金字塔</a>分工：TDD 在开发环验证「写对代码」；<a href="#testcontainers">Testcontainers 集成测试</a>在 CI 验证组件协作；UAT 验证<strong>端到端业务价值</strong>与验收标准，不替代单元/集成自动化。</p>
+            <p><strong>环境拓扑</strong>：UAT 须<strong>独立实例</strong>（不与 dev 共享 DB/Redis），Spring profile <code>uat</code>，中间件版本与 prod 对齐（PostgreSQL 16、Redis 7、Kafka 同 minor）。K8s 用独立 namespace（如 <code>uat-order</code>），ConfigMap/Secret 与 prod 结构同构、值不同。禁止 UAT 直连 prod 库——验收失败可 wipe 重建，不影响生产。</p>
+            <p><strong>数据策略</strong>：① <strong>脱敏生产副本</strong>（定时从 prod 快照 restore + 掩码手机号/身份证/卡号，见<a href="16-security-development.html#sensitive-data-deserialization">第 16 章日志脱敏</a>）；② <strong>合成数据</strong>（Faker/工厂类生成边界场景）；③ <strong>刷新周期</strong>（每周或每迭代首日 reset，避免脏数据累积）。<strong>禁止真实 PII</strong>进入 UAT——违规即安全事件。</p>
+            <p><strong>部署与晋级</strong>：CI 流水线 test 绿 → 晋级 UAT（同一不可变镜像 tag/digest，见<a href="20-devops-cloud-native.html#cicd">第 20 章 CI/CD</a>）；<a href="11-persistence.html#migration">Flyway</a> 随部署自动迁移；未完成特性用<strong>特性开关</strong>（LaunchDarkly/Unleash/<code>@ConditionalOnProperty</code>）在 UAT 打开、prod 关闭。</p>
+            <p><strong>访问与权限</strong>：VPN 或 IP 白名单；专用测试账号（非员工真实账号）；RBAC 与 prod 隔离——UAT 角色可宽于 prod 便于验收，但须与 prod 权限模型<strong>同构</strong>（见<a href="15-common-modules.html#rbac">第 15 章 RBAC</a>），避免「UAT 能过、prod 403」。</p>
+            <p><strong>验收流程</strong>：UAT checklist（需求 ID → 场景 → 期望 → 实际 → Pass/Fail）→ 缺陷流转 Jira/Linear（blocker 禁止晋级 prod）→ PO/业务<strong>签字 Gate</strong> → 才进入蓝绿/金丝雀发布（细节见<a href="20-devops-cloud-native.html#cicd">第 20 章发布策略</a>）。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart LR
+    DEV[dev 本地] --> TEST[test CI 自动化]
+    TEST -->|镜像 tag 晋级| UAT[UAT 业务验收]
+    UAT -->|签字 Gate| PROD[prod 蓝绿/金丝雀]
+    UAT -.->|脱敏副本/合成数据| DATA[(UAT 独立 DB)]
+    UAT -.->|VPN/白名单| PO[PO / QA / 业务]</pre>
+              <p class="diagram-caption">图：dev → test → UAT → prod 晋级与 UAT 数据/访问隔离</p>
+            </div>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code># application-uat.yml
+spring:
+  profiles: uat
+  datasource:
+    primary:
+      url: jdbc:postgresql://uat-db.internal:5432/order_uat
+      username: ${UAT_DB_USER}
+      password: ${UAT_DB_PASSWORD}
+    readonly:
+      url: jdbc:postgresql://uat-db-replica.internal:5432/order_uat
+      username: ${UAT_RO_USER}
+      password: ${UAT_RO_PASSWORD}
+  data:
+    redis:
+      host: uat-redis.internal
+      port: 6379
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+app:
+  feature:
+    new-checkout: true   # UAT 开启，prod application-prod.yml 为 false
+
+logging:
+  level:
+    root: INFO
+  pattern:
+    console: "%d{ISO8601} [%X{traceId}] %-5level %logger - %msg%n"
+
+---
+# k8s/uat/deployment.yaml（节选）
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+  namespace: uat-order
+spec:
+  replicas: 2
+  template:
+    spec:
+      containers:
+        - name: app
+          image: registry.example.com/order:1.4.0-uat.42   # CI 晋级 tag
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: uat
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: 8080 }
+
+# CI 晋级片段（GitHub Actions）
+- name: Deploy UAT
+  if: github.ref == 'refs/heads/release/1.4.0'
+  run: |
+    kubectl -n uat-order set image deploy/order-service \
+      app=registry.example.com/order:${{ github.sha }}
+    kubectl -n uat-order rollout status deploy/order-service</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>UAT checklist 与需求/User Story ID 一一映射，便于追溯与签字。</li>
+              <li>多数据源：主库读写验收流程，只读从库验证报表/导出——与 prod 只读分离同构。</li>
+              <li>数据刷新脚本自动化（CronJob + pg_restore + 脱敏 SQL），减少手工操作。</li>
+              <li>特性开关默认值 prod-off、uat-on，避免误开生产。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>UAT 与 staging 混用同一 namespace/DB——验收脏数据互相污染。</li>
+              <li>用 prod 真实 PII「方便测试」——合规与安全双重风险。</li>
+              <li>UAT 跳过 Flyway 手工改表——与 prod 迁移路径不一致，上线必炸。</li>
+              <li>未设签字 Gate 直接推 prod——业务未验收的功能流入生产。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「UAT = 独立实例 + 脱敏数据 + 业务签字；test 自动化，UAT 验价值，prod 才放量。」</p>
+          </div>
+          <div class="card-block block-reading">
+            <p>延伸阅读：<a href="20-devops-cloud-native.html#cicd">第 20 章 CI/CD</a>、<a href="16-security-development.html#sensitive-data-deserialization">第 16 章数据脱敏</a>、<a href="11-persistence.html#migration">第 11 章 Flyway</a></p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="static-analysis">
+        <h2>静态分析</h2>
+        <article class="knowledge-card">
+          <h3>SpotBugs、PMD、Checkstyle 与 SonarQube</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>静态分析在编码与构建阶段发现空指针、资源泄漏、安全缺陷等问题。Checkstyle 管代码风格；SpotBugs/PMD 侧重缺陷模式；SonarQube 聚合覆盖率、重复率与安全热点。CI 中设置 Quality Gate（质量门禁）：例如新代码覆盖率 ≥ 80%、零 blocker issue（阻断问题）。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart TD
+    CODE[提交代码] --> CI[CI Pipeline]
+    CI --> UNIT[单元测试]
+    CI --> STATIC[SpotBugs/PMD/Checkstyle]
+    CI --> SONAR[SonarQube 扫描]
+    SONAR --> GATE{Quality Gate}
+    GATE -->|通过| MERGE[允许合并]
+    GATE -->|失败| FIX[修复后重跑]</pre>
+              <p class="diagram-caption">图：质量门禁在 CI 流水线中的位置</p>
+            </div>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>&lt;!-- pom.xml 片段 --&gt;
+&lt;plugin&gt;
+  &lt;groupId&gt;com.github.spotbugs&lt;/groupId&gt;
+  &lt;artifactId&gt;spotbugs-maven-plugin&lt;/artifactId&gt;
+  &lt;configuration&gt;
+    &lt;effort&gt;Max&lt;/effort&gt;
+    &lt;threshold&gt;Low&lt;/threshold&gt;
+    &lt;failOnError&gt;true&lt;/failOnError&gt;
+  &lt;/configuration&gt;
+&lt;/plugin&gt;</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>增量扫描：优先对 New Code（新增/变更代码）设置阻断阈值，避免历史债务一次性阻塞交付。</li>
+              <li><code>@SuppressWarnings</code> 必须注释理由与 ticket 号。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="contract-testing">
+        <h2>契约测试</h2>
+        <article class="knowledge-card">
+          <h3>Pact · Spring Cloud Contract · CI 门禁</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>契约测试填补单元测试与 E2E 之间的鸿沟：独立验证服务双方对 API/消息的理解一致。架构层规范见<a href="03-architecture-design.html#api-design">第 03 章契约测试</a>。<strong>Pact</strong>（Consumer-Driven）消费方发布期望，提供方验证；<strong>Spring Cloud Contract</strong> 适合 JVM 生态，契约即 Groovy/YAML，CI 生成 Stub。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>Pact 消费者示例（JUnit 5）</h4>
+            <pre><code>@Pact(consumer = "order-service")
+RequestResponsePact orderPact(PactDslWithProvider builder) {
+  return builder
+      .given("order exists")
+      .uponReceiving("get order")
+      .path("/api/v1/orders/1").method("GET")
+      .willRespondWith().status(200)
+      .body(new PactDslJsonBody().stringType("id", "1"))
+      .toPact();
+}
+
+@ExtendWith(PactConsumerTestExt.class)
+class OrderClientTest {
+  @Test
+  @PactTestFor(pactMethod = "orderPact")
+  void fetch(MockServer mockServer) {
+    var client = new OrderClient(mockServer.getUrl());
+    assertThat(client.get("1").id()).isEqualTo("1");
+  }
+}</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>契约变更走 PR + Broker 版本化，与 OpenAPI lint 同级 CI 门禁。</li>
+              <li>Provider 验证失败阻断发布，避免「上游改字段下游全挂」。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="archunit">
+        <h2>ArchUnit 架构测试</h2>
+        <article class="knowledge-card">
+          <h3>分层依赖规则与架构腐化防护</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>ArchUnit</strong> 在测试中断言包依赖、命名、注解规则，防止 Domain 依赖 Infrastructure、Controller 绕过 Service 等架构违规。与<a href="12-spring-framework.html#project-structure">第 12 章分层</a>对齐，纳入 CI。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>@AnalyzeClasses(packages = "com.example.shop", importOptions = ImportOption.DoNotIncludeTests.class)
+class ArchitectureTest {
+  @ArchTest
+  static final ArchRule domainIndependent = noClasses()
+      .that().resideInAPackage("..domain..")
+      .should().dependOnClassesThat().resideInAnyPackage("..infrastructure..", "..web..");
+
+  @ArchTest
+  static final ArchRule servicesTransactional = classes()
+      .that().haveSimpleNameEndingWith("ApplicationService")
+      .should().beAnnotatedWith(Service.class);
+}</code></pre>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="e2e-testing">
+        <h2>E2E 测试</h2>
+        <article class="knowledge-card">
+          <h3>Playwright · 数据工厂 · Flaky 治理</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>E2E 验证端到端业务价值，数量应少（测试金字塔顶层）。<strong>Playwright</strong> 支持多浏览器、自动等待、trace 回放。与<a href="17-test-driven-development.html">第 17 章 TDD</a>、<a href="#uat">UAT</a>分工：E2E 在 CI 跑主路径 Smoke；UAT 由业务方签字。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>Playwright 示例（TypeScript）</h4>
+            <pre><code>test('下单主路径', async ({ page }) =&gt; {
+  await page.goto('/login');
+  await page.fill('[name=username]', process.env.E2E_USER);
+  await page.click('button[type=submit]');
+  await page.click('text=新建订单');
+  await expect(page.locator('.order-success')).toBeVisible({ timeout: 10000 });
+});</code></pre>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>Flaky 治理</h4>
+            <ul>
+              <li>固定测试数据工厂 + Testcontainers 隔离，禁止依赖 prod 数据。</li>
+              <li>失败自动 retry 最多 1 次；连续 flaky 记 tech debt 根因修复。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="code-review">
+        <h2>Code Review</h2>
+        <article class="knowledge-card">
+          <h3>Review 清单与可维护性</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>Review 关注：正确性（边界/并发/事务）、安全性（注入/鉴权/敏感数据）、可观测性（日志/traceId）、可测试性、性能（N+1/无界查询）。小 PR（&lt;400 行）通常更快完成评审与合并。评论对事不对人，区分 nit / suggestion / blocker（阻断项）。与重构结合：发现重复/过长方法时，在 PR 内或跟进 PR 做「行为不变的小步重构」（<em>重构</em> 原则：测试绿灯 → 重构 → 再绿）。</p>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记 Checklist</h4>
+            <table class="compare-table">
+              <tr><th>维度</th><th>问什么</th></tr>
+              <tr><td>正确性</td><td>失败路径？幂等？</td></tr>
+              <tr><td>安全</td><td>输入校验？权限？</td></tr>
+              <tr><td>性能</td><td>热路径 IO？索引？</td></tr>
+              <tr><td>运维</td><td>日志可搜？指标？</td></tr>
+              <tr><td>测试</td><td>关键路径有测？</td></tr>
+            </table>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>Review 只看风格不看语义——风格交给 linter。</li>
+              <li>巨型 PR 没人认真看——拆分为可独立发布的增量。</li>
+            </ul>
+          </div>
+          <div class="card-block block-reading">
+            <p>延伸阅读：<em>Clean Code</em>、<em>重构</em>（Martin Fowler）</p>
+          </div>
+        </article>
+      </section>
+      <section class="section" id="chapter-execution-checklist">
+        <h2>章末实战闭环</h2>
+        <article class="knowledge-card">
+          <h3>质量保障落地清单</h3>
+          <div class="card-block block-deliverable">
+            <h4>输入</h4>
+            <ul>
+              <li>质量目标与缺陷分级标准</li>
+              <li>测试环境、数据与依赖准备</li>
+              <li>静态分析与审查规则集</li>
+              <li>UAT 参与方与验收口径</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>输出</h4>
+            <ul>
+              <li>单元/集成/UAT 全链路计划</li>
+              <li>缺陷闭环与质量看板</li>
+              <li>发布前质量门禁报告</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>验收标准</h4>
+            <ul>
+              <li>关键路径具备自动化覆盖</li>
+              <li>阻断级缺陷在发布前清零</li>
+              <li>质量指标与业务结果联动</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>失败信号</h4>
+            <ul>
+              <li>只看覆盖率不看用例价值</li>
+              <li>测试环境与生产差异过大</li>
+              <li>缺陷重复发生无根因改进</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <nav class="chapter-nav">
+        <a href="17-test-driven-development.html">← 上一章：测试驱动开发</a>
+        <a href="19-performance-tuning.html">下一章：性能调优 →</a>
+      </nav>
+    </main>
+  </div>  <script src="assets/diagram.js" defer></script>
+  <script src="assets/explain-format.js" defer></script>
+  <script src="assets/chapter-toc.js" defer></script>
+</body>
+</html>

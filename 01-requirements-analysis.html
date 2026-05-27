@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>01 需求分析 — Java项目手册</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/sidebar.js" defer></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">Java项目手册</div>
+      <nav>
+        <div class="nav-group">
+          <ul class="nav-list">
+                                    <li><a href="index.html">目录首页</a></li>
+            <li><a href="01-requirements-analysis.html">01 需求分析</a></li>
+            <li><a href="02-prototype-design.html">02 原型设计</a></li>
+            <li><a href="03-architecture-design.html">03 架构设计</a></li>
+            <li><a href="04-project-scheduling.html">04 项目排期</a></li>
+            <li class="sidebar-group"><span class="sidebar-group-label"><a href="java-development.html">开发实现</a></span></li>
+            <li class="sidebar-subitem"><a href="05-dev-environment.html">05 开发环境搭建</a></li>
+            <li class="sidebar-subitem"><a href="06-java-basics.html">06 Java基础语法</a></li>
+            <li class="sidebar-subitem"><a href="07-oop.html">07 面向对象</a></li>
+            <li class="sidebar-subitem"><a href="08-jvm.html">08 JVM</a></li>
+            <li class="sidebar-subitem"><a href="09-concurrency.html">09 并发编程</a></li>
+            <li class="sidebar-subitem"><a href="10-io-nio-network.html">10 IO·NIO·网络</a></li>
+            <li class="sidebar-subitem"><a href="11-persistence.html">11 持久化</a></li>
+            <li class="sidebar-subitem"><a href="12-spring-framework.html">12 Spring Framework</a></li>
+            <li class="sidebar-subitem"><a href="13-build-packaging-deploy.html">13 构建·打包·部署</a></li>
+            <li class="sidebar-subitem"><a href="14-ruoyi-framework.html">14 RuoYi 框架</a></li>
+            <li class="sidebar-subitem"><a href="15-common-modules.html">15 常见功能模块</a></li>
+            <li class="sidebar-subitem"><a href="16-security-development.html">16 安全开发</a></li>
+            <li class="sidebar-subitem"><a href="17-test-driven-development.html">17 测试驱动开发</a></li>
+            <li><a href="18-testing-quality.html">18 测试·质量</a></li>
+            <li><a href="19-performance-tuning.html">19 性能调优</a></li>
+            <li><a href="20-devops-cloud-native.html">20 工程化·DevOps·CI/CD</a></li>
+            <li><a href="21-ai-development.html">21 AI 辅助开发</a></li>
+            <li><a href="22-business-intelligence.html">22 业务智能化</a></li>
+            <li><a href="glossary.html">术语字典</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="page-header">
+        <h1>01 需求分析</h1>
+        <p>软件工程的起点是<strong>把需求说清楚、可验收、可演进</strong>。本章站在<strong>软件工程师 / 架构师</strong>视角，把传统需求工程从「概览—干系人—分类—获取—建模—故事—优先级—NFR—规格—评审—衔接」串成一条可治理的主线；收尾给出反模式、工具清单与章末闭环。业务侧 LLM 能力需求见<a href="22-business-intelligence.html">第 21 章业务智能化</a>（What/Why），与<a href="21-ai-development.html">第 21 章 AI 辅助开发</a>（开发者 How）分工。基线产物驱动<a href="02-prototype-design.html">第 02 章原型</a>、<a href="03-architecture-design.html">第 03 章架构</a>、<a href="04-project-scheduling.html">第 04 章排期</a>、<a href="17-test-driven-development.html">第 17 章 TDD</a>。</p>
+        <div class="diagram-block">
+          <pre class="mermaid">flowchart LR
+    VAL[价值定位] --> STK[干系人]
+    STK --> TAX[需求分类]
+    TAX --> GATH[获取方法]
+    GATH --> MOD[需求建模]
+    MOD --> STORY[故事与 AC]
+    STORY --> PRI[优先级评估]
+    PRI --> NFR[NFR 与质量属性]
+    NFR --> SPEC[规格化文档]
+    SPEC --> REV[评审与变更 RTM]
+    REV --> BASE[基线 + RTM]
+    BASE --> HAND[衔接 02/03/04/16/17/21]</pre>
+          <p class="diagram-caption">图：需求分析全流程</p>
+        </div>
+      </header>
+
+      <section class="section" id="requirements-module-map">
+        <h2>需求分析模块导览</h2>
+        <article class="knowledge-card">
+          <h3>从“业务问题”到“可验收基线”的阅读路径</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>本章按<strong>需求工程生命周期</strong>组织，而非按文档模板堆叠：先看清价值与范围、再选获取与建模方法、再做优先级与质量取舍，最后形成可文档化、可评审、可追溯的<strong>基线</strong>并向架构/迭代/测试交付。业务 LLM 能力需求已独立为<a href="22-business-intelligence.html">第 21 章</a>，与本章共用同一治理框架——基线、CR、RTM、NFR 一套口径。</p>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>模块划分</h4>
+            <ul>
+              <li><strong>模块 A（价值与范围）</strong>：<a href="#requirements-overview">概览与价值定位</a>、<a href="#stakeholder-analysis">干系人识别与需求来源</a>、<a href="#requirements-taxonomy">需求分类与边界</a></li>
+              <li><strong>模块 B（获取与建模）</strong>：<a href="#requirements-gathering">需求获取方法工具箱</a>、<a href="#requirements-modeling">需求建模技术</a>、<a href="#user-stories-ac">用户故事与验收标准</a></li>
+              <li><strong>模块 C（优先级与质量）</strong>：<a href="#prioritization-value">优先级与价值评估</a>、<a href="#nfr-requirements">非功能需求与质量属性</a>、<a href="#requirements-spec">需求规格与文档化</a></li>
+              <li><strong>模块 D（治理与衔接）</strong>：<a href="#requirements-clarification">评审、变更与可追溯性</a>、<a href="#requirements-handoff">向架构/迭代/测试衔接</a></li>
+              <li><strong>模块 E（闭环与落地）</strong>：<a href="#requirements-antipatterns">陷阱与反模式</a>、<a href="#practice-toolkit">实践与工具清单</a>、<a href="#chapter-execution-checklist">章末实战闭环</a></li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>每个模块都应产出“图 + 文档 + 可验证检查单”三件套，可被第 02/03 章直接消费。</li>
+              <li>需求工程的本质不是“写文档”，而是“降低未来变更成本”——优先治理高价值/高不确定性条目。</li>
+              <li>多角色（架构师、PO、合规、运营、SRE）应在同一基线下读到一致结论；不一致即视为冲突单。</li>
+              <li>以价值与机会成本视角看待需求：明确期望收益、风险敞口与变更/止损规则。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+<section class="section" id="requirements-overview">
+        <h2>需求分析概览与价值定位</h2>
+        <article class="knowledge-card">
+          <h3>从“写得清”到“赌得对”：业务目标、范围与价值假设</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>软件工程的根本不确定性来源于<strong>问题空间</strong>而非<strong>解决方案空间</strong>。需求分析回答“<strong>为谁、为什么、做什么、做到何种程度</strong>”四问，并把它们转成可验证、可裁减、可演进的契约。对软件工程师/架构师，本阶段决定后续约 80% 的方案成本与机会成本；需求本质是<strong>可验证的价值假设</strong>——必须可量化验收、可追踪，并约定变更/取消（止损）机制。</p>
+            <p>启动期应在 1–2 周内产出<strong>业务目标 → 项目章程 → 范围说明 → 关键干系人 → 风险与假设</strong>，每项都有所有权与时间戳。架构师/Tech Lead 同步识别：<strong>核心域</strong>（竞争力相关）、<strong>支撑域</strong>（通用业务）、<strong>通用域</strong>（可外购），并提前暴露集成 SLA、合规口径、数据主权等强约束。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart LR
+    GOAL[业务目标 OKR] --> SCOPE[范围 In/Out]
+    SCOPE --> STAKE[干系人识别]
+    STAKE --> CHARTER[项目章程]
+    CHARTER --> RAID[RAID 风险登记]
+    RAID --> SRS[范围说明书]
+    GOAL --> VPB[价值假设画布]
+    VPB --> SRS</pre>
+              <p class="diagram-caption">图：需求分析启动流程</p>
+            </div>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li><strong>项目章程</strong>：目标、里程碑、预算、关键角色、成功标准</li>
+              <li><strong>范围说明书</strong>：In/Out of Scope、假设、约束、依赖</li>
+              <li><strong>价值假设画布</strong>：用户问题、价值主张、收益指标、风险与替代方案</li>
+              <li><strong>RAID 登记</strong>：Risk / Assumption / Issue / Dependency 四象限</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例：项目章程要点</h4>
+            <pre><code>项目: 商家中后台 SaaS v1
+目标: 上线 6 个月帮助 ≥200 中小商家实现订单/库存/履约一体化
+关键指标: MRR ≥ ￥30 万 | 商家月留存 ≥ 75% | 履约时长 P50 ≤ 24h
+In: 订单/库存/履约/对账;  Out: ERP 全量替代、海外站、自有物流调度
+关键假设: 主流支付渠道直连可在 4 周内对齐; 试点商家已签 MOU
+关键角色: 产品负责人(PO)、架构师、合规对接人、客户成功一线
+成功标准: 试点 5 家 GMV/月 ≥ ￥200 万 且 NPS ≥ 40; 否则进入 pivot 评估
+止损触发: M3 试点签约 &lt;3 家  /  M6 月留存 &lt;55%</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>用 SMART 把目标量化；对每个目标定义“失败信号”（lead metric）。</li>
+              <li>范围说明书写“<strong>不做清单</strong>”，可显著降低 scope creep。</li>
+              <li>把“赌注假设”单列：哪些假设错了项目就该 pivot/止损；与 OKR 关键结果挂钩。</li>
+              <li>架构师同步建立“技术风险登记”，与业务风险并列管理，避免技术债隐性累积。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>把愿景当需求——“让平台更智能”不可验证。</li>
+              <li>“业务方说了算”当免责声明，缺乏对价值的独立判断与挑战。</li>
+              <li>假设默写在 PPT，未进入需求基线，没人监控其是否被证伪。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>“目标可量化、范围有边界、假设可证伪、止损有触发。”</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="stakeholder-analysis">
+        <h2>干系人识别与需求来源</h2>
+        <article class="knowledge-card">
+          <h3>RACI、Power-Interest 与多源证据链</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>干系人</strong>（Stakeholder）指对项目结果有影响或受其影响的角色。识别完整性直接决定基线的可信度——少一个合规干系人，可能在 UAT 前一周才暴露合规问题。建议矩阵化识别：</p>
+            <ul>
+              <li><strong>RACI</strong>：Responsible（执行）/ Accountable（最终负责，唯一）/ Consulted（咨询）/ Informed（知会）。</li>
+              <li><strong>Power-Interest Grid</strong>：高权高兴趣=核心管理；高权低兴趣=保持满意；低权高兴趣=保持知会；低权低兴趣=最小监控。</li>
+              <li><strong>用户画像 Persona</strong>：年龄/职责/场景/痛点/动机/技术熟练度。</li>
+              <li><strong>使用者 vs 决策者 vs 出资人</strong>：B 端项目常常分离，必须分别访谈。</li>
+            </ul>
+            <p>需求来源不仅是“人”，还包括：业务流程、监管文件、竞品分析、运营数据、客诉工单、SRE 故障复盘、合规审计报告、行业标准（OWASP、等保 2.0、ISO 27001）——形成<strong>多源证据链</strong>。</p>
+            <div class="diagram-block diagram-quadrant-matrix">
+              <pre class="mermaid">quadrantChart
+    title "干系人 Power-Interest 矩阵（示例）"
+    x-axis "兴趣低" --> "兴趣高"
+    y-axis "权力低" --> "权力高"
+    quadrant-1 "核心管理"
+    quadrant-2 "保持满意"
+    quadrant-3 "最小监控"
+    quadrant-4 "保持知会"
+    "业务总监": [0.55, 0.85]
+    "合规官": [0.35, 0.80]
+    "运营主管": [0.85, 0.55]
+    "一线客服": [0.80, 0.20]
+    "SRE": [0.55, 0.55]</pre>
+              <p class="diagram-caption">图：Power-Interest 干系人矩阵示例</p>
+            </div>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li><strong>干系人地图</strong>：联系人、决策权、关注点、风险偏好</li>
+              <li><strong>RACI 矩阵</strong>：核心交付物 × 角色</li>
+              <li><strong>Power-Interest 图</strong>：沟通策略分级</li>
+              <li><strong>用户画像集</strong>：≥3 类典型用户/角色</li>
+              <li><strong>需求来源登记</strong>：来源 → 证据 → 关联需求 ID</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>RACI 与 Power-Interest 片段</h4>
+            <pre><code>| 干系人        | 角色          | RACI | 权力 | 兴趣 | 关注点                |
+|---------------|---------------|------|------|------|-----------------------|
+| 业务总监      | 出资人        | A    | 高   | 中   | ROI / 上线时间        |
+| 运营主管      | 决策者        | R    | 中   | 高   | 流程效率 / 工单量     |
+| 一线客服      | 使用者        | C    | 低   | 高   | 操作便捷 / 响应速度   |
+| 合规官        | 强约束        | C    | 高   | 低   | 数据合规 / 审计追溯   |
+| SRE          | 受影响        | I    | 中   | 中   | SLO / 可观测 / Runbook|
+| 法务         | 出境/合同评审 | C    | 高   | 低   | 出境合规 / 三方协议   |</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>对决策者用“价值与风险”语言；对使用者用“场景与痛点”语言。</li>
+              <li>合规/安全/SRE 默认列为 Consulted——晚加入=返工。</li>
+              <li>用“影子日”陪同一线工作 1 天，胜过 5 次会议。</li>
+              <li>架构视角：识别“沉默的干系人”（未来的运维、新业务线、监管），需求遗漏会在上线后暴露。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>只对接“最大嗓门”的人，忽略 80% 长尾用户。</li>
+              <li>RACI 出现多个 A，决策无人拍板。</li>
+              <li>干系人只在启动会出现，迭代中失联。</li>
+            </ul>
+          </div>
+          <div class="card-block block-reading">
+            <p>延伸阅读：《Software Requirements》（Karl Wiegers）、《用户故事地图》（Jeff Patton）</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="requirements-taxonomy">
+        <h2>需求分类与边界</h2>
+        <article class="knowledge-card">
+          <h3>功能 / 非功能 / 约束 / 合规 / 业务规则</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>不区分需求类型，会让一个 PRD 同时混入“能做什么 / 该多快 / 不能违反什么 / 业界标准是什么”——评审无法收敛。建议至少分五类：</p>
+            <ul>
+              <li><strong>功能需求 FR</strong>（Functional Requirement）：系统行为，<em>what it does</em>。</li>
+              <li><strong>非功能需求 NFR</strong>（Non-Functional Requirement / Quality Attribute）：性能、可用性、可扩展、安全、合规、可观测、可维护、可访问性。</li>
+              <li><strong>约束 Constraint</strong>：技术/部署/预算/时间/团队能力等不可妥协项（如 Java 21、私有云、Q3 上线）。</li>
+              <li><strong>合规需求 Compliance</strong>：法规与行业标准（PIPL、GDPR、PCI DSS、等保 2.0、SOC2、行业审计）。</li>
+              <li><strong>业务规则 Business Rule</strong>：业务策略与判定（计费规则、折扣策略、风控阈值）。</li>
+            </ul>
+            <p>按 <strong>ISO/IEC 25010</strong> 质量模型可进一步细化 NFR 八大特性：功能适用性、性能效率、兼容性、易用性、可靠性、安全性、可维护性、可移植性——见<a href="#nfr-requirements">非功能需求</a>。</p>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li><strong>需求分类索引</strong>：FR/NFR/约束/合规/规则 各自子集与 ID 段</li>
+              <li><strong>约束登记表</strong>：约束源、影响范围、是否可谈判、再评估触发条件</li>
+              <li><strong>合规对照表</strong>：法规条款 → 业务影响 → 实现要求 → 验证方式</li>
+              <li><strong>业务规则字典</strong>：规则 ID、口径、变更责任人、版本</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>分类示例（节选）</h4>
+            <pre><code>| 类型     | 编号    | 摘要                          | 责任人  | 验证方式        |
+|----------|---------|-------------------------------|---------|-----------------|
+| FR       | FR-101  | 商家批量导入 SKU              | PO      | UAT + 用例      |
+| NFR      | NFR-007 | 下单接口 P99 ≤ 200ms         | 架构师  | k6 压测         |
+| 约束     | C-003   | 部署私有 K8s,无 GPU          | SRE     | 部署清单核对    |
+| 合规     | CP-002  | PII 字段加密 + 审计 ≥6 月    | 合规官  | 合规抽检 + 渗透 |
+| 业务规则 | BR-014  | 折扣不可叠加,VIP 折扣最高   | 运营    | 决策表 + 单测   |</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>NFR 必须有度量与阈值，否则归入“愿景”不进基线。</li>
+              <li>合规要求必须落到“字段级 + 行为级”，否则不可验证。</li>
+              <li>约束写明“触发再评估的条件”（团队规模 / 预算 / 监管变化）。</li>
+              <li>业务规则用<strong>规则引擎 / 决策表</strong>外部化（见<a href="15-common-modules.html">第 15 章</a>），便于运营自助变更。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>把合规当 NFR 子集，丢失审计追溯链。</li>
+              <li>业务规则散落代码中，缺统一字典，规则一致性不可证。</li>
+              <li>约束未与利益相关方确认，事后被推翻。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>“FR 描行为，NFR 设阈值，约束定边界，合规留证据，规则可外部化。”</p>
+          </div>
+        </article>
+      </section>
+
+<section class="section" id="requirements-gathering">
+        <h2>需求获取方法工具箱</h2>
+        <article class="knowledge-card">
+          <h3>访谈 / 观察 / 问卷 / 原型 / 工作坊 / 故事地图</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>需求获取方法选型应匹配“<strong>不确定性来源</strong>”与“<strong>调研成本</strong>”：早期高不确定 → 访谈/观察/工作坊；规模化验证 → 问卷/数据分析；交互细节 → 原型/可点击 Demo；跨域协同 → Event Storming / 用户故事地图。</p>
+            <p>每条记录都应包含“<strong>谁说的 / 什么场景 / 期望结果 / 是事实还是假设</strong>”，区分 evidence 与 belief。Walking Skeleton（端到端最小骨架）可验证技术可行性，但不替代需求文档。</p>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li><strong>原始需求清单</strong>：编号、来源、描述、优先级草稿、关联干系人</li>
+              <li><strong>访谈纪要库</strong>：按时间/角色检索，关键决策回放可追溯</li>
+              <li><strong>用户故事地图</strong>：横向用户旅程 + 纵向发布切片</li>
+              <li><strong>问卷结果与原始数据</strong>（脱敏存档）</li>
+              <li><strong>主要假设登记</strong>：假设 → 验证方式 → 期限</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>方法谱（节选）</h4>
+            <pre><code>| 方法                 | 适用                | 产出                  | 风险             |
+|----------------------|---------------------|-----------------------|------------------|
+| 1:1 深度访谈         | 高不确定 / 隐性需求 | 场景与痛点            | 样本偏差 / 主观  |
+| 影子观察 Shadowing   | 工作流不透明        | 实际行为 / 异常路径   | 投入大 / 现场限制|
+| 焦点小组             | 群体共识            | 主流诉求 / 争议点     | 群体思维         |
+| 问卷                 | 假设验证 / 规模化   | 量化分布              | 设计偏差 / 回收率|
+| 卡片分类 / IA        | 信息架构            | 菜单 / 分类共识       | 易过设计         |
+| 用户故事工作坊       | 跨角色对齐          | 用户故事 + 优先级初稿 | 时间长 / 需主持  |
+| 用户故事地图         | 产品全景            | 旅程 × 发布切片       | 维护成本         |
+| Event Storming       | 复杂业务流程 / DDD  | 事件流 / 聚合候选     | 需引导           |
+| Jobs To Be Done      | 价值角度切入        | When..I want..So..    | 抽象需训练       |
+| 原型测试             | 交互可行性          | 行为反馈 / 卡点       | 易当 UI 评审     |
+| 数据 / 日志分析      | 已上线产品          | 真实行为分布          | 隐私 / 数据质量  |
+| 竞品反向工程         | 行业基准            | 差异化要点            | 抄袭风险         |</code></pre>
+          </div>
+          <div class="card-block block-example">
+            <h4>需求登记模板</h4>
+            <pre><code>REQ-001 | 来源: 运营访谈(2026-05-10) | 干系人: 运营主管
+场景: 每周一批量上新 SKU 200-500 行,目前 Excel 手动逐行
+痛点: 人工耗时 3h,错误率约 5%
+期望: 批量导入 ≤ 5000 行/次,失败行可下载错误报告
+事实 vs 假设: 手工流程为事实;错误率为运营估算(假设,需采样验证)
+优先级草稿: Must | 关联域: 商品管理 | 关联 NFR: 导入接口 P95 ≤ 5s</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>“5 Whys”深挖根因，区分症状与原因。</li>
+              <li>访谈先讲故事再问需求，避免引导。</li>
+              <li>问卷先小样本预测试再发放，校准歧义题目。</li>
+              <li>工作坊用“沉默写作”减少话语权失衡。</li>
+              <li>量化思维：用真实日志/数据替代“我觉得”。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>只收集“功能清单”，忽略异常分支与边界条件。</li>
+              <li>原型当作最终 UI 规格，交互细节未文字化。</li>
+              <li>“用户怎么说” ≠ “用户怎么做”，缺少行为观察校验。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>“访谈深挖、观察校验、问卷量化、工作坊收敛、原型试错。”</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="requirements-modeling">
+        <h2>需求建模技术</h2>
+        <article class="knowledge-card">
+          <h3>用例、用户故事地图、Event Storming、领域故事、影响地图</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>建模是把零散需求转成<strong>结构化、可推演、可评审</strong>表达的关键步骤。不同建模工具适用于不同抽象层级，应像“工具箱”一样按需取用：</p>
+            <ul>
+              <li><strong>用例图 Use Case</strong>：参与者 × 系统能力总览，适合界定<strong>系统边界</strong>与外部交互。</li>
+              <li><strong>用户故事地图 User Story Map</strong>：横向用户旅程 + 纵向发布切片，适合规划 MVP / 迭代。</li>
+              <li><strong>事件风暴 Event Storming</strong>：以“领域事件 → 命令 → 聚合 → 政策”集体建模，适合发现<strong>限界上下文</strong>，与<a href="03-architecture-design.html#domain-modeling">第 03 章 DDD</a>直连。</li>
+              <li><strong>领域故事讲述 Domain Storytelling</strong>：用图形化故事呈现真实业务流程，跨角色对齐神器。</li>
+              <li><strong>影响地图 Impact Mapping</strong>：目标 → 角色 → 影响 → 交付物，回答“我们为什么做、谁能促成、如何度量”。</li>
+              <li><strong>C4 上下文图</strong>：系统级 → 容器级 → 组件级 → 代码级，渐进展开技术视角（衔接第 03 章）。</li>
+              <li><strong>状态图 / 决策表</strong>：复杂规则与状态机模型，适合金融/风控/计费。</li>
+            </ul>
+            <p>各模型互补：<strong>影响地图回答 Why，用户故事地图回答 What/Sequence，事件风暴回答 How（领域），用例回答 Who/What 边界，状态图回答 When/State</strong>。</p>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li><strong>用例总览图</strong>（含 In/Out 边界与外部系统）</li>
+              <li><strong>用户故事地图</strong>（贴墙 / Miro / Notion 持续维护）</li>
+              <li><strong>Event Storming 全景</strong>（事件 + 命令 + 聚合 + 边界 + 热点）</li>
+              <li><strong>影响地图</strong>（目标 → 角色 → 行为变化 → 交付物 → 度量指标）</li>
+              <li><strong>主要场景状态机 / 决策表</strong></li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>影响地图示例（节选）</h4>
+            <pre><code>目标 (WHY): 6 个月内将商家月留存从 60% 提升到 75%
+
+角色 (WHO):
+  - 新签商家   -> 行为: 首单履约更顺      -> 交付: 引导式开店 + 履约模板
+  - 老商家     -> 行为: 复购数据可视化    -> 交付: 商家 BI Dashboard
+  - 客户成功   -> 行为: 主动健康巡检      -> 交付: 风险评分看板
+  - 客服一线   -> 行为: 工单一次处置率↑   -> 交付: 知识库 RAG 助手
+
+度量 (HOW): 月留存 / 30 日活跃 / NPS / 工单转人工率 / 首单履约时长</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>模型不是产物，<strong>评审过程</strong>才是。</li>
+              <li>选 1–2 个模型成为团队主语言，避免每周换工具。</li>
+              <li>Event Storming 大方便发现“跨上下文”隐藏耦合，是 DDD 入口。</li>
+              <li>影响地图是“需求 vs 战略对齐器”，与业务/产品对齐时必备。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>用例图沦为“系统功能列表”，忽略外部参与者与系统边界。</li>
+              <li>故事地图只做一次不维护，迭代脱节。</li>
+              <li>Event Storming 沦为白板涂鸦，未沉淀“聚合、上下文、政策”决策。</li>
+            </ul>
+          </div>
+          <div class="card-block block-reading">
+            <p>延伸阅读：《User Story Mapping》（Jeff Patton）、《Introducing EventStorming》（Alberto Brandolini）、《Impact Mapping》（Gojko Adzic）</p>
+          </div>
+        </article>
+      </section>
+
+<section class="section" id="user-stories-ac">
+        <h2>用户故事与验收标准</h2>
+        <article class="knowledge-card">
+          <h3>INVEST 原则与 Given-When-Then</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>用户故事格式：<em>As a … I want … So that …</em>。遵循 <strong>INVEST</strong>（Independent、Negotiable、Valuable、Estimable、Small、Testable）。验收标准用 <strong>Given-When-Then</strong>（BDD）写成可测试场景，直接驱动自动化测试与 Demo——与<a href="17-test-driven-development.html">第 17 章 TDD</a>形成<strong>规格即测试</strong>闭环。精化后的条目进入 Product Backlog，按优先级（见<a href="#prioritization-value">优先级与价值评估</a>）排序。</p>
+            <p>故事是<strong>意图载体</strong>，AC 是<strong>契约</strong>：故事用产品语言写，AC 用工程语言写；任何分歧以 AC 为准。建议每个 Story 至少 3 个 Scenario：正常、异常、边界。</p>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li><strong>Product Backlog</strong>：排序后的用户故事与估算（Story Point / T-shirt size）</li>
+              <li><strong>验收标准文档</strong>：每条故事的 GWT 场景集</li>
+              <li><strong>故事拆分准则</strong>：垂直切片（端到端）而非水平（按层）</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例：幂等下单 Story + 多 AC</h4>
+            <pre><code>Story: 作为买家,我希望重复提交订单被幂等处理,避免重复扣款
+
+Scenario: 5 秒内双击提交
+  Given 用户已登录且购物车有效
+  When 5 秒内第二次 POST /orders 携带相同 Idempotency-Key
+  Then 返回同一 orderId,库存只扣减一次
+
+Scenario: 库存不足
+  Given SKU 可用库存为 0
+  When 用户提交订单
+  Then 返回 409 与错误码 INSUFFICIENT_STOCK,不创建订单
+
+Scenario: 支付渠道超时
+  Given 支付网关 30 秒未返回
+  When 用户重试提交
+  Then 显示订单 "支付中" 状态,提供 "查询/取消" 操作</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>故事按<strong>垂直切片</strong>拆分（端到端可演示），避免“先做后端再做前端”水平切。</li>
+              <li>AC 必含异常 / 边界 / 失败补偿，否则等于半张契约。</li>
+              <li>Story 估算用<strong>相对单位</strong>（Story Point），不用绝对人天。</li>
+              <li>Story 卡上同步链接到原型帧 / API Mock / 测试用例（RTM 雏形）。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>故事过大，无法在一个 Sprint 完成（违反 Small / Estimable）。</li>
+              <li>AC 只写主路径，测试无法补全异常场景。</li>
+              <li>Story 写“技术任务”（如“升级 Spring Boot”）而非业务价值。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>“故事讲价值，GWT 写验收；测得过的才算 Done。”</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="prioritization-value">
+        <h2>需求优先级与价值评估</h2>
+        <article class="knowledge-card">
+          <h3>MoSCoW / Kano / RICE / WSJF / ROI / Cost of Delay</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>排序需求本质是<strong>在有限资源下做下注</strong>。每条需求都有“<strong>价值、成本、风险、时间窗口</strong>”四维属性。常见方法：</p>
+            <ul>
+              <li><strong>MoSCoW</strong>：Must / Should / Could / Won't——快速分级，缺量化。</li>
+              <li><strong>Kano 模型</strong>：必备 / 期望 / 兴奋型 × 实现/缺失满意度——识别“兴奋点”与“保健因素”。</li>
+              <li><strong>RICE</strong>：Reach × Impact × Confidence / Effort，产品级常用。</li>
+              <li><strong>WSJF</strong>（Weighted Shortest Job First）：(业务价值 + 时间价值 + 风险/机会) / 工作量，SAFe 推荐。</li>
+              <li><strong>ROI / NPV</strong>：财务建模，与业务方/管理层沟通时必备。</li>
+              <li><strong>Cost of Delay</strong>（CoD）：晚交付一周损失多少；与 WSJF 强相关。</li>
+              <li><strong>价值-成本矩阵</strong>：高价值低成本=立即；低价值高成本=砍掉。</li>
+              <li><strong>机会成本视角</strong>：不做这个能做什么——从优先级与资源约束角度权衡。</li>
+            </ul>
+            <p>对<strong>软件工程师/架构师视角</strong>：每个需求可按“期望收益 × 达成概率 ? 成本 × 风险”建模权衡；用 Cost of Delay 显式化“等待成本”，避免“需求列表黑洞”式无止境累积。优先级必须是<strong>共识结果</strong>而非单人裁决，否则后续争议成本远高于评估成本。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart TD
+    REQ[候选需求] --> Q1{是否价值/成本可估?}
+    Q1 -->|否| RESEARCH[补访谈/PoC/数据]
+    Q1 -->|是| METHOD{选评估方法}
+    METHOD -->|产品级| RICE
+    METHOD -->|SAFe/迭代| WSJF
+    METHOD -->|管理层| ROI
+    RICE --> SCORE[分数化 + 排序]
+    WSJF --> SCORE
+    ROI --> SCORE
+    SCORE --> CAP{容量是否足够?}
+    CAP -->|是| BACKLOG[进 Backlog 排期]
+    CAP -->|否| NOT_DO[进 不做清单 + 理由]</pre>
+              <p class="diagram-caption">图：优先级评估决策流</p>
+            </div>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li><strong>优先级评分表</strong>：方法、得分、决策、备注、复评日期</li>
+              <li><strong>Backlog 排序结果</strong>与冻结点</li>
+              <li><strong>“不做清单”</strong>与原因（含 CR 触发条件）</li>
+              <li><strong>WSJF / CoD 仪表</strong>（关键 Epic 级跟踪）</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>WSJF 评分示例</h4>
+            <pre><code>| 需求               | 业务价值 BV | 时间价值 TC | 风险/机会 RR/OE | 工作量 Job | WSJF |
+|--------------------|-------------|-------------|------------------|------------|------|
+| 商家批量导入 SKU   | 8           | 5           | 3                | 5          | 3.2  |
+| 商家 BI Dashboard  | 13          | 8           | 5                | 13         | 2.0  |
+| 履约 SLA 监控      | 5           | 8           | 8                | 3          | 7.0  |
+| 多币种结算         | 8           | 3           | 3                | 13         | 1.1  |
+WSJF 高 → 优先做; 同口径下"履约 SLA 监控"应最早交付,验证最贵假设。</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>任何方法都依赖“价值与成本可估”，无估不排——优先把不确定性变成估算。</li>
+              <li><strong>Must ≤ 30% 容量</strong>，留 20%+ 弹性应对变更与技术债。</li>
+              <li>Confidence 用三档（高/中/低），避免精确假象。</li>
+              <li>决策书面化：写明“为什么不做 X”，未来便于回溯与回测。</li>
+              <li>每季度复评一次优先级，市场/竞品变化即触发临时复评。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>评分缺乏多角色校准，单方面拍板（HiPPO 现象）。</li>
+              <li>工程团队挪用排序权，等于绕过业务价值判断。</li>
+              <li>所有需求都标 Must——优先级失效。</li>
+              <li>沉没成本绑架：投入大就不能砍。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>“价值/成本/风险/时机四维评分；Cost of Delay 显式化；不做清单白纸黑字。”</p>
+          </div>
+          <div class="card-block block-reading">
+            <p>延伸阅读：《Principles of Product Development Flow》（Donald Reinertsen，Cost of Delay 经典）、《Inspired》（Marty Cagan）</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="nfr-requirements">
+        <h2>非功能需求与质量属性</h2>
+        <article class="knowledge-card">
+          <h3>性能 / 可用性 / 安全 / 合规 / 可观测 / 可维护</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>NFR</strong>（非功能需求）/ <strong>Quality Attribute</strong> 决定架构形态；含 LLM 场景时须额外定义 Token 预算、推理延迟 p99、Faithfulness/转人工率等（见<a href="22-business-intelligence.html#ai-cost-latency-slo">第 21 章成本与 SLO</a>、<a href="22-business-intelligence.html#ai-evaluation">Eval</a>）。建议参考 <strong>ISO/IEC 25010</strong> 八大特性 + 业务专属补充：</p>
+            <ul>
+              <li><strong>性能效率</strong>：吞吐、延迟（P50/P99/P999）、资源利用。</li>
+              <li><strong>可靠性 / 可用性</strong>：SLO（99.9% / 99.99%）、RPO/RTO、降级策略。</li>
+              <li><strong>安全性</strong>：认证授权、加密、审计、抗注入、抗滥用（与<a href="16-security-development.html">第 16 章</a>联动）。</li>
+              <li><strong>合规性</strong>：数据驻留 / 出境、隐私、留存、审计追溯。</li>
+              <li><strong>可维护性</strong>：可测试、可观测、可演进、低耦合。</li>
+              <li><strong>可移植性 / 可扩展性</strong>：多云、水平扩展、白标、国际化。</li>
+              <li><strong>易用性 / 可访问性</strong>：WCAG、键盘可达、错误恢复。</li>
+              <li><strong>可观测性（横切）</strong>：Logs/Metrics/Traces 三支柱、SLI 定义（与<a href="20-devops-cloud-native.html#observability">第 20 章</a>联动）。</li>
+            </ul>
+            <p>用<strong>质量属性场景</strong>（ATAM 思路）描述六要素：<strong>刺激源 → 环境 → 制品 → 响应 → 响应度量 → 优先级</strong>；评审时追问“该响应的代价是什么、与哪条 NFR 冲突”。NFR 矩阵须映射到<strong>架构元素</strong>（模块/中间件/部署单元）与<strong>验证方式</strong>（压测/混沌/渗透/合规抽检），避免上线前才暴露“要秒杀级性能”。MVP 可先放宽非核心 NFR，但须在 ADR 中标注<strong>演进触发条件</strong>（如 DAU&gt;10 万 → 引入缓存层）。</p>
+            <div class="diagram-block diagram-quadrant-matrix">
+              <pre class="mermaid">quadrantChart
+    title "NFR 优先级示例(电商下单)"
+    x-axis "实现成本低" --> "实现成本高"
+    y-axis "业务影响低" --> "业务影响高"
+    quadrant-1 "优先保障"
+    quadrant-2 "分阶段投入"
+    quadrant-3 "可延后"
+    quadrant-4 "权衡取舍"
+    "支付幂等": [0.75, 0.9]
+    "订单查询 P99": [0.55, 0.7]
+    "审计日志": [0.4, 0.85]
+    "深色模式": [0.2, 0.15]</pre>
+              <p class="diagram-caption">图：NFR 优先级象限（示例）</p>
+            </div>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li><strong>NFR 矩阵</strong>：类别、指标、目标值、架构映射、验证方法、责任人、MVP/Scale 阶段</li>
+              <li><strong>AI 相关 NFR</strong>（若有）：Token 月配额、首 token 延迟、Citation 命中率、降级策略</li>
+              <li><strong>质量属性场景集</strong>：每条含刺激/响应/度量，可评审、可测试</li>
+              <li><strong>NFR→架构映射表</strong>：如“P99≤200ms → 缓存+读写分离”“99.9% → 多副本+健康检查”</li>
+              <li><strong>SLI/SLO 草案</strong>：与第 20 章可观测性双向同步</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>NFR→架构映射（节选）</h4>
+            <pre><code>| NFR 指标          | 架构决策                | 验证方式        |
+|-------------------|-------------------------|-----------------|
+| 下单 P99 ≤200ms   | Redis 热点 + 异步写 ES  | k6 压测         |
+| 99.9% 可用        | K8s 多副本 + PDB        | 混沌 Pod 杀     |
+| 审计留存 ≥6 月    | 独立审计库 + WORM       | 合规抽检        |
+| 10x 流量扩展      | 无状态水平扩 + MQ 削峰  | 容量规划评审    |
+| PII 字段级加密    | 应用层加密 + KMS        | 渗透 + 数据脱敏检查|</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>NFR 写“P99 ≤ 200ms”而非“高性能”——可度量、可测试、可仲裁。</li>
+              <li>与 SLO 双向同步：NFR 是承诺，SLO 是运行期度量。</li>
+              <li>合规先于 MVP——一旦违法成本极高，无法事后补救。</li>
+              <li>用“演进触发条件”给当下减负，但触发后必须真正动手。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>NFR 写“高性能、高可用”等形容词，无量化指标。</li>
+              <li>安全/合规需求在开发末期才引入，导致架构返工。</li>
+              <li>只列 NFR 不映射架构——评审时无法判断方案是否覆盖。</li>
+              <li>NFR 与运行期 SLI 脱节，承诺无法被监控验证。</li>
+            </ul>
+          </div>
+          <div class="card-block block-reading">
+            <p>延伸阅读：<em>Software Architecture in Practice</em>（质量属性场景）、ISO/IEC 25010、<a href="16-security-development.html">第 16 章安全开发</a>、<a href="20-devops-cloud-native.html#observability">第 20 章可观测性</a></p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="dsr-compliance">
+        <h2>数据主体权利（DSR）</h2>
+        <article class="knowledge-card">
+          <h3>GDPR / PIPL 可验收需求</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>DSR（Data Subject Request）</strong>：用户导出、更正、删除、被遗忘权。须在需求基线写清：<strong>响应时限</strong>（如 15 工作日）、<strong>匿名化 vs 硬删</strong>（订单留存法规 vs profile 删除）、<strong>审计留痕</strong>（谁何时处理了哪条 DSR）。与<a href="16-security-development.html">第 16 章 PII</a>、<a href="22-business-intelligence.html#ai-data-governance">AI 数据治理</a>联动。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>验收 Story 示例</h4>
+            <pre><code>Story: 作为用户,我可在设置页申请导出个人数据,并在 15 日内收到 ZIP
+AC: Given 已登录 When 提交导出 Then 生成异步任务 And 邮件通知下载链接
+AC: Given 注销申请 When 审核通过 Then profile 匿名化 And 订单保留脱敏字段</code></pre>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="product-metrics">
+        <h2>产品度量需求</h2>
+        <article class="knowledge-card">
+          <h3>North Star · 漏斗 · 业务 KPI vs 技术 SLI</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>需求阶段定义<strong>业务 KPI</strong>（注册转化、下单成功率、留存），与<a href="19-performance-tuning.html">第 19 章 SLI/SLO</a>的<strong>技术 SLI</strong>（延迟、错误率）区分。North Star 指标驱动优先级；漏斗指标定位流失环节。埋点需求写入 PRD：事件名、属性、触发时机、隐私合规。</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="requirements-spec">
+        <h2>需求规格与文档化</h2>
+        <article class="knowledge-card">
+          <h3>PRD / SRS / 用户故事 / AC / Specification by Example</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>不同组织/项目阶段有不同的文档形态，但底层目标相同：<strong>让任何接手者无需口头交接也能理解决策</strong>。常见载体：</p>
+            <ul>
+              <li><strong>PRD</strong>（Product Requirements Document）：偏产品视角，what + why + 目标用户 + 关键流程；适合互联网/敏捷。</li>
+              <li><strong>SRS</strong>（Software Requirements Specification，IEEE 830 / ISO/IEC/IEEE 29148）：偏工程合同，FR/NFR/约束齐全；适合金融、医疗、政企。</li>
+              <li><strong>User Story + AC</strong>：敏捷主语言，故事卡 + Given-When-Then 验收。</li>
+              <li><strong>决策记录</strong>：<a href="03-architecture-design.html#architecture-decision">ADR</a>（架构）、PDR（产品决策）相互引用，避免“会议口头通过、文档无留痕”。</li>
+              <li><strong>Specification by Example</strong>：用真实例子取代抽象描述，与 BDD/Cucumber 直接对接，形成 Living Documentation。</li>
+            </ul>
+            <p>最佳实践：“<strong>用户故事承载意图，AC 承载契约，PRD/SRS 承载上下文</strong>”。AC 用 GWT 写成可执行场景（与<a href="17-test-driven-development.html">第 17 章 TDD</a>衔接），避免“定义模糊 → 测试用例难写 → 上线扯皮”。术语字典先行，避免 PRD 里“订单”前后语义漂移。</p>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li><strong>章节化 PRD/SRS 模板</strong>：目录、版本、审批历史</li>
+              <li><strong>用户故事卡 + AC</strong>（覆盖正常 / 异常 / 边界）</li>
+              <li><strong>规格示例集</strong>（Living Documentation，与代码同仓维护）</li>
+              <li><strong>术语字典</strong>（Ubiquitous Language，与第 03 章统一）</li>
+              <li><strong>需求版本 tag</strong>（如 REQ-v1.3.0），每次冻结打 tag</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>PRD 章节模板（节选）</h4>
+            <pre><code>1. 背景与目标 (Why)
+2. 用户与场景 (Who / When)
+3. 范围 In / Out
+4. 关键流程 (主路径 + 异常)
+5. 用户故事 + AC 列表 (链接到 Backlog)
+6. 数据与权限模型
+7. 非功能需求 (链接到 NFR 矩阵)
+8. 合规与安全要求
+9. 度量与上线后验证计划
+10. 风险 / 假设 / 依赖
+11. 关联文档: ADR / 原型 / API / 测试
+12. 变更历史 / 审批</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>AC 必含异常 / 边界 / 失败补偿。</li>
+              <li>术语字典先行；任何新术语先入字典再用。</li>
+              <li>Living Documentation：例子用代码版本控制，与实现一起演进。</li>
+              <li>文档版本化，每次冻结打 tag，CR 引用 tag。</li>
+              <li>大型项目可建“规格示例 → Cucumber Feature → CI 报告”链路。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>PRD 写 50 页流水账，无人能从头读到尾。</li>
+              <li>AC 只写正常路径，测试只能补漏。</li>
+              <li>文档与代码分仓，永远不同步，半年后无人信任。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>“PRD 讲 Why，故事讲 What，AC 是契约，例子即规范。”</p>
+          </div>
+        </article>
+      </section>
+
+<section class="section" id="requirements-clarification">
+        <h2>需求评审、变更管理与可追溯性</h2>
+        <article class="knowledge-card">
+          <h3>DoR / DoD / 基线 / CR / RTM</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>需求<strong>澄清</strong>与<strong>评审</strong>是把“以为”变成“白纸黑字共识”的关键活动。建议建立：</p>
+            <ul>
+              <li><strong>DoR</strong>（Definition of Ready）：故事进入开发的最低门槛——描述清、AC 齐、依赖明、估算完。</li>
+              <li><strong>DoD</strong>（Definition of Done）：故事完成的标准——代码合并、测试过、文档更新、监控到位。</li>
+              <li><strong>基线 Baseline</strong>：里程碑冻结版本，每次冻结打版本号 + 日期。</li>
+              <li><strong>变更控制 CR</strong>（Change Request）：原因 / 影响分析 / 优先级 / 审批人 / 关联条目。</li>
+              <li><strong>RTM</strong>（Requirements Traceability Matrix）：需求 → 设计 → 代码 → 测试用例，双向追溯。</li>
+            </ul>
+            <p>架构师参与澄清的额外职责：识别核心域与隐性技术依赖、暴露集成 SLA、用 Walking Skeleton 验证关键风险（端到端最小骨架，不替代需求文档）。评审会议程固定：<strong>走主路径 → 过异常态 → NFR 抽查 → 未决项登记 → Go/No-Go 结论</strong>。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart TB
+    REQ[需求条目] --> DESIGN[设计/架构]
+    DESIGN --> CODE[实现]
+    CODE --> TEST[测试用例]
+    REQ --> RTM[需求追溯矩阵 RTM]
+    RTM --> DESIGN
+    RTM --> TEST
+    CR[变更请求 CR] -->|审批后| REQ
+    DOR{DoR 通过?} -->|是| READY[进开发]
+    READY --> DOD{DoD 通过?}
+    DOD -->|是| DONE[纳入基线]</pre>
+              <p class="diagram-caption">图：需求基线、CR 与 RTM 追溯链</p>
+            </div>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li><strong>DoR / DoD 文档</strong>：团队共识、签字</li>
+              <li><strong>需求基线</strong>：版本号、冻结日期、包含的条目集合</li>
+              <li><strong>变更记录册</strong>：CR 编号、内容、影响、审批人、状态</li>
+              <li><strong>RTM</strong>：需求 ID → 设计文档 → 代码模块 → 测试用例 ID</li>
+              <li><strong>评审纪要</strong>：与会人、结论、待办、责任人、截止日</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>需求澄清 Checklist（节选）</h4>
+            <pre><code>□ 主流程与异常分支已明确
+□ 数据量级与 retention 策略已确认
+□ 一致性: 强一致 or 最终一致?
+□ 性能/可用性 NFR 已量化
+□ AI 场景是否 Human-in-the-loop、Golden Set 是否就绪
+□ 集成方与 SLA / 鉴权方式
+□ 权限模型与审计 (见第 15 章 RBAC)
+□ 国际化 / 多租户 / 灾备需求
+□ 合规与隐私评估完成 (出境/PII)
+□ 监控与告警指标已定义</code></pre>
+          </div>
+          <div class="card-block block-example">
+            <h4>CR 模板</h4>
+            <pre><code>CR-2026-031 | 提出人: 运营主管 | 提出日: 2026-06-11
+变更内容: SKU 批量导入上限由 5000 提升到 20000 行
+原因: 大商家上新峰值实际可达 12000 行
+影响分析:
+  - FR-101 (导入) 修改; NFR-022 (导入 P95 5s -> 评估到 8s)
+  - 影响第 03 章 ADR-007 (限流策略)
+  - 测试用例 TC-501 ~ TC-510 需扩展
+工作量评估: 后端 5pd + 前端 2pd + 测试 3pd
+审批: 架构师 ? / PO ? / SRE 待评估
+状态: Approved | 进入 Sprint 7</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>评审议程固定；未决项必须有 Owner 与截止日，会议结束 24h 内归档。</li>
+              <li>CR 必须经原始干系人 + 架构师评估，禁止“群里 +1”过审。</li>
+              <li>RTM 工具化（Jira Issue Link / Confluence Macro / 自研脚本），勿手动维护。</li>
+              <li>每个 PR 模板包含“关联需求 ID + AC 验证”字段，缺字段阻断合并。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>Stakeholder 口头变更不入文档，测试仍按旧 spec 验收。</li>
+              <li>RTM 只做一次不维护，迭代后追溯链断裂。</li>
+              <li>评审会无结论文档，下次仍争议。</li>
+              <li>基线一旦冻结拒绝任何变更——团队绕过流程，治理失效。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>“DoR 卡入口、DoD 卡出口、基线管变更、RTM 跑闭环。”</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="requirements-handoff">
+        <h2>需求向架构 / 迭代 / 测试的衔接</h2>
+        <article class="knowledge-card">
+          <h3>单一基线、单一 ID、多向交付</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>需求基线不是“终点”而是“交接点”。若需求文档不能直接驱动架构图、迭代任务、测试用例，则需求工程失败。建议建立显式衔接：</p>
+            <ul>
+              <li><strong>→ 原型设计（<a href="02-prototype-design.html">第 02 章</a>）</strong>：用户故事/AC 直接转线框关键页面、交互态、Mock API。</li>
+              <li><strong>→ 架构设计（<a href="03-architecture-design.html">第 03 章</a>）</strong>：核心 FR → 关键用例与组件；NFR → ADR；术语 → DDD Ubiquitous Language；RTM → 架构追溯。</li>
+              <li><strong>→ 项目排期（<a href="04-project-scheduling.html">第 04 章</a>）</strong>：优先级 + 估算 → WBS、里程碑、Sprint Backlog；CoD 高的条目优先排期；NFR 验证窗口预留。</li>
+              <li><strong>→ TDD（<a href="17-test-driven-development.html">第 17 章</a>）</strong>：AC（GWT）直接转 Cucumber/JUnit；规格即文档。</li>
+              <li><strong>→ 测试 · 质量（<a href="18-testing-quality.html">第 18 章</a>）</strong>：NFR → 压测/混沌/渗透计划；用例矩阵覆盖优先级。</li>
+              <li><strong>→ 业务智能化（<a href="22-business-intelligence.html">第 21 章</a>）</strong>：LLM 场景、RAG/Agent 需求、Golden Set、Eval 门禁与交付路线图。</li>
+              <li><strong>→ AI 辅助（<a href="21-ai-development.html">第 21 章</a>）</strong>：用户故事/AC 可作为开发者 Prompt 模板输入；Harness 与本地模型部署。</li>
+            </ul>
+            <p>衔接关键：<strong>统一标识 ID + 单一事实源</strong>——同一需求 ID 贯穿原型、架构图、Jira 卡、代码 PR、测试用例、监控告警。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart LR
+    REQ[需求基线<br/>RTM] --> P02[02 原型]
+    REQ --> P03[03 架构 + ADR]
+    REQ --> P04[04 排期 + Sprint]
+    REQ --> P16[16 TDD]
+    REQ --> P17[17 测试/压测/渗透]
+    REQ --> P20[20 AI 辅助/Eval]
+    REQ --> P21[21 业务智能化]
+    P03 --> RUN[运行期 SLI/SLO]
+    P17 --> RUN
+    RUN -.回测.-> REQ</pre>
+              <p class="diagram-caption">图：需求基线驱动多向交付与回测</p>
+            </div>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li><strong>需求→交付物衔接矩阵</strong></li>
+              <li><strong>标准 Issue / PR 模板</strong>：包含需求 ID、AC、关联文档、监控指标</li>
+              <li><strong>跨章节锚点链接清单</strong>：确保“点开即跳”</li>
+              <li><strong>上线后回测计划</strong>：30 / 60 / 90 天 NFR 与价值假设验证</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>衔接表片段</h4>
+            <pre><code>| 需求 ID | 原型帧            | 架构组件          | ADR     | Sprint    | TDD 测试类               | 监控指标             |
+|---------|-------------------|-------------------|---------|-----------|---------------------------|----------------------|
+| FR-101  | sku-import.fig    | ImportService     | ADR-007 | Sprint 3  | SkuImportE2ETest         | sku_import_duration  |
+| NFR-007 | (横切)            | OrderApi + Cache  | ADR-012 | Sprint4-5 | OrderLatencyPerfTest     | order_p99_latency    |
+| CP-002  | (字段级展示)      | AuditModule       | ADR-019 | Sprint 6  | AuditFieldEncryptionTest | audit_completeness   |
+| UC-01   | faq-rag-chat.fig  | RagService        | ADR-024 | Sprint 7  | RagEvalRegressionTest    | citation_hit_rate    |</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>用工具化追溯（Jira Link、PR 强制需求 ID）替代手工维护。</li>
+              <li>上线后 30/60/90 天回访 NFR 是否达成；价值假设是否被证实（闭环验证）。</li>
+              <li>跨章节锚点统一收口，避免“文档迷宫”。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>需求/原型/架构“各自一份文档”，缺乏 ID 贯通。</li>
+              <li>上线后不回头校验需求达成——赌注无回测，团队不会成长。</li>
+              <li>衔接表只在启动期维护，迭代后失同步。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>“同一 ID 贯穿、单一事实源、需求闭环回测。”</p>
+          </div>
+        </article>
+      </section>
+
+      <h2 class="part-heading">收尾 — 落地与反模式</h2>
+
+      <section class="section" id="requirements-antipatterns">
+        <h2>常见陷阱与反模式</h2>
+        <article class="knowledge-card">
+          <h3>需求工程的高频翻车现场</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>软件工程师/架构师的核心价值之一，是<strong>识别常见反模式并提前阻断</strong>。汇总跨多个项目复盘的高频陷阱，按阶段归类：</p>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>启动期</h4>
+            <ul>
+              <li><strong>愿景需求混淆</strong>：「让平台更智能」当作需求，不可验证。</li>
+              <li><strong>干系人遗漏</strong>：合规 / SRE / 客服在 UAT 前才被通知。</li>
+              <li><strong>假设未显式化</strong>：把假设当事实，错了无人买单。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>获取期</h4>
+            <ul>
+              <li><strong>黄金客户偏差</strong>：只对接 KOL，忽略 80% 长尾用户。</li>
+              <li><strong>回声室效应</strong>：访谈引导式提问，得到自己想听的答案。</li>
+              <li><strong>观察缺位</strong>：只听用户说，不看用户做。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>规格期</h4>
+            <ul>
+              <li><strong>Gold Plating</strong>：过度设计「以防万一」，70% 不会发生的需求列入 Must。</li>
+              <li><strong>Scope Creep</strong>：每周新增 + 永不删除。</li>
+              <li><strong>模糊形容词</strong>：「快速」「友好」「易用」不可验证。</li>
+              <li><strong>AC 只写主路径</strong>：异常路径=上线后炸点。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>排序期</h4>
+            <ul>
+              <li><strong>HiPPO</strong>（Highest Paid Person's Opinion）决策：拍脑袋，无量化。</li>
+              <li><strong>平均主义</strong>：每个干系人都给一个 Must，优先级失效。</li>
+              <li><strong>沉没成本</strong>：投入大就不能砍。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>评审 / 变更期</h4>
+            <ul>
+              <li><strong>口头变更</strong>：会议变更未入 CR，测试仍按旧 spec。</li>
+              <li><strong>僵硬基线</strong>：基线冻结后拒绝任何变更，团队绕过流程。</li>
+              <li><strong>RTM 形式主义</strong>：填表一次，永不维护。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>衔接期</h4>
+            <ul>
+              <li><strong>文档孤岛</strong>：需求 / 原型 / 架构 / 测试用例分仓且无 ID。</li>
+              <li><strong>架构师隐身</strong>：技术不可行需求未被阻止。</li>
+              <li><strong>测试无 AC</strong>：测试团队凭经验补用例。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>AI / 智能化期</h4>
+            <ul>
+              <li><strong>Demo 即合同</strong>：GPT-4 演示效果直接对外承诺，无 Eval 体系。</li>
+              <li><strong>缺降级路径</strong>：模型 / 向量库失败后系统瘫痪。</li>
+              <li><strong>数据合规盲区</strong>：未做出境 / PII 评估即上线。</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>应对策略</h4>
+            <ul>
+              <li>把反模式写进 DoR / DoD 检查项，评审会必过反模式 Checklist。</li>
+              <li>复盘时显式标注踩中的反模式编号，沉淀为团队记忆。</li>
+              <li>新成员入职第一周阅读反模式清单，建立“雷区地图”。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>“先识别陷阱再写需求；反模式比最佳实践更难学。”</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="practice-toolkit">
+        <h2>落地实践与工具清单</h2>
+        <article class="knowledge-card">
+          <h3>团队级模板、工具栈与阅读地图</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>方法落地依赖<strong>统一的工具栈与最小模板集</strong>。建议团队按角色固化工具，按项目规模量化裁减模板——小项目跑半套、大项目全套，杜绝“每人一套工具 / 每月换一次模板”。</p>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>工具栈（推荐组合）</h4>
+            <pre><code>| 用途              | 主流工具                       | 备选                       |
+|-------------------|--------------------------------|----------------------------|
+| 需求 / 任务管理   | Jira / Linear                  | Notion / GitHub Issues     |
+| 文档协作          | Confluence / Notion            | Lark Wiki / Yuque          |
+| 原型              | Figma / 墨刀 / Axure          | Sketch / Adobe XD          |
+| 流程图 / 建模     | Miro / Draw.io / FigJam       | EventStormer / WPS         |
+| API Mock          | Apifox / Postman / Swagger UI | WireMock                   |
+| BDD / AC          | Cucumber / Karate / JBehave   | SpecFlow                   |
+| RTM               | Jira Issue Link / 自研脚本    | Confluence Macro           |
+| 决策记录          | ADR-tools / Markdown in Git   | Confluence                 |</code></pre>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>最小模板集</h4>
+            <ul>
+              <li>项目章程 / 价值假设画布 / RAID 登记表</li>
+              <li>干系人地图 + RACI + Power-Interest</li>
+              <li>用户画像（Persona）模板</li>
+              <li>用户故事卡（+ AC GWT）</li>
+              <li>NFR 矩阵 + 质量属性场景</li>
+              <li>优先级评分表（MoSCoW / WSJF）</li>
+              <li>决策记录（<a href="03-architecture-design.html#architecture-decision">ADR</a> / PDR）</li>
+              <li>CR 模板 / RTM 表 / 评审检查单</li>
+              <li>章末闭环清单（见下节）</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>角色快速行动清单</h4>
+            <ul>
+              <li><strong>产品 PM</strong>：维护 Backlog、CR、PRD、Persona、Roadmap</li>
+              <li><strong>架构师 / Tech Lead</strong>：参与澄清、NFR、ADR、技术风险登记、Walking Skeleton</li>
+              <li><strong>设计师</strong>：信息架构、原型、可访问性、交互态</li>
+              <li><strong>QA / 测试</strong>：DoR/DoD 治理、AC 评审、用例覆盖率、压测计划</li>
+              <li><strong>运维 / SRE</strong>：NFR/SLO 校准、可观测要求、Runbook 评审</li>
+              <li><strong>合规 / 安全</strong>：法规对照、PII 审计、出境评估、威胁建模</li>
+              <li><strong>AI 工程师</strong>：场景可行性、Golden Set、Eval 门禁、降级策略</li>
+            </ul>
+          </div>
+          <div class="card-block block-reading">
+            <h4>阅读地图</h4>
+            <ul>
+              <li>《Software Requirements》Karl Wiegers — 需求工程百科</li>
+              <li>《User Story Mapping》Jeff Patton — 故事地图圣经</li>
+              <li>《Specification by Example》Gojko Adzic — 规格即文档</li>
+              <li>《Impact Mapping》Gojko Adzic — 战略对齐</li>
+              <li>《Domain-Driven Design》Eric Evans — DDD 蓝皮书</li>
+              <li>《Principles of Product Development Flow》Donald Reinertsen — Cost of Delay</li>
+              <li>《Lean Startup》Eric Ries — MVP 与假设验证</li>
+              <li>《Software Architecture in Practice》Bass/Clements/Kazman — 质量属性场景</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>“工具统一、模板最小、清单先行、阅读不断。”</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="chapter-execution-checklist">
+        <h2>章末实战闭环</h2>
+        <article class="knowledge-card">
+          <h3>需求工程落地清单</h3>
+          <div class="card-block block-deliverable">
+            <h4>输入</h4>
+            <ul>
+              <li>业务目标与范围说明（含 In/Out、止损触发）</li>
+              <li>核心干系人访谈纪要、RACI 与 Power-Interest 矩阵</li>
+              <li>用户故事 / 验收标准草案（GWT，覆盖正常/异常/边界）</li>
+              <li>需求分类（FR/NFR/约束/合规/规则）与初步优先级评分</li>
+              <li>业务 AI 场景候选（详见<a href="22-business-intelligence.html">第 21 章</a>）</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>输出</h4>
+            <ul>
+              <li>可追溯需求基线（版本号 + 冻结日期 + tag）</li>
+              <li>NFR 矩阵 + 质量属性场景集 + NFR→架构映射</li>
+              <li>优先级排序结果 + 不做清单 + WSJF/CoD 仪表</li>
+              <li>PRD / SRS / Story + AC + 术语字典</li>
+              <li>RTM 初版（需求 → 原型 → 架构 → ADR → 测试 → 监控）</li>
+              <li>AI 场景清单与 Eval 门禁（详见<a href="22-business-intelligence.html#ai-delivery-roadmap">第 21 章交付路线图</a>）</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>验收标准</h4>
+            <ul>
+              <li>关键故事具备可执行 GWT 场景，覆盖正常/异常/边界</li>
+              <li>NFR 全部量化，可映射到架构组件与验证方式</li>
+              <li>优先级评分有多角色校准，且与 Sprint 容量匹配</li>
+              <li>范围外项与变更流程被明确记录，且评审纪要可追溯</li>
+              <li>需求评审结论可驱动第 02 章原型与第 03 章架构</li>
+              <li>AI 场景具备 Golden Set 与 Eval 门禁草案</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>失败信号</h4>
+            <ul>
+              <li>大量「高性能/易用」但无量化指标</li>
+              <li>口头需求变更未进入 CR 与文档</li>
+              <li>测试团队无法据此编写验收用例</li>
+              <li>RTM 留白或一次成型不再维护</li>
+              <li>AI 场景缺降级路径或合规评估，仅凭 Demo 过审</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>“目标可量化、需求可追溯、变更可审计、验证可回测。”</p>
+          </div>
+        </article>
+      </section>
+
+      <nav class="chapter-nav">
+        <a href="index.html">← 返回目录</a>
+        <a href="02-prototype-design.html">下一章：原型设计 →</a>
+      </nav>
+    </main>
+  </div>  <script src="assets/diagram.js" defer></script>
+  <script src="assets/explain-format.js" defer></script>
+  <script src="assets/chapter-toc.js" defer></script>
+</body>
+</html>

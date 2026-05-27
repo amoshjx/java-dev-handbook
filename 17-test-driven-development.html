@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>17 测试驱动开发 — Java项目手册</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/sidebar.js" defer></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">Java项目手册</div>
+      <nav>
+        <div class="nav-group">
+                    <ul class="nav-list">
+                                                                                                                                                <li><a href="index.html">目录首页</a></li>
+            <li><a href="01-requirements-analysis.html">01 需求分析</a></li>
+            <li><a href="02-prototype-design.html">02 原型设计</a></li>
+            <li><a href="03-architecture-design.html">03 架构设计</a></li>
+            <li><a href="04-project-scheduling.html">04 项目排期</a></li>
+            <li class="sidebar-group"><span class="sidebar-group-label"><a href="java-development.html">开发实现</a></span></li>
+            <li class="sidebar-subitem"><a href="05-dev-environment.html">05 开发环境搭建</a></li>
+            <li class="sidebar-subitem"><a href="06-java-basics.html">06 Java基础语法</a></li>
+            <li class="sidebar-subitem"><a href="07-oop.html">07 面向对象</a></li>
+            <li class="sidebar-subitem"><a href="08-jvm.html">08 JVM</a></li>
+            <li class="sidebar-subitem"><a href="09-concurrency.html">09 并发编程</a></li>
+            <li class="sidebar-subitem"><a href="10-io-nio-network.html">10 IO·NIO·网络</a></li>
+            <li class="sidebar-subitem"><a href="11-persistence.html">11 持久化</a></li>
+            <li class="sidebar-subitem"><a href="12-spring-framework.html">12 Spring Framework</a></li>
+            <li class="sidebar-subitem"><a href="13-build-packaging-deploy.html">13 构建·打包·部署</a></li>
+            <li class="sidebar-subitem"><a href="14-ruoyi-framework.html">14 RuoYi 框架</a></li>
+            <li class="sidebar-subitem"><a href="15-common-modules.html">15 常见功能模块</a></li>
+            <li class="sidebar-subitem"><a href="16-security-development.html">16 安全开发</a></li>
+            <li class="sidebar-subitem"><a href="17-test-driven-development.html">17 测试驱动开发</a></li>
+            <li><a href="18-testing-quality.html">18 测试·质量</a></li>
+            <li><a href="19-performance-tuning.html">19 性能调优</a></li>
+            <li><a href="20-devops-cloud-native.html">20 工程化·DevOps·CI/CD</a></li>
+            <li><a href="21-ai-development.html">21 AI 辅助开发</a></li>
+            <li><a href="22-business-intelligence.html">22 业务智能化</a></li>
+            <li><a href="glossary.html">术语字典</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="page-header">
+        <h1>17 测试驱动开发</h1>
+        <p>面向 Java 团队的<strong>TDD 开发范式与实战流程</strong>：红-绿-重构循环、测试金字塔下的单元测试驱动、Fake/Mock 选型、BDD 衔接、遗留代码加测、Spring Boot 切片测试、AI 辅助测试先行与团队 CI 实践。JUnit/Mockito/Testcontainers 语法与静态分析见<a href="18-testing-quality.html">第 18 章测试·质量</a>；Harness 约束见<a href="21-ai-development.html#harness-engineering">第 21 章 Harness Engineering</a>。</p>
+      </header>
+
+      <section class="section" id="tdd-red-green-refactor">
+        <h2>TDD 是什么：红-绿-重构循环</h2>
+        <article class="knowledge-card">
+          <h3>测试先行 vs 后写测试：节奏与反馈环</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>测试驱动开发（TDD）</strong>不是「多写测试」，而是<strong>用失败测试驱动设计与实现</strong>的短周期开发节奏。经典三步循环：<strong>红（Red）</strong>——写一个描述期望行为、当前必然失败的测试；<strong>绿（Green）</strong>——写<strong>最少</strong>生产代码让测试通过；<strong>重构（Refactor）</strong>——在测试保护下整理结构，消除重复、改善命名，保持全绿。</p>
+            <p>与「功能写完再补测试」的本质差异：TDD 把测试当作<strong>设计工具</strong>——先定义对外可观测行为（API/领域方法），再实现；后写测试往往只为覆盖率，容易测实现细节、与生产代码同构耦合。Kent Beck 强调 TDD 粒度是<strong>极短</strong>的（分钟级），而非一个 Story 结束才跑测试。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart LR
+    RED[红 Red 写失败测试] --> GREEN[绿 Green 最小实现]
+    GREEN --> REF[重构 Refactor]
+    REF --> RED</pre>
+              <p class="diagram-caption">图：TDD 红-绿-重构循环</p>
+            </div>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例：折扣计算 TDD 三步</h4>
+            <pre><code>// 1. 红：先写测试（类尚不存在，编译失败或运行失败）
+@Test
+void shouldApplyTenPercentOffWhenSubtotalExceeds100() {
+    var pricing = new PricingService();
+    assertThat(pricing.discount(new BigDecimal("150"))).isEqualByComparingTo("15.00");
+}
+
+// 2. 绿：最小实现
+public BigDecimal discount(BigDecimal subtotal) {
+    if (subtotal.compareTo(new BigDecimal("100")) &gt; 0) {
+        return subtotal.multiply(new BigDecimal("0.10"));
+    }
+    return BigDecimal.ZERO;
+}
+
+// 3. 重构：提取规则、消除魔法数，测试仍绿</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>一次只推进一个失败原因：先让测试<strong>编译</strong>，再让测试<strong>失败在断言</strong>，最后实现。</li>
+              <li>IDE 快捷键：运行当前测试 → 实现 → 再运行；配合 Live Template 加速 AAA 结构。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>跳过「失败断言」直接写实现——失去 TDD 对行为契约的约束。</li>
+              <li>绿阶段写过多逻辑——违背「最小实现」，后续重构负担大。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「红写测、绿写码、重构清结构；测试是设计，不是事后补丁。」</p>
+          </div>
+          <div class="card-block block-reading">
+            <p>延伸阅读：Kent Beck《Test-Driven Development: By Example》</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="tdd-when-why">
+        <h2>TDD 价值与适用/不适用场景</h2>
+        <article class="knowledge-card">
+          <h3>何时 TDD 回报最高，何时别硬套</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>TDD 价值</strong>：① 可执行规格——测试即文档；② 小步反馈——秒级发现回归；③ 驱动可测试设计——依赖注入、纯函数、小类；④ 重构信心——安全网允许持续改进结构。</p>
+            <p><strong>高回报场景</strong>：领域规则（定价、风控、状态机）、纯逻辑 Service、API 契约、Bug 修复（先写复现测试再修）。<strong>低回报或需变通</strong>：探索性原型（需求未稳定，测试会频繁调整）、复杂 UI/动画（测行为成本高，可采用 E2E 或手工探索 + 下层 TDD）、无 seam 的遗留大泥球（先特征测试再局部 TDD，见<a href="#legacy-code-tdd">遗留代码卡片</a>）、强集成依赖且 Mock 失真（用 Testcontainers 或契约测试，见<a href="18-testing-quality.html#testcontainers">第 18 章 Testcontainers</a>）。</p>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>Spike 原型可 throwaway；确定方向后对核心域重新 TDD 重写。</li>
+              <li>团队约定：新代码默认 TDD；遗留模块「改哪测哪」+ 特征测试。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>把 TDD 当 KPI——形式化写测但不走红绿重构，只剩负担。</li>
+              <li>在不确定 API 的 UI 层强行 TDD——应在 Presenter/ViewModel 或域层 TDD。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「规则清晰用 TDD；探索 UI 先 spike；遗留先 seam 再驱动。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="test-pyramid-tdd">
+        <h2>测试金字塔与 TDD 的关系</h2>
+        <article class="knowledge-card">
+          <h3>单元 TDD 为主，集成/E2E 验证边界</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>测试金字塔</strong>（Mike Cohn）：底层大量<strong>快速单元测试</strong>，中层适量<strong>集成测试</strong>，顶层少量<strong>端到端</strong>。TDD 日常节奏主要发生在<strong>单元层</strong>——毫秒级反馈、隔离依赖、精确失败定位。</p>
+            <p>TDD 与金字塔的关系：单元 TDD 驱动设计与重构；集成测试在<strong>边界确认</strong>后补充（Repository + DB、HTTP 契约），不必每个小步都起容器；E2E 验证关键用户旅程。反模式「冰淇淋锥」——大量 UI E2E、少量单元——TDD 难以维持，CI 慢且 flaky。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例：分层 TDD 节奏</h4>
+            <pre><code>// 单元 TDD（每几分钟）：OrderPricingService — 纯 Java，无 Spring
+// 集成（每个 Story/PR）：@DataJpaTest + Testcontainers — 持久化映射
+// 契约（跨服务）：Spring Cloud Contract / Pact
+// E2E（发布前）：Playwright 下单主路径 1～3 条</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>CI 分阶段：<code>@Tag("unit")</code> 每次 push；<code>@Tag("integration")</code> PR 合并前；E2E nightly。</li>
+              <li>单元 TDD 覆盖分支；集成测「配线是否正确」。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「TDD 在塔底跑得快；塔顶验旅程，不替单元设计。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="unit-test-driving">
+        <h2>单元测试驱动：从失败测试到最小实现</h2>
+        <article class="knowledge-card">
+          <h3>Fake vs Mock vs Stub：TDD 中的依赖替身选型</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>单元 TDD 要求被测单元<strong>隔离</strong>。替身类型：<strong>Stub</strong>——预设返回值，不断言交互；<strong>Mock</strong>——验证调用次数/参数（行为验证）；<strong>Fake</strong>——可工作的轻量实现（内存 Repository、FakeClock）。</p>
+            <p>TDD 偏好：<strong>优先 Fake 与真实值对象</strong>——测试读作规格；仅在跨进程/慢 IO 边界用 Mock。Over-mock 导致测试绑定调用顺序，重构即红。从失败测试开始时，先问「这个依赖该 Fake 还是 Mock？」——若关心<strong>结果</strong>用 Fake/Stub；若关心<strong>是否调用外部网关一次</strong>才 Mock（详见<a href="#mockito-tdd-boundary">Mockito 边界卡片</a>）。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例：内存 Fake Repository</h4>
+            <pre><code>class InMemoryAccountRepo implements AccountRepository {
+    private final Map&lt;UUID, Account&gt; store = new ConcurrentHashMap&lt;&gt;();
+    @Override public Optional&lt;Account&gt; findById(UUID id) { return Optional.ofNullable(store.get(id)); }
+    @Override public Account save(Account a) { store.put(a.id(), a); return a; }
+}
+
+@Test
+void shouldDebitAndPersist() {
+    var repo = new InMemoryAccountRepo();
+    var service = new TransferService(repo, new FakeLedger());
+    repo.save(accountWithBalance("100"));
+    service.transfer(fromId, toId, new BigDecimal("30"));
+    assertThat(repo.findById(fromId).orElseThrow().balance()).isEqualByComparingTo("70");
+}</code></pre>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>Mock 被测类自己的 private 方法——测实现而非行为。</li>
+              <li>Fake 与生产行为不一致（如忽略唯一约束）——集成层补测。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「Fake 当轻量真实现；Mock 只钉边界交互；Stub 喂数据。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="junit5-tdd-workflow">
+        <h2>JUnit 5 + TDD 工作流</h2>
+        <article class="knowledge-card">
+          <h3>@Test、AssertJ 与参数化：TDD 日常工具链</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>TDD 工作流依赖<strong>快速、表达力强的断言</strong>。JUnit 5 <code>@Test</code> + AssertJ 流式 API 让失败信息可读；<code>@ParameterizedTest</code> 在绿之后扩展边界用例；<code>@Nested</code> 按规则分组。完整 API 与 Mockito 扩展见<a href="18-testing-quality.html#junit5">第 18 章 JUnit 5</a>，本章聚焦 TDD 节奏下的用法。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例：TDD 迭代中的测试演进</h4>
+            <pre><code>@DisplayName("PasswordValidator")
+class PasswordValidatorTest {
+
+    PasswordValidator validator = new PasswordValidator();
+
+    @Test
+    void shouldRejectBlankPassword() {
+        assertThat(validator.isValid("")).isFalse();
+    }
+
+    // 绿后加边界 — 参数化一次覆盖多 case
+    @ParameterizedTest
+    @CsvSource({ "'abc', false", "'Abcdef1!', true", "'short1!', false" })
+    void shouldValidateStrength(String pwd, boolean expected) {
+        assertThat(validator.isValid(pwd)).isEqualTo(expected);
+    }
+
+    @Nested
+    class WhenExpired {
+        @Test
+        void shouldRejectEvenIfStrong() {
+            assertThat(validator.isValid("Abcdef1!", Instant.now().minus(90, DAYS))).isFalse();
+        }
+    }
+}</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>测试名用 <code>should...</code> 或 BDD 风格 <code>given_when_then</code>；<code>@DisplayName</code> 中文可读。</li>
+              <li>AssertJ <code>assertThatThrownBy</code> 测异常路径——TDD 先写失败分支。</li>
+              <li>IDE：Ctrl+Shift+F10 跑当前方法；连续 TDD 开「auto rerun」。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「单 case 先 @Test；边界用参数化；分组 @Nested。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="mockito-tdd-boundary">
+        <h2>Mockito 在 TDD 中的边界</h2>
+        <article class="knowledge-card">
+          <h3>何时 Mock、何时真实对象 / Testcontainers</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>Mockito 语法与 @Mock/@InjectMocks 见<a href="18-testing-quality.html#mockito">第 18 章 Mockito</a>。TDD 视角的边界：</p>
+            <ul>
+              <li><strong>适合 Mock</strong>：外部支付网关、邮件 SDK、跨团队 HTTP Client——慢、不可控、需验证「是否调用一次」。</li>
+              <li><strong>不适合 Mock</strong>：同模块 POJO、值对象、算法类——直接 new；Repository 优先 Fake 或 @DataJpaTest。</li>
+              <li><strong>Testcontainers</strong>：SQL 方言、JSON 字段、索引行为 Fake 无法模拟——在集成阶段补测，不在每个 TDD 小步启动。</li>
+            </ul>
+            <p>原则：<strong>单元 TDD 少 Mock，集成测真依赖</strong>。Mock 过多 = 测试规格变成实现说明书。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例：边界 Mock + 域内真实对象</h4>
+            <pre><code>@ExtendWith(MockitoExtension.class)
+class NotifyOrderHandlerTest {
+    @Mock PaymentGateway gateway;          // 外部边界
+    @Mock OrderRepository repo;
+    @InjectMocks NotifyOrderHandler handler;
+
+    @Test
+    void shouldNotifyAfterSuccessfulCharge() {
+        var order = Order.pending(new BigDecimal("99"));  // 真实域对象
+        when(gateway.charge(any())).thenReturn(PaymentResult.ok("p1"));
+        when(repo.save(any())).thenAnswer(inv -&gt; inv.getArgument(0));
+
+        handler.complete(order);
+
+        verify(gateway).charge(argThat(c -&gt; c.amount().signum() &gt; 0));
+        assertThat(order.status()).isEqualTo(Status.PAID);
+    }
+}</code></pre>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>TDD 每一步都 verify 内部 private 调用链——重构必挂。</li>
+              <li>Mock static/final 泛滥（mockito-inline）——掩盖设计问题，优先抽接口。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「域内真实，边界 Mock；数据库容器后置。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="refactoring-safety-net">
+        <h2>重构安全网与特征测试</h2>
+        <article class="knowledge-card">
+          <h3>测试通过后重构；遗留代码的 Characterization Test</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>TDD 第三步<strong>重构</strong>前提：测试全绿。Martin Fowler 重构清单：提取方法、搬移字段、以多态替条件——每步跑测试。无测试的遗留模块：先写<strong>特征测试（Characterization Test）</strong>——记录当前行为（哪怕疑似 bug），锁定基线再改。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart LR
+    LEG[遗留代码] --> CHAR[特征测试锁定现状]
+    CHAR --> SEAM[找 Seams 接缝]
+    SEAM --> TDD[TDD 新行为]
+    TDD --> REF[小步重构]</pre>
+              <p class="diagram-caption">图：遗留代码 TDD 切入路径</p>
+            </div>
+            <p>与<a href="18-testing-quality.html#code-review">第 18 章 Code Review</a>联动：Review 发现重复或过长方法时，要求「先绿 → 重构 PR → 仍绿」。Approval Test、Snapshot 适合复杂 JSON/HTML 输出基线。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例：特征测试锁定 legacy 行为</h4>
+            <pre><code>@Test
+void legacyDiscount_shouldMatchCurrentProductionBehavior() {
+    // 未理解业务前，先锁定现有输出，防止重构改行为
+    var legacy = new LegacyPricingEngine();
+    assertThat(legacy.quote(buildCart("VIP", "2024-05-11")))
+        .isEqualByComparingTo(new BigDecimal("847.50"));
+}
+
+// 基线绿后，逐步 TDD 新 PricingService 并对比 legacy 输出</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>重构 PR 与行为 PR 分离——Review 聚焦结构变化。</li>
+              <li>Approval Tests（<code>approvaltests</code> 库）管理大输出 diff。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>无测试直接大重构——生产事故；至少特征测试或集成冒烟。</li>
+              <li>特征测试通过就永不再看——应逐步替换为可读的行为规格。</li>
+            </ul>
+          </div>
+          <div class="card-block block-reading">
+            <p>延伸阅读：Martin Fowler《重构》、Michael Feathers《修改代码的艺术》</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="bdd-tdd-bridge">
+        <h2>BDD 与 TDD：Cucumber/Gherkin 衔接</h2>
+        <article class="knowledge-card">
+          <h3>Given-When-Then 与外层/内层 TDD</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>BDD</strong>（行为驱动开发）用<strong>业务可读语言</strong>描述场景；<strong>TDD</strong>用代码测试驱动实现。二者互补：Cucumber <strong>Scenario</strong> 作外层验收规格（Red），Step Definition 内部仍可对域对象做<strong>单元 TDD</strong>（Green/Refactor）。</p>
+            <p>衔接模式：Product/QA 写 Gherkin → 开发 Red 场景（可能先 stub Step）→ 域层 TDD 实现 → Step 变绿 → 重构。避免 Step 里堆 200 行业务逻辑——应调用已 TDD 的 Application Service。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart TD
+    BDD[Gherkin 场景 Given-When-Then] --> STEP[Step Definitions]
+    STEP --> TDD[TDD 单元测试驱动]
+    TDD --> IMPL[生产代码实现]
+    IMPL --> E2E[可选 E2E 验收]
+    BDD --> STAKE[与业务/测试共享语言]</pre>
+              <p class="diagram-caption">图：BDD 与 TDD 衔接——行为规格到自动化测试</p>
+            </div>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例：Feature + Step + 域 TDD</h4>
+            <pre><code># transfer.feature
+Scenario: Reject transfer when balance insufficient
+  Given account "A1" has balance 100.00
+  When I transfer 200.00 from "A1" to "A2"
+  Then the transfer is rejected with "INSUFFICIENT_FUNDS"
+
+// TransferStepDefinitions.java — 调用已 TDD 的 TransferService
+@When("I transfer {bigdecimal} from {string} to {string}")
+public void transfer(BigDecimal amount, String from, String to) {
+    caught = catchThrowable(() -&gt; service.transfer(from, to, amount));
+}</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>一个 Scenario 测一个行为；背景用 <code>Background</code> 去重。</li>
+              <li>Step 复用域层 Builder，不直接 JDBC。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「Gherkin 定故事，JUnit TDD 写心脏；Step 薄，Service 厚。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="legacy-code-tdd">
+        <h2>遗留代码 TDD：Seams 与逐步加测</h2>
+        <article class="knowledge-card">
+          <h3>Michael Feathers 的 Seam 与 Sprout 技术</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>Michael Feathers 定义 <strong>Seam（接缝）</strong>：不改代码即可插入测试观察点的地方——构造注入、Extract Interface、包可见方法、Subclass 覆写。遗留代码 TDD 路径：① 识别变更点；② 在 Seam 加特征测试；③ 小步提取纯函数/Service；④ 对新类标准 TDD；⑤ 删掉旧路径。</p>
+            <p><strong>Sprout</strong>：新功能用新类 + 测试实现，旧类仅委托。<strong>Wrap</strong>：旧 API 外包一层接口。避免「大爆炸重写」。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例：Extract Interface 创造 Seam</h4>
+            <pre><code>// 遗留：static 调用 ExternalRateClient.fetch() — 无法测
+// 1. 提取接口 + 构造注入（Seam）
+public class PricingFacade {
+    private final RateClient rates;
+    public PricingFacade(RateClient rates) { this.rates = rates; }
+    BigDecimal quote(Currency from, Currency to, BigDecimal amount) {
+        return amount.multiply(rates.fetch(from, to));
+    }
+}
+
+// 2. 特征测试 + Fake RateClient → 3. TDD 新规则</code></pre>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>无 Seam 硬测 private——PowerMock 掩盖设计，优先重构出 Seam。</li>
+              <li>一次加测覆盖全类——按变更热点增量覆盖。</li>
+            </ul>
+          </div>
+          <div class="card-block block-reading">
+            <p>延伸阅读：Michael Feathers《Working Effectively with Legacy Code》</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="tdd-spring-boot">
+        <h2>TDD + Spring Boot 切片测试</h2>
+        <article class="knowledge-card">
+          <h3>@WebMvcTest、@DataJpaTest 驱动分层实现</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>Spring Boot 项目 TDD 仍从<strong>纯 Java 域层</strong>开始（无 Spring 上下文）。进入适配层时用<strong>切片测试</strong>缩短反馈：@WebMvcTest 测 Controller 契约与序列化；@DataJpaTest 测 Entity 映射与 Query；@JsonTest 测 DTO。全量 @SpringBootTest 留集成/E2E 阶段。</p>
+            <p>节奏：域 Service TDD → @WebMvcTest MockMvc 验证 HTTP 映射 → @DataJpaTest + Testcontainers 验证 SQL。与<a href="12-spring-framework.html">第 12 章 Spring Framework</a>配置知识配合。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例：@WebMvcTest TDD Controller</h4>
+            <pre><code>@WebMvcTest(OrderController.class)
+class OrderControllerTest {
+    @Autowired MockMvc mvc;
+    @MockBean CreateOrderUseCase useCase;
+
+    @Test
+    void shouldReturn201WhenOrderCreated() throws Exception {
+        when(useCase.handle(any())).thenReturn(new OrderId("ord_1"));
+
+        mvc.perform(post("/api/v1/orders")
+                .contentType(APPLICATION_JSON)
+                .content("""
+                    {"sku":"SKU1","qty":2}
+                    """))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.id").value("ord_1"));
+    }
+}</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>@MockBean 只 Mock UseCase/Port，不 Mock Controller 自身。</li>
+              <li>@DataJpaTest 默认 rollback；复杂 SQL 用 Testcontainers 真库。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「域层无 Spring；WebMvc 测 API；DataJpa 测映射。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="tdd-ai-assisted">
+        <h2>TDD + AI 辅助：测试先行与 Harness 约束</h2>
+        <article class="knowledge-card">
+          <h3>AI 生成失败测试、Human 审规格、CI 硬门禁</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>AI 辅助 TDD 的有效姿势：<strong>人写/审行为规格</strong> → AI 生成<strong>失败测试骨架</strong> → 人确认断言语义 → AI 或人写最小实现 → CI 跑全绿 → 人做重构 Review。反模式：AI 直接生成功能代码再补测——会削弱测试先行带来的设计驱动。</p>
+            <p>Harness 约束（详见<a href="21-ai-development.html#harness-engineering">第 21 章 Harness Engineering</a>）：Cursor Rules 要求「改生产代码前必须有失败测试」；CI 跑 <code>mvn test</code> + SpotBugs；Eval 集用于回归核心 Scenario。Prompt 示例：「为 PricingService 写 JUnit5+AssertJ 测试，先只写 shouldApplyDiscountWhen...，不要写实现类。」</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例：AI TDD Prompt 模板</h4>
+            <pre><code>// Prompt（给 Agent）
+为 TransferService 做 TDD 第 1 步：
+1. 只创建 TransferServiceTest.java
+2. 用 JUnit5 + AssertJ，测试 shouldRejectWhenBalanceInsufficient
+3. 不要创建 TransferService 实现
+4. 运行 mvn -pl billing test，确认失败在「类不存在」或断言
+
+// Harness：.cursor/rules 禁止 Agent 跳过 test 失败直接改 prod</code></pre>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>AI 测试断言过弱（<code>assertNotNull</code>）——人必须收紧规格。</li>
+              <li>AI Mock 一切——要求优先 Fake/纯函数测试。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「人定行为，AI 写红测；Harness 卡测试先行门。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="team-tdd-practices">
+        <h2>团队 TDD 实践：结对、CI 与覆盖率误用</h2>
+        <article class="knowledge-card">
+          <h3>结对 TDD、门禁策略与可测性文化</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>结对 TDD</strong>：Navigator 写测试/spec，Driver 写实现；或定时交换——传播节奏与断言风格。<strong>CI 门禁</strong>：PR 必跑 unit + 关键 integration；main 分支保护；测试失败禁止合并。与<a href="20-devops-cloud-native.html">第 20 章 CI</a>联动。</p>
+            <p><strong>覆盖率误用</strong>：80% 行覆盖 ≠ 行为正确；assert 空测试也能刷 coverage。更好指标：突变测试（PIT）、关键路径 Scenario 全绿、生产缺陷率。团队规范：新 Bug 必须带复现测试；Sonar「新代码覆盖」作参考非 KPI。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例：GitHub Actions TDD 门禁</h4>
+            <pre><code># .github/workflows/ci.yml
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { java-version: '21', distribution: 'temurin' }
+      - run: mvn -B verify -Pci
+      # -Pci：unit + integration；mutation 可选 weekly</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>「测试午餐」：每周 30min 分享一个 TDD 重构案例。</li>
+              <li>Definition of Done：行为测试 + 文档 + 无 blocker Sonar。</li>
+              <li>Flaky 测试零容忍——先修或 @Disabled 带 ticket。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>管理层只盯覆盖率数字——鼓励测行为而非行数。</li>
+              <li>CI 过慢（全量 Testcontainers 每次 push）——拆 fast/slow 套件。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「结对传节奏，CI 守绿门；覆盖是信号，不是目的。」</p>
+          </div>
+          <div class="card-block block-reading">
+            <p>延伸阅读：Llewellyn Falco《Stronger Than Before》、PIT Mutation Testing 文档</p>
+          </div>
+        </article>
+      </section>
+      <section class="section" id="chapter-execution-checklist">
+        <h2>章末实战闭环</h2>
+        <article class="knowledge-card">
+          <h3>TDD落地清单</h3>
+          <div class="card-block block-deliverable">
+            <h4>输入</h4>
+            <ul>
+              <li>用户故事与 GWT 验收场景</li>
+              <li>待重构代码与风险清单</li>
+              <li>测试替身策略与边界约束</li>
+              <li>团队 CI 门禁与覆盖目标</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>输出</h4>
+            <ul>
+              <li>红绿重构用例集与演进记录</li>
+              <li>测试金字塔分层实践模板</li>
+              <li>遗留代码加测策略与基线</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>验收标准</h4>
+            <ul>
+              <li>每次重构由测试先行驱动</li>
+              <li>失败测试可精准定位业务回归</li>
+              <li>CI 阶段阻断破坏性改动</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>失败信号</h4>
+            <ul>
+              <li>测试在开发后补写形式化</li>
+              <li>Mock 过度导致行为失真</li>
+              <li>重构不落地仅停留理论</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <nav class="chapter-nav">
+        <a href="16-security-development.html">← 上一章：安全开发</a>
+        <a href="18-testing-quality.html">下一章：测试·质量 →</a>
+      </nav>
+    </main>
+  </div>  <script src="assets/diagram.js" defer></script>
+  <script src="assets/explain-format.js" defer></script>
+  <script src="assets/chapter-toc.js" defer></script>
+</body>
+</html>

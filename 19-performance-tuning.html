@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>19 性能调优 — Java项目手册</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/sidebar.js" defer></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">Java项目手册</div>
+      <nav>
+        <div class="nav-group">
+                    <ul class="nav-list">
+                                                                                                                                                <li><a href="index.html">目录首页</a></li>
+            <li><a href="01-requirements-analysis.html">01 需求分析</a></li>
+            <li><a href="02-prototype-design.html">02 原型设计</a></li>
+            <li><a href="03-architecture-design.html">03 架构设计</a></li>
+            <li><a href="04-project-scheduling.html">04 项目排期</a></li>
+            <li class="sidebar-group"><span class="sidebar-group-label"><a href="java-development.html">开发实现</a></span></li>
+            <li class="sidebar-subitem"><a href="05-dev-environment.html">05 开发环境搭建</a></li>
+            <li class="sidebar-subitem"><a href="06-java-basics.html">06 Java基础语法</a></li>
+            <li class="sidebar-subitem"><a href="07-oop.html">07 面向对象</a></li>
+            <li class="sidebar-subitem"><a href="08-jvm.html">08 JVM</a></li>
+            <li class="sidebar-subitem"><a href="09-concurrency.html">09 并发编程</a></li>
+            <li class="sidebar-subitem"><a href="10-io-nio-network.html">10 IO·NIO·网络</a></li>
+            <li class="sidebar-subitem"><a href="11-persistence.html">11 持久化</a></li>
+            <li class="sidebar-subitem"><a href="12-spring-framework.html">12 Spring Framework</a></li>
+            <li class="sidebar-subitem"><a href="13-build-packaging-deploy.html">13 构建·打包·部署</a></li>
+            <li class="sidebar-subitem"><a href="14-ruoyi-framework.html">14 RuoYi 框架</a></li>
+            <li class="sidebar-subitem"><a href="15-common-modules.html">15 常见功能模块</a></li>
+            <li class="sidebar-subitem"><a href="16-security-development.html">16 安全开发</a></li>
+            <li class="sidebar-subitem"><a href="17-test-driven-development.html">17 测试驱动开发</a></li>
+            <li><a href="18-testing-quality.html">18 测试·质量</a></li>
+            <li><a href="19-performance-tuning.html">19 性能调优</a></li>
+            <li><a href="20-devops-cloud-native.html">20 工程化·DevOps·CI/CD</a></li>
+            <li><a href="21-ai-development.html">21 AI 辅助开发</a></li>
+            <li><a href="22-business-intelligence.html">22 业务智能化</a></li>
+            <li><a href="glossary.html">术语字典</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="page-header">
+        <h1>19 性能调优</h1>
+        <p>没有度量就没有优化——先定位瓶颈类型（CPU/IO/锁/GC/DB），再动刀。</p>
+      </header>
+
+      <section class="section" id="metrics">
+        <h2>指标体系</h2>
+        <article class="knowledge-card">
+          <h3>RED / USE 与 SLI/SLO</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>服务层 RED：Rate（QPS）、Errors（错误率）、Duration（延迟分位）。资源层 USE：Utilization、Saturation、Errors。调优<strong>证据链</strong>：症状（告警/投诉）→ 指标确认（RED/USE）→ Profile（JFR/火焰图/堆 dump）→ 根因 → 修复 → 压测验证 SLO。无 Profile 不调 JVM 参数；无压测不宣称「已优化」。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart TD
+    SYM[性能症状] --> METRIC[RED/USE 指标]
+    METRIC --> PROFILE[Profiler/火焰图/堆 dump]
+    PROFILE --> ROOT[定位根因]
+    ROOT --> FIX[代码/配置/架构修复]
+    FIX --> VERIFY[压测验证 SLO]
+    VERIFY -->|未达标| METRIC</pre>
+              <p class="diagram-caption">图：性能调优证据链——从现象到验证闭环</p>
+            </div>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>// Micrometer + Prometheus
+Timer.builder("http.server.requests")
+    .tag("uri", uri)
+    .tag("status", String.valueOf(status))
+    .publishPercentiles(0.5, 0.95, 0.99)
+    .register(registry)
+    .record(duration);
+
+// SLO 告警：5 分钟窗口错误率 &gt; 1%
+ALERT ErrorBudgetBurn
+  IF rate(http_errors[5m]) / rate(http_requests[5m]) &gt; 0.01</code></pre>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「服务看 RED，资源看 USE；优化对准 SLO，别追微基准幻觉。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="cpu-memory">
+        <h2>CPU/内存分析</h2>
+        <article class="knowledge-card">
+          <h3>火焰图与线程栈</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>CPU 高：用 async-profiler 分别做 <code>-e cpu</code> 与 <code>-e wall</code> 采样，宽帧即热点。CPU 低但 QPS 上不去：查 BLOCKED/WAITING 线程（锁、连接池、DB）。内存高：Heap Dump + MAT Dominator Tree。分配速率异常：async-profiler <code>-e alloc</code> 或 JFR Object Allocation 事件。预发复现优先于生产 attach；生产侧更推荐短时 JFR（<code>settings=profile</code>），通常可控在低开销（常见约 1%~2%）。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart LR
+    CPU[CPU 高] --> FLAME[火焰图 CPU 采样]
+    IO[CPU 低 QPS 低] --> BLOCK[线程 BLOCKED 分析]
+    MEM[内存高] --> HEAP[Heap Dump Dominator]
+    FLAME --> HOT[热点方法]
+    BLOCK --> LOCK[锁/IO/DB 等待]
+    HEAP --> LEAK[最大 Retained Set]</pre>
+              <p class="diagram-caption">图：CPU/内存/阻塞三类症状诊断路径</p>
+            </div>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例 Shell</h4>
+            <pre><code># CPU 火焰图（async-profiler，预发/短时生产）
+./profiler.sh -d 60 -e cpu -f cpu.html &lt;pid&gt;
+./profiler.sh -d 60 -e wall -f wall.html &lt;pid&gt;
+
+# 分配热点
+./profiler.sh -d 30 -e alloc -f alloc.html &lt;pid&gt;
+
+# JFR（内置，JDK 11+）
+jcmd &lt;pid&gt; JFR.start name=perf settings=profile duration=120s filename=/tmp/app.jfr
+
+# 线程状态统计
+jcmd &lt;pid&gt; Thread.print | grep "java.lang.Thread.State" | sort | uniq -c
+
+# 与 Micrometer 指标对齐时间轴
+curl localhost:8080/actuator/prometheus | grep jvm_threads_states</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>在预发复现优先；生产侧避免长时持续 profiling 干扰业务。</li>
+              <li>对比正常与异常时间窗口的指标，找差异（delta）。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="gc-tuning">
+        <h2>GC 调优</h2>
+        <article class="knowledge-card">
+          <h3>从 GC 日志到参数调整</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>关注指标：GC 频率、单次 pause 时间、allocation rate、晋升失败/疏散失败（promotion failed / evacuation failure）。Young GC 频繁可能是堆太小或对象创建过快；Full GC 频繁可能与老年代压力、metaspace 增长异常或显式 GC 调用有关。调优顺序：先修复代码与对象生命周期问题 → 再调堆大小与代际比例 → 再选收集器 → 最后微调参数。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code># GC 日志（JDK 17+）
+-Xlog:gc*,safepoint:file=gc.log:time,uptime,level,tags
+
+# G1 常见微调
+-XX:InitiatingHeapOccupancyPercent=45
+-XX:G1ReservePercent=15
+
+# 分析工具
+# https://gceasy.io 或 GCViewer</code></pre>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>堆调到物理内存 100%，不留 OS page cache。</li>
+              <li>忽略 allocation rate，只调 GC 参数治标不治本。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="slow-sql">
+        <h2>慢 SQL 与缓存</h2>
+        <article class="knowledge-card">
+          <h3>缓存模式与击穿/穿透/雪崩</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>Cache-Aside：读 miss 加载 DB 写缓存；写 DB 删缓存。热点 key 用互斥锁或 singleflight 防击穿。空值缓存防穿透。TTL 加 jitter 防雪崩。本地缓存（Caffeine）+ 分布式（Redis）二级架构常见。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>@Cacheable(value = "orders", key = "#id", unless = "#result == null")
+public Order getOrder(UUID id) {
+    return repo.findById(id).orElse(null);
+}
+
+@CacheEvict(value = "orders", key = "#order.id")
+public void updateOrder(Order order) {
+    repo.save(order);
+}
+
+// Caffeine 本地缓存
+LoadingCache&lt;String, User&gt; cache = Caffeine.newBuilder()
+    .maximumSize(10_000)
+    .expireAfterWrite(Duration.ofMinutes(5))
+    .build(this::loadUser);</code></pre>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="load-stress-testing">
+        <h2>压力测试与性能指标</h2>
+        <article class="knowledge-card">
+          <h3>压测类型、工具、指标与完整流程</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>压测类型</strong>（别混用术语）：<strong>基准测试（Benchmark）</strong>——单接口、固定并发，建立性能基线；<strong>负载测试（Load）</strong>——预期日常流量下验证 SLO；<strong>压力测试（Stress）</strong>——持续加压直到错误率上升或资源饱和，找系统拐点；<strong>稳定性/浸泡测试（Soak）</strong>——中等负载长时间运行，暴露内存泄漏、连接泄漏、GC 恶化；<strong>峰值测试（Spike）</strong>——短时流量尖刺，验证限流、熔断与队列缓冲。</p>
+            <p><strong>工具选型</strong>：通用 <strong>JMeter</strong>（GUI + CLI，生态最大）、<strong>k6</strong>（JS 脚本、thresholds 内置）、<strong>Gatling</strong>（Scala DSL、高并发报告精美）、<strong>wrk</strong>/<strong>ab</strong>（快速 HTTP 探针）。Java 生态常用 <strong>Gatling</strong> 或 <strong>JMeter</strong> 对 Spring Boot REST 做场景化脚本；k6 适合 CI 门禁。压测机与 SUT 分离，避免压测端 CPU 成为瓶颈。</p>
+            <p><strong>性能指标</strong>：吞吐统一按 <strong>QPS</strong> 表达（HTTP 场景下常与 RPS 近似等价，TPS 需按业务事务口径单独定义）；延迟 <strong>Avg、P50/P90/P95/P99、Max</strong>（对外承诺看 P95/P99，别只报 Avg）；<strong>错误率</strong>、<strong>并发用户数/VU</strong>；资源 <strong>CPU、内存、GC pause、线程池队列、DB 连接池、慢 SQL</strong>。与<a href="#metrics">指标体系卡片</a>衔接：<strong>SLI</strong>（可测，如 p99 延迟）→ <strong>SLO</strong>（目标，如 p99 &lt; 200ms）→ 压测<strong>验收标准</strong>（预发/发布前必须通过）。</p>
+            <p><strong>压测流程</strong>：① 目标定义（场景、SLO、数据规模）→ ② 脚本（混合读写、think time、参数化）→ ③ 环境隔离（独立预发、禁与其他任务争用）→ ④ 预热（JIT、缓存填热）→ ⑤ 阶梯加压 → ⑥ 报告与对照 SLO → ⑦ 未达标则回到<a href="#metrics">证据链</a>（Profiler/火焰图/堆 dump）定位瓶颈 → 调优 → 再压测闭环。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart TD
+    GOAL[目标与 SLO 定义] --> SCRIPT[场景脚本 JMeter/k6/Gatling]
+    SCRIPT --> ENV[环境隔离 预发]
+    ENV --> WARM[预热 JIT/缓存]
+    WARM --> RAMP[阶梯加压]
+    RAMP --> REPORT[报告: TPS/分位/错误率/资源]
+    REPORT --> PASS{SLO 达标?}
+    PASS -->|是| CAP[容量规划 1.5~2x 余量]
+    PASS -->|否| EVID[证据链: Profile/火焰图/堆]
+    EVID --> TUNE[调优 JVM/并发/SQL/缓存]
+    TUNE --> RAMP</pre>
+              <p class="diagram-caption">图：压力测试完整流程与证据链闭环</p>
+            </div>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart LR
+    subgraph THROUGHPUT["吞吐"]
+      TPS[QPS 主口径]
+    end
+    subgraph UX["体验"]
+      LAT[P50 P90 P95 P99 Max]
+    end
+    subgraph REL["可靠"]
+      ERR[错误率]
+    end
+    subgraph RES_GRP["资源"]
+      RES[CPU 内存 GC 连接池 DB]
+    end
+    TPS --> SLO[SLI/SLO 验收]
+    LAT --> SLO
+    ERR --> SLO
+    RES --> SLO</pre>
+              <p class="diagram-caption">图：压测核心指标与 SLO 验收关系</p>
+            </div>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>// k6 — 阶梯加压 + SLO thresholds（适合 CI）
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+
+export const options = {
+  stages: [
+    { duration: '2m', target: 100 },
+    { duration: '5m', target: 100 },
+    { duration: '2m', target: 200 },
+    { duration: '5m', target: 200 },
+    { duration: '2m', target: 0 },
+  ],
+  thresholds: {
+    http_req_duration: ['p(95)&lt;150', 'p(99)&lt;200'],
+    http_req_failed: ['rate&lt;0.01'],
+  },
+};
+
+export default function () {
+  const res = http.get('https://staging/api/v1/orders');
+  check(res, { 'status 200': (r) =&gt; r.status === 200 });
+  sleep(1); // think time
+}
+
+// Gatling Scala 简述（Spring Boot 下单接口）
+class OrderSimulation extends Simulation {
+  val httpProtocol = http.baseUrl("https://staging")
+  val scn = scenario("Orders")
+    .exec(http("list").get("/api/v1/orders").check(status.is(200)))
+    .pause(1)
+  setUp(scn.inject(rampUsers(200).during(5.minutes)).protocols(httpProtocol))
+}
+
+// JMeter CLI 非 GUI 压测
+// jmeter -n -t order.jmx -l result.jtl -e -o report/</code></pre>
+            <p><strong>结果解读（示例表）</strong></p>
+            <table>
+              <thead><tr><th>指标</th><th>本次</th><th>SLO</th><th>结论</th></tr></thead>
+              <tbody>
+                <tr><td>QPS</td><td>1,240</td><td>≥ 1,000</td><td>通过</td></tr>
+                <tr><td>P99 延迟</td><td>218 ms</td><td>&lt; 200 ms</td><td>不通过 → 查 GC/慢 SQL</td></tr>
+                <tr><td>错误率</td><td>0.3%</td><td>&lt; 1%</td><td>通过</td></tr>
+                <tr><td>DB 连接池等待</td><td>持续上升且伴随 P99 恶化</td><td>—</td><td>瓶颈信号 → 调池或 SQL</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>预发数据量、索引、缓存命中率接近生产；压测前固定 JVM、连接池、线程池并记录 baseline。</li>
+              <li>场景混合读写 + think time，避免「只打 GET」高估容量；报告同时看吞吐<strong>与</strong> P99，拐点常先于 Avg 恶化。</li>
+              <li>生产容量 ≈ 实测峰值 QPS × <strong>1.5~2</strong> 安全系数，并预留发布窗口内的流量突增。</li>
+              <li>Spring Boot 压测时同步抓 <code>/actuator/prometheus</code> 与 GC 日志，与 k6/Gatling 时间轴对齐。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>未预热直接加压——JIT 与缓存未稳定，P99 虚高。</li>
+              <li>压测机与 SUT 同机或网络未隔离——测的是压测端瓶颈。</li>
+              <li>只盯 Avg 延迟——长尾被平均掉，线上投诉来自 P99。</li>
+              <li>生产直接全量压测——用预发/影子流量；CI 轻量 k6 门禁即可，见第 20 章 CI。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「五类压测分清场景；工具 JMeter/k6/Gatling；看 P99 与错误率，SLO 不过就回证据链；容量留 1.5~2 倍。」</p>
+          </div>
+          <div class="card-block block-reading">
+            <p>延伸阅读：Gatling 官方文档、k6 文档、<em>Systems Performance</em>（Brendan Gregg）</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="performance-metrics-slo">
+        <h2>压测指标采集与验收</h2>
+        <article class="knowledge-card">
+          <h3>Micrometer 对齐、压测报告与容量规划</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>压测期间的指标应与生产<strong>同一套</strong>导出方式：<strong>Micrometer</strong> → <strong>Prometheus</strong> scrape → Grafana 看板（详见<a href="20-devops-cloud-native.html#observability">第 20 章可观测性</a>）。压测脚本 thresholds 与 Prometheus 告警规则使用相同 SLI 口径，避免「压测通过、上线告警」两套标准。</p>
+            <p><strong>压测报告模板</strong>（发布评审附件）：场景说明、并发曲线、QPS/P50/P95/P99、错误率、资源峰值（CPU/堆/GC/连接池）、与 SLO 对照表、瓶颈与待办。未达标项必须链到调优工单，禁止仅凭「感觉更快」上线。</p>
+            <p><strong>与容量规划</strong>：拐点 QPS × 安全系数 = 单机/集群目标；结合业务增长预测与多 AZ 冗余，反推实例数、DB 规格与缓存容量。压测是<strong>验证</strong>容量模型，不是替代监控。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例：压测报告摘要（Markdown）</h4>
+            <pre><code>## 压测报告 — order-service v2.3（预发 2026-05-20）
+
+| SLI | 目标 SLO | 200 VU | 400 VU | 结论 |
+|-----|----------|--------|--------|------|
+| QPS | ≥ 1000 | 1180 | 1210 | OK |
+| P99 延迟 | &lt; 200ms | 142ms | 218ms | 400 VU 超标 |
+| 错误率 | &lt; 1% | 0% | 0.4% | 边缘 |
+
+瓶颈：400 VU 时 Hikari 等待 + Full GC 增多 → 调连接池 / SQL（见慢 SQL 卡片）
+决策：生产按 800 VU 峰值 × 1.5 部署 3 实例</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>压测窗口在 Grafana 建临时 Dashboard，变量绑定 <code>application</code> 与环境标签。</li>
+              <li>CI 可对预发跑 k6 <code>thresholds</code> 作门禁；全量浸泡测试放发布前人工触发。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>压测不看 Prometheus 只看工具自带报告——缺少 JVM/DB 关联，根因难定。</li>
+              <li>报告无版本与配置快照——无法复现结论。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「压测与生产同一套 Micrometer；报告对 SLO 表；拐点 × 1.5~2 = 容量。」</p>
+          </div>
+          <div class="card-block block-reading">
+            <p>延伸阅读：<em>Site Reliability Engineering</em>（Google SRE）、Prometheus 官方文档</p>
+          </div>
+        </article>
+      </section>
+      <section class="section" id="chapter-execution-checklist">
+        <h2>章末实战闭环</h2>
+        <article class="knowledge-card">
+          <h3>性能调优落地清单</h3>
+          <div class="card-block block-deliverable">
+            <h4>输入</h4>
+            <ul>
+              <li>SLO 指标与用户体验阈值</li>
+              <li>压测脚本与真实流量画像</li>
+              <li>APM/日志/指标历史数据</li>
+              <li>容量预算与成本约束</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>输出</h4>
+            <ul>
+              <li>性能瓶颈证据链与优先级</li>
+              <li>调优方案（代码/SQL/缓存）</li>
+              <li>容量规划与扩容触发条件</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>验收标准</h4>
+            <ul>
+              <li>P95/P99 指标达到目标区间</li>
+              <li>调优收益有前后对比数据</li>
+              <li>高峰流量下系统稳定可降级</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>失败信号</h4>
+            <ul>
+              <li>凭直觉调优缺少指标依据</li>
+              <li>压测场景与真实业务脱节</li>
+              <li>仅提升吞吐忽略错误率</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <nav class="chapter-nav">
+        <a href="18-testing-quality.html">← 上一章：测试·质量</a>
+        <a href="20-devops-cloud-native.html">下一章：工程化·DevOps →</a>
+      </nav>
+    </main>
+  </div>  <script src="assets/diagram.js" defer></script>
+  <script src="assets/explain-format.js" defer></script>
+  <script src="assets/chapter-toc.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>04 项目排期 — 开发 · 测试 · 上线 — Java项目手册</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/sidebar.js" defer></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">Java项目手册</div>
+      <nav>
+        <div class="nav-group">
+                    <ul class="nav-list">
+                                                                                                                                                <li><a href="index.html">目录首页</a></li>
+            <li><a href="01-requirements-analysis.html">01 需求分析</a></li>
+            <li><a href="02-prototype-design.html">02 原型设计</a></li>
+            <li><a href="03-architecture-design.html">03 架构设计</a></li>
+            <li><a href="04-project-scheduling.html">04 项目排期</a></li>
+            <li class="sidebar-group"><span class="sidebar-group-label"><a href="java-development.html">开发实现</a></span></li>
+            <li class="sidebar-subitem"><a href="05-dev-environment.html">05 开发环境搭建</a></li>
+            <li class="sidebar-subitem"><a href="06-java-basics.html">06 Java基础语法</a></li>
+            <li class="sidebar-subitem"><a href="07-oop.html">07 面向对象</a></li>
+            <li class="sidebar-subitem"><a href="08-jvm.html">08 JVM</a></li>
+            <li class="sidebar-subitem"><a href="09-concurrency.html">09 并发编程</a></li>
+            <li class="sidebar-subitem"><a href="10-io-nio-network.html">10 IO·NIO·网络</a></li>
+            <li class="sidebar-subitem"><a href="11-persistence.html">11 持久化</a></li>
+            <li class="sidebar-subitem"><a href="12-spring-framework.html">12 Spring Framework</a></li>
+            <li class="sidebar-subitem"><a href="13-build-packaging-deploy.html">13 构建·打包·部署</a></li>
+            <li class="sidebar-subitem"><a href="14-ruoyi-framework.html">14 RuoYi 框架</a></li>
+            <li class="sidebar-subitem"><a href="15-common-modules.html">15 常见功能模块</a></li>
+            <li class="sidebar-subitem"><a href="16-security-development.html">16 安全开发</a></li>
+            <li class="sidebar-subitem"><a href="17-test-driven-development.html">17 测试驱动开发</a></li>
+            <li><a href="18-testing-quality.html">18 测试·质量</a></li>
+            <li><a href="19-performance-tuning.html">19 性能调优</a></li>
+            <li><a href="20-devops-cloud-native.html">20 工程化·DevOps·CI/CD</a></li>
+            <li><a href="21-ai-development.html">21 AI 辅助开发</a></li>
+            <li><a href="22-business-intelligence.html">22 业务智能化</a></li>
+            <li><a href="glossary.html">术语字典</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="page-header">
+        <h1>04 项目排期 — 开发 · 测试 · 上线</h1>
+        <p>技术选型（01–03）之后、编码之前，回答 <strong>When / Who / How long</strong>：WBS 分解、里程碑、迭代计划、资源容量、风险缓冲、跨团队联调节奏，以及测试窗口与上线 Gate。本章聚焦<strong>排期与交付节奏</strong>；TDD/测试质量见 <a href="17-test-driven-development.html">第 17 章</a>、<a href="18-testing-quality.html">第 18 章</a>；CI/CD 与发布细节见 <a href="20-devops-cloud-native.html#cicd">第 20 章</a>；Spring Boot 模块拆分见 <a href="12-spring-framework.html">第 12 章</a>。</p>
+      </header>
+
+      <section class="section" id="scheduling-overview">
+        <h2>项目排期总览</h2>
+        <article class="knowledge-card">
+          <h3>从需求基线到上线的排期框架</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>项目排期</strong>把已澄清的需求（<a href="01-requirements-analysis.html">第 01 章</a>）与架构/选型（03–05）转化为<strong>可执行的时间表</strong>：谁、何时、交付什么。企业 Java 项目典型阶段：<strong>启动</strong>（章程、干系人）→ <strong>计划</strong>（WBS、里程碑、资源）→ <strong>执行</strong>（开发迭代、联调）→ <strong>监控</strong>（燃尽、偏差、RAID）→ <strong>收尾</strong>（上线、Hypercare、复盘）。排期产出不是 Gantt 图本身，而是<strong>共识</strong>：业务、产品、研发、测试、运维对「什么时候能用什么」签字确认。Windows 企业环境常见约束：内网审批慢、UAT 窗口固定（如每月第二个周六）、节假日封网、第三方接口联调需提前预约。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart LR
+    A[需求基线 01] --> B[架构/选型 03-05]
+    B --> C[排期计划 06]
+    C --> D[开发 06-16]
+    D --> E[测试 06-19]
+    E --> F[上线 20]
+    F --> G[Hypercare 复盘]
+    C --> H[里程碑 Gate]
+    H --> D
+    H --> E
+    H --> F</pre>
+              <p class="diagram-caption">图：排期在软件工程生命周期中的位置</p>
+            </div>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li>《项目计划书》：范围摘要、阶段划分、关键假设</li>
+              <li>《里程碑表》：名称、日期、交付物、Gate 负责人、Go/No-Go 标准</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>计划与<a href="01-requirements-analysis.html#requirements-clarification">RTM</a>绑定：每个里程碑对应可验收的需求条目。</li>
+              <li>首版排期用「三点估算」（乐观/最可能/悲观），对外承诺取悲观或加缓冲。</li>
+              <li>PM 与 Tech Lead 共签里程碑，避免「业务以为已排、研发以为还在估」。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>排期从「编码第一天」算起，漏掉环境搭建、联调、UAT 签字 weeks。</li>
+              <li>里程碑只有日期没有交付物，到期无法客观判定是否达成。</li>
+              <li>计划做完即尘封，无周报/燃尽跟踪——变成「愿望清单」。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「基线定范围，里程碑定 Gate，计划要跟踪，产出可验收。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="wbs-milestones">
+        <h2>WBS 与里程碑</h2>
+        <article class="knowledge-card">
+          <h3>工作分解与关键 Gate</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>WBS</strong>（Work Breakdown Structure）应按<strong>交付物</strong>而非活动拆分，可映射到 Epic → Feature → Story → Task。企业 Java 项目常用里程碑：<strong>M1 需求冻结</strong>（基线签字，变更走 CR）→ <strong>M2 架构评审</strong>（ADR 通过，见<a href="03-architecture-design.html">第 03 章</a>）→ <strong>M3 开发完成</strong>（Code Freeze，功能完备、P0 缺陷清零）→ <strong>M4 测试完成</strong>（SIT/UAT Pass，测试报告签字）→ <strong>M5 上线</strong>（生产验证、监控正常）。每个 Gate 设<strong>入口/出口标准</strong>：例如 M3 入口 = 测试环境可用；出口 = 集成测试通过率 ≥ 95%、无 Blocker。WBS 叶子任务粒度建议 0.5–2 人日，便于跟踪。</p>
+            <div class="diagram-block diagram-milestone-timeline">
+              <pre class="mermaid">gantt
+    title "企业 Java 项目里程碑示意"
+    dateFormat YYYY-MM-DD
+    section Gate
+    "需求冻结 M1"           :milestone, m1, 2026-05-01, 0d
+    "架构评审 M2"           :milestone, m2, 2026-05-08, 0d
+    "开发完成 M3"           :milestone, m3, 2026-06-16, 0d
+    "测试完成 M4"           :milestone, m4, 2026-07-05, 0d
+    "上线 M5"               :milestone, m5, 2026-07-12, 0d
+    section "执行"
+    "开发迭代"              :dev, 2026-05-09, 38d
+    "SIT 集成测试"          :sit, 2026-06-17, 12d
+    "UAT 验收"              :uat, 2026-06-29, 8d</pre>
+              <p class="diagram-caption">图：典型里程碑时间轴（示意，按项目调整）</p>
+            </div>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li>WBS 树（Excel/Jira/Project）：编号、名称、负责人、估算、依赖</li>
+              <li>里程碑一页纸：五 Gate + 交付物清单 + 签字栏</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>WBS 与 Jira Epic/Story 结构对齐，避免「计划一套、工具一套」。</li>
+              <li>需求冻结后变更必须走 CR，评估对里程碑的影响并书面确认。</li>
+              <li>M2 架构评审邀请运维/安全早期介入，减少后期排期被动。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>WBS 按职能拆（「后端开发 60 天」）无法跟踪进度。</li>
+              <li>里程碑之间无依赖关系，并行阶段资源冲突未发现。</li>
+              <li>「开发完成」未定义 Code Freeze，功能持续涌入导致测试永远测不完。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「WBS 拆交付，五 Gate 要签字：冻结→架构→开发→测试→上线。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="agile-sprint-planning">
+        <h2>敏捷 Sprint 计划</h2>
+        <article class="knowledge-card">
+          <h3>Story Point · Velocity · Backlog 排序</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>Sprint</strong> 通常 2 周：Planning → Daily → Review → Retro。Backlog 按<strong>价值 × 风险 × 依赖</strong>排序：先打通主链路（登录→核心业务→报表），再 polish。估算用 <strong>Story Point</strong>（相对复杂度，斐波那契 1/2/3/5/8/13）；团队 <strong>Velocity</strong> = 近 3–6 Sprint 完成点数均值，用于预测「还需几个 Sprint」。Java 团队注意：Spike（调研 POC）应作为独立 Story/Task 管理，可不计入业务功能点，但必须占用 Sprint 容量；技术债 Story 每 Sprint 留 10–20% 容量。Sprint Goal 一句话对齐业务目标，避免「做完一堆 Story 但业务目标未达成」。</p>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li>Sprint Backlog：Story + 验收标准 + 负责人 + 点数</li>
+              <li>Velocity 趋势表：每 Sprint 承诺/完成点数</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>Planning 用「扑克估算」，异常值讨论后收敛，建立共同基准。</li>
+              <li>跨 Sprint 依赖在 Planning 前识别，前置 Story 优先拉入当前 Sprint。</li>
+              <li>Definition of Done 写清：单测、Review、文档、可部署到 test 环境。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>把 Story Point 当「人日」换算，失去相对估算意义。</li>
+              <li>Velocity 未稳定（新团队前 3 Sprint）就对外承诺上线日期。</li>
+              <li>Sprint 中插单无上限，承诺点数永远完不成，燃尽图失真。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「Backlog 排价值，点数看 Velocity，DoD 写清楚，Spike 单独算。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="waterfall-vs-agile">
+        <h2>瀑布与敏捷选型</h2>
+        <article class="knowledge-card">
+          <h3>纯瀑布 · 纯敏捷 · 企业混合模式</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>瀑布</strong>：阶段串行、文档重、适合需求稳定、合规强、外包固定总价（政企、金融核心改造）。<strong>敏捷</strong>：短迭代、拥抱变更、适合产品型互联网业务。<strong>Java 企业最常见：混合</strong>——外层瀑布里程碑（需求冻结、UAT、上线窗口固定），内层 Scrum Sprint 开发；或「增量交付」：每 2 周 demo 可运行增量，但生产发布仍按季度/月度窗口。选型依据：监管审计要求、合同类型、需求变更频率、团队成熟度。切忌「挂牌敏捷」——无 Product Owner、无 Retro、Sprint 只是两周日历。</p>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li>《生命周期模型说明》：选用混合模式的理由与阶段映射</li>
+              <li>变更流程：CR 模板 + 对里程碑影响的评估字段</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>混合模式下，对外承诺用里程碑日期，对内用 Sprint 跟踪。</li>
+              <li>合规项目保留必要文档（设计评审记录、测试报告），但避免重复劳动。</li>
+              <li>PO 必须有权排优先级，否则 Backlog 排序变成「谁嗓门大」。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>合同固定范围+固定价却选纯敏捷，范围蔓延无人买单。</li>
+              <li>需求冻结后仍大量隐性变更，里程碑形同虚设。</li>
+              <li>敏捷迭代内做不完 UAT 签字，把验收留到最后两周——风险集中爆发。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「外层里程碑锁窗口，内层 Sprint 跑交付；政企混合最常见。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="dev-phase-schedule">
+        <h2>开发阶段排期</h2>
+        <article class="knowledge-card">
+          <h3>模块并行 · 依赖 · Code Freeze</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>开发排期按<strong>模块依赖图</strong>编排：基础模块（用户/RBAC、字典）→ 领域服务 → 集成层 → 前端页面。可并行的模块分配不同小组，但共享<strong>接口契约</strong>（OpenAPI，见<a href="03-architecture-design.html#api-design">第 03 章联调</a>）须先冻结。Spring Boot 多模块工程（<a href="12-spring-framework.html">第 12 章</a>）按 Maven 模块排期：api → domain → infrastructure → boot。关键路径上的任务优先投入资深人力。<strong>Code Freeze</strong>：M3 前 N 天（通常 5–10 工作日）仅允许 P0/P1 缺陷修复与发布分支 cherry-pick，新 Feature 进下一版本。环境：<code>dev</code> 每日集成，<code>test</code> 供 QA 稳定回归。</p>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li>模块依赖图 + 各模块起止日期</li>
+              <li>Code Freeze 公告：日期、允许变更类型、发布分支策略</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>依赖模块用 Mock/Stub 先行，避免「等 A 做完 B 才能开工」空转。</li>
+              <li>每周跨模块同步会 30 分钟，只过接口变更与阻塞项。</li>
+              <li>Feature Flag 让未完成特性可合并 main 但不暴露给用户。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>所有模块同时改同一数据库表，集成阶段 migration 冲突。</li>
+              <li>Code Freeze 无 enforcement，主分支持续合入新功能。</li>
+              <li>低估联调时间——前后端各「开发完成」但端到端未通。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「依赖图定顺序，契约先冻结，Code Freeze 守 M3。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="test-phase-schedule">
+        <h2>测试阶段排期</h2>
+        <article class="knowledge-card">
+          <h3>单元 · 集成 · UAT 时间窗</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>测试排期与<strong>测试金字塔</strong>对应（详见<a href="17-test-driven-development.html">第 17 章 TDD</a>）：单元/组件测试<strong>左移</strong>在开发 Sprint 内完成；<strong>SIT</strong>（系统集成测试）在 test 环境，预留总工期 15–25%（视集成复杂度）；<strong>UAT</strong> 在预发/UAT 环境，业务方执行验收清单（<a href="18-testing-quality.html#uat-environment">第 18 章 UAT 环境</a>）。排期要点：<strong>测试环境就绪</strong>是 M3→M4 的前置条件——数据脱敏、账号权限、第三方沙箱、Flyway 脚本与 prod 一致。预留<strong>回归轮次</strong>（至少 2 轮）与<strong>缺陷修复缓冲</strong>（SIT 后期每天留 30% 开发容量修 Bug）。Windows 企业项目 UAT 常限工作日晚间或指定周末，排期必须写进日历并提前预约业务资源。</p>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li>测试计划：范围、环境、入口/出口标准、轮次时间表</li>
+              <li>UAT 窗口日历：参与人、场景清单、签字 Gate</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>测试数据工厂脚本化，UAT 每轮可快速重置。</li>
+              <li>SIT 与 UAT 用同一不可变镜像 tag，避免「测 A 发 B」。</li>
+              <li>自动化回归在 nightly 跑，人工 UAT 聚焦业务场景与边界。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>测试环境临上线才搭建，SIT 压缩到 3 天走过场。</li>
+              <li>UAT 无业务方排期，开发自测冒充验收。</li>
+              <li>未预留回归轮次，修 Bug 引入新缺陷无限循环。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「单测左移 Sprint 内，SIT 15–25%，UAT 环境先就绪再排期。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="release-go-live">
+        <h2>上线与发布窗口</h2>
+        <article class="knowledge-card">
+          <h3>变更委员会 · 回滚 · 蓝绿/金丝雀</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>上线窗口</strong>：金融/政企常限<strong>非交易时段</strong>（如周六 02:00–06:00）或<strong>变更日</strong>（每月固定一天）；需提前向<strong>变更委员会（CAB）</strong>提交变更单：影响范围、回滚步骤、验证清单、值班人。<strong>回滚预案</strong>：数据库 Flyway 反向脚本或备份恢复、上一版本镜像 tag、配置快照；RTO/RPO 写清。<strong>发布策略</strong>（<a href="20-devops-cloud-native.html#cicd">第 20 章 CI/CD</a>）：蓝绿（两套环境切换）、金丝雀（5%→20%→100% 流量）；Java 服务注意 session 粘性与 MQ 消费位点。上线 checklist：监控大盘、告警静默解除、Smoke Test、业务方确认。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart TB
+    A[变更单 CAB 审批] --> B[备份 DB/配置]
+    B --> C{发布策略}
+    C -->|蓝绿| D[切流量到新环境]
+    C -->|金丝雀| E[5% 流量验证]
+    E --> F[逐步扩量]
+    D --> G[Smoke Test]
+    F --> G
+    G --> H{通过?}
+    H -->|是| I[解除告警静默 Hypercare]
+    H -->|否| J[回滚上一版本]
+    J --> K[复盘 RCA]</pre>
+              <p class="diagram-caption">图：上线发布与回滚决策流</p>
+            </div>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li>上线 Runbook：步骤、命令、验证点、回滚触发条件</li>
+              <li>变更单 + CAB 审批记录 + 值班表</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>生产发布前在预发做「全真演练」，计时并优化 Runbook。</li>
+              <li>DDL 变更与 DML 分开窗口，大表 migration 单独排低峰期。</li>
+              <li>金丝雀期间盯 Error Rate、p99 延迟、业务核心指标三板斧。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>回滚方案未演练，出事才发现 Flyway 不可逆或数据已污染。</li>
+              <li>上线当晚才第一次连生产 VPN/堡垒机，环境问题耗光窗口。</li>
+              <li>无 Hypercare 值班，周一高峰暴露周末未发现的问题。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「CAB 先审批，Runbook 含回滚，蓝绿/金丝雀渐进，Smoke 过再收工。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="resource-capacity">
+        <h2>资源与容量</h2>
+        <article class="knowledge-card">
+          <h3>人力 · 环境 · 第三方 · 节假日缓冲</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>人力容量</strong>：每人有效开发时间 ≈ 日历天 × 0.6–0.7（会议、Support、请假）；并行项目须扣减。角色覆盖：Backend、Frontend、QA、DBA、运维、安全评审——缺角色要在排期显式标注风险。<strong>环境</strong>：dev/test/UAT/prod 申请周期（内网常 1–2 周）、License（Oracle、中间件）。<strong>第三方依赖</strong>：支付、短信、政企接口联调需对方排期，提前 4–8 周预约。<strong>节假日缓冲</strong>：春节/国庆前冻结大变更；年假集中期（7–8 月）减 Velocity；排期加 <strong>10–20% 管理储备</strong>（PMI 推荐）或关键路径单独 contingency。</p>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li>资源矩阵：角色 × 月份 × FTE（全职当量）</li>
+              <li>环境/第三方依赖清单 + 预计就绪日期</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>关键人员设 Backup，核心模块 Bus Factor ≥ 2。</li>
+              <li>环境申请与架构评审同步启动，不等到开发阶段。</li>
+              <li>中国区项目把法定假日与调休写进共享日历。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>按 100% 饱和度排期，忽略会议与突发 Support。</li>
+              <li>第三方「说能联调」无书面确认，临上线接口未通。</li>
+              <li>节前上线无 rollback 演练，假期出故障无人响应。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「人力乘 0.7，环境第三方早预约，节假日留缓冲。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="risk-buffer">
+        <h2>风险与缓冲</h2>
+        <article class="knowledge-card">
+          <h3>风险登记 · Contingency · 关键路径</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>风险登记册</strong>：风险描述、概率、影响、应对（规避/减轻/转移/接受）、Owner、状态。技术类常见：性能不达标、数据迁移失败、中间件版本不兼容；管理类：需求变更、人员流失、环境延迟。<strong>Contingency buffer</strong> 加在<strong>关键路径</strong>末尾（非每任务都加——否则总工期膨胀）。关键路径 = 最长依赖链（如：DB 设计 → 核心 API → 前端主流程 → SIT → UAT → 上线）；缩短非关键路径任务不能缩短总工期。定量：关键路径加 15–25% 时间缓冲，或预留「应急 Sprint」。风险触发时走<strong>escalation</strong>：Tech Lead → PM → Sponsor，并更新里程碑对外沟通。</p>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li>风险登记册（RAID 中的 R）+ 每周评审记录</li>
+              <li>关键路径标注图 + contingency 天数说明</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>风险用「如果…则…影响…我们…」句式，可测试可跟踪。</li>
+              <li>Spike 验证高风险项（如分库分表 POC）在 M2 后尽早安排。</li>
+              <li>缓冲时间由 PM 统一管理，开发不可见具体天数——避免 Parkinson。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>风险登记后从不评审，变成归档文档。</li>
+              <li>每个任务加 20% padding，总工期翻倍仍不准。</li>
+              <li>忽视非技术风险（业务方 UAT 人力不足）导致关键路径阻塞。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「风险有 Owner，缓冲加关键路径，Spike 验不确定。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="cross-team-coordination">
+        <h2>跨团队协调</h2>
+        <article class="knowledge-card">
+          <h3>前后端 · DB · 运维联调节奏</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>企业 Java 项目典型协同：<strong>后端</strong>（Spring Boot）? <strong>前端</strong>（Vue/React，<a href="03-architecture-design.html#api-design">第 03 章 API 设计</a>）通过 OpenAPI 契约；<strong>DBA</strong> 评审 DDL/索引与 migration 窗口；<strong>运维</strong> 准备 K8s/VM、监控、证书。节奏建议：<strong>接口冻结日</strong>（每 Sprint 中点）——此后改契约走 CR；<strong>联调周</strong>（Sprint 最后 2 天）前后端 + QA 同屏过主流程；<strong>运维预审</strong>（上线前 2 周）资源、告警、日志采集。沟通机制：Slack/Teams 频道 + 周会 30min + 阻塞项日报。依赖团队用 RACI 矩阵明确谁 Responsible/Accountable/Consulted/Informed。</p>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li>跨团队 RACI 矩阵 + 联调节奏日历</li>
+              <li>接口变更 CR 模板 + 联调问题跟踪表</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>契约仓库（openapi.yaml）单源真相，CI 生成前后端 Stub。</li>
+              <li>DBA 参与 M2 架构评审，避免上线前才说「这索引不行」。</li>
+              <li>运维 early engagement：M3 前完成 prod-like 预发环境验收。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>前后端各排各的，联调阶段才发现字段语义不一致。</li>
+              <li>DDL 上线前夜才提交 DBA，审批来不及。</li>
+              <li>运维上线当天才第一次见 Runbook，配置项遗漏。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「契约冻结日，联调 Sprint 末，运维提前两周预审。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="tracking-reporting">
+        <h2>跟踪与报告</h2>
+        <article class="knowledge-card">
+          <h3>燃尽图 · 周报 · 里程碑偏差 · RAID</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>燃尽图</strong>（Burndown）：Sprint 剩余点数/任务随日递减，平线或上升说明阻塞或范围蔓延。<strong>周报</strong>：完成项、计划项、风险/阻塞、里程碑 RAG（红/黄/绿）、需决策项——一页纸给 Sponsor。<strong>里程碑偏差</strong>：实际 vs 基线，偏差 &gt; 5% 需根因与纠正措施（赶工、减范围、加人——加人有 Brooks 定律限制）。<strong>RAID</strong>：Risks、Assumptions、Issues、Dependencies 四表合一，周会更新。工具：Jira/Azure DevOps/禅道 + Excel 里程碑；避免「工具很全、数据没人填」。</p>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li>周报模板 + 里程碑 RAG 仪表盘</li>
+              <li>RAID 日志（Living Document，周更）</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>阻塞项 &gt; 24h 未解 Escalate，不等到周会才说。</li>
+              <li>里程碑偏差用趋势（连续 2 周黄）比单点更准确。</li>
+              <li>Assumptions 显式化（「第三方 6/1 前提供沙箱」），到期验证。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>周报只写「进展顺利」，风险到爆雷才上报。</li>
+              <li>燃尽图不更新 Story 状态，图表造假。</li>
+              <li>Issues 无 Owner 无 Due Date，同一问题反复出现。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「燃尽看趋势，周报 RAG 色，RAID 周更 living doc。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="post-launch">
+        <h2>上线后 Hypercare</h2>
+        <article class="knowledge-card">
+          <h3>值守 · 监控 · 复盘</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>Hypercare</strong>（上线后强化支持期，通常 1–4 周）：研发+运维<strong>联合值班</strong>，快速响应 P0/P1；告警阈值临时调敏感，每日 standup 过 incident。<strong>监控</strong>：对接<a href="20-devops-cloud-native.html#observability">第 20 章可观测性</a>——Error Rate、Latency p99、核心业务 KPI（订单量、成功率）；与压测基线对比。<strong>复盘</strong>（Blameless Postmortem）：时间线、根因（5 Whys）、行动项（Owner+Due）；区分「排期估算偏差」与「执行偏差」。经验沉淀进 ADR、Runbook、下版排期假设——形成组织记忆。</p>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li>Hypercare 值班表 + escalation 路径</li>
+              <li>上线复盘报告 + 改进行动项清单</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>Hypercare 结束标准：连续 5 工作日无 P0/P1、监控平稳。</li>
+              <li>复盘在上线后 1 周内完成，记忆尚新。</li>
+              <li>行动项进 Backlog 并分配 Sprint，避免「复盘完就忘」。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>上线成功即散伙，无 Hypercare，生产问题响应慢。</li>
+              <li>复盘变批斗会，隐藏真实根因，下个项目重复踩坑。</li>
+              <li>监控未覆盖新业务路径，用户先发现问题。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「Hypercare 联合值班，监控盯三板斧，复盘无 blame 有行动。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="tech-debt-register">
+        <h2>技术债登记</h2>
+        <article class="knowledge-card">
+          <h3>Tech Debt Register 与偿还规则</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>每 Sprint 留 10–20% 容量偿还技术债。登记字段：<strong>描述、影响、修复成本、风险、Owner、优先级</strong>。偿还规则：P0 安全/合规债下一 Sprint 必排；架构腐化类与 Feature 同优先级比较 WSJF。</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="incident-oncall">
+        <h2>Incident 与 On-call</h2>
+        <article class="knowledge-card">
+          <h3>Severity 分级 · Escalation · Status Page</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <pre><code>| 级别 | 定义              | 响应目标    | 动作                    |
+|------|-------------------|-------------|-------------------------|
+| P0   | 核心链路全不可用  | 15 min      | War Room + Status Page  |
+| P1   | 核心功能严重降级  | 1 h         | On-call 升级 Tech Lead  |
+| P2   | 非核心功能异常    | 1 工作日    | 正常排期修复            |
+| P3   | 轻微缺陷          | 下版本      | Backlog                 |</code></pre>
+            <p>Escalation：On-call → Tech Lead → PM → Sponsor。与<a href="#post-launch">Hypercare</a>衔接。</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="chapter-execution-checklist">
+        <h2>章末实战闭环</h2>
+        <article class="knowledge-card">
+          <h3>项目排期落地清单</h3>
+          <div class="card-block block-deliverable">
+            <h4>输入</h4>
+            <ul>
+              <li>范围基线与里程碑约束</li>
+              <li>团队人力能力矩阵与假期计划</li>
+              <li>外部依赖与审批窗口（CAB/UAT）</li>
+              <li>风险清单与缓冲策略</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>输出</h4>
+            <ul>
+              <li>WBS 与关键路径排期表</li>
+              <li>阶段 Gate（开发/测试/上线）标准</li>
+              <li>RAID 清单与升级机制</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>验收标准</h4>
+            <ul>
+              <li>关键路径任务均有负责人与时限</li>
+              <li>风险缓冲覆盖高概率高影响项</li>
+              <li>排期可映射到可交付成果</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>失败信号</h4>
+            <ul>
+              <li>排期仅按功能罗列无依赖关系</li>
+              <li>测试与上线窗口被压缩失真</li>
+              <li>风险登记存在但无人跟进</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <nav class="chapter-nav">
+        <a href="03-architecture-design.html">← 上一章：架构设计</a>
+        <a href="05-dev-environment.html">下一章：开发环境搭建 →</a>
+      </nav>
+    </main>
+  </div>  <script src="assets/diagram.js" defer></script>
+  <script src="assets/explain-format.js" defer></script>
+  <script src="assets/chapter-toc.js" defer></script>
+</body>
+</html>

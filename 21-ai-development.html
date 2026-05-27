@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>21 AI 辅助开发 — Java项目手册</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/sidebar.js" defer></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">Java项目手册</div>
+      <nav>
+        <div class="nav-group">
+                    <ul class="nav-list">
+                                                                                                                                                <li><a href="index.html">目录首页</a></li>
+            <li><a href="01-requirements-analysis.html">01 需求分析</a></li>
+            <li><a href="02-prototype-design.html">02 原型设计</a></li>
+            <li><a href="03-architecture-design.html">03 架构设计</a></li>
+            <li><a href="04-project-scheduling.html">04 项目排期</a></li>
+            <li class="sidebar-group"><span class="sidebar-group-label"><a href="java-development.html">开发实现</a></span></li>
+            <li class="sidebar-subitem"><a href="05-dev-environment.html">05 开发环境搭建</a></li>
+            <li class="sidebar-subitem"><a href="06-java-basics.html">06 Java基础语法</a></li>
+            <li class="sidebar-subitem"><a href="07-oop.html">07 面向对象</a></li>
+            <li class="sidebar-subitem"><a href="08-jvm.html">08 JVM</a></li>
+            <li class="sidebar-subitem"><a href="09-concurrency.html">09 并发编程</a></li>
+            <li class="sidebar-subitem"><a href="10-io-nio-network.html">10 IO·NIO·网络</a></li>
+            <li class="sidebar-subitem"><a href="11-persistence.html">11 持久化</a></li>
+            <li class="sidebar-subitem"><a href="12-spring-framework.html">12 Spring Framework</a></li>
+            <li class="sidebar-subitem"><a href="13-build-packaging-deploy.html">13 构建·打包·部署</a></li>
+            <li class="sidebar-subitem"><a href="14-ruoyi-framework.html">14 RuoYi 框架</a></li>
+            <li class="sidebar-subitem"><a href="15-common-modules.html">15 常见功能模块</a></li>
+            <li class="sidebar-subitem"><a href="16-security-development.html">16 安全开发</a></li>
+            <li class="sidebar-subitem"><a href="17-test-driven-development.html">17 测试驱动开发</a></li>
+            <li><a href="18-testing-quality.html">18 测试·质量</a></li>
+            <li><a href="19-performance-tuning.html">19 性能调优</a></li>
+            <li><a href="20-devops-cloud-native.html">20 工程化·DevOps·CI/CD</a></li>
+            <li><a href="21-ai-development.html">21 AI 辅助开发</a></li>
+            <li><a href="22-business-intelligence.html">22 业务智能化</a></li>
+            <li><a href="glossary.html">术语字典</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="page-header">
+        <h1>21 AI 辅助开发</h1>
+        <p>AI 是杠杆，不是替身——高级开发者用 AI 放大判断力，而非替代判断。本章聚焦<strong>开发者如何用 AI 写代码</strong>（Prompt、Cursor、Harness、本地模型）；产品/架构如何在业务中融入 LLM 见<a href="22-business-intelligence.html#ai-business-overview">第 21 章业务智能化</a>。</p>
+      </header>
+
+      <section class="section" id="prompt">
+        <h2>Prompt 工程</h2>
+        <article class="knowledge-card">
+          <h3>结构化 Prompt 与角色设定</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>有效 Prompt 包含：角色、上下文、任务、约束、输出格式、验收标准。避免模糊动词（「优化一下」）；给出输入输出示例（few-shot）。复杂任务拆步：先设计接口签名，再实现，再补测试。引用具体文件路径与现有约定，减少幻觉。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart TD
+    ROLE[角色设定] --> CTX[上下文/文件引用]
+    CTX --> TASK[明确任务]
+    TASK --> CONSTRAINT[约束条件]
+    CONSTRAINT --> FORMAT[输出格式]
+    FORMAT --> ACCEPT[验收标准]
+    ACCEPT --> LLM[LLM 生成]
+    LLM --> REVIEW[人工审查]</pre>
+              <p class="diagram-caption">图：结构化 Prompt 工程流程</p>
+            </div>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例 Prompt 模板</h4>
+            <pre><code>你是资深 Java 架构师，熟悉 Spring Boot 3 与本项目分层规范。
+
+任务：为 OrderService.pay() 添加幂等保护。
+约束：
+- 使用现有 IdempotencyStore 接口，不引入新依赖
+- 构造器注入，@Transactional 在 application 层
+- 补充 JUnit5 + Mockito 单测
+
+输出：
+1. 变更文件列表
+2. 完整代码（可编译）
+3. 边界 case 说明</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>让 AI 「先列出计划，确认后再写代码」降低返工。</li>
+              <li>指定「最小 diff，不改无关文件」控制范围。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="ai-review">
+        <h2>AI 代码审查（AI Code Review）</h2>
+        <article class="knowledge-card">
+          <h3>让 AI 当第一轮 Reviewer</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>提交 PR 前先用 AI 审查 diff：并发安全、事务边界、N+1、空指针、日志敏感信息、测试覆盖缺口。要求 AI 按严重级别分级（blocker/suggestion/nit）并引用行号。人工审查聚焦架构与业务语义，AI 主要用于提前暴露低级缺陷。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例 Prompt</h4>
+            <pre><code>Review 以下 git diff，关注：
+1. 并发与事务正确性
+2. SQL/JPA 性能（N+1、缺失索引提示）
+3. 安全（注入、鉴权、PII 日志）
+4. 测试是否覆盖新分支
+
+格式：
+| 级别 | 文件:行 | 问题 | 建议 |
+仅输出有实质问题的项，不要泛泛 praise。</code></pre>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>盲信 AI 审查，不验证就合并——AI 会漏业务语义与领域约束错误。</li>
+              <li>把整个 codebase 塞给 AI，噪音淹没 signal——优先提供 diff + 相关文件。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="test-gen">
+        <h2>测试生成</h2>
+        <article class="knowledge-card">
+          <h3>从行为规格到测试用例</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>把 Given-When-Then 验收标准直接喂给 AI 生成 JUnit5 + AssertJ + Mockito 测试。指定命名规范、fixture 位置、禁止真实 DB。生成后人工审查：断言是否测行为而非实现、mock 是否过度。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>// AI 生成的测试骨架（需人工审查）
+@ExtendWith(MockitoExtension.class)
+class PayOrderUseCaseTest {
+    @Test
+    void shouldBeIdempotentWhenSameIdempotencyKey() {
+        var cmd = new PayOrderCommand(orderId, "key-1", proof);
+        when(store.tryAcquire("key-1")).thenReturn(true, false);
+
+        handler.execute(cmd);
+        handler.execute(cmd); // 第二次
+
+        verify(gateway, times(1)).charge(any());
+    }
+}</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>先让 AI 列「应测场景清单」，确认后再批量生成。</li>
+              <li>Mutation test（PIT）验证测试有效性，非仅覆盖率数字。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="security">
+        <h2>安全边界</h2>
+        <article class="knowledge-card">
+          <h3>数据隐私与供应链风险</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>禁止将生产密钥、用户 PII、未脱敏日志粘贴给外部模型。企业环境应使用隐私模式（privacy mode）或本地模型处理敏感代码。AI 建议引入的依赖需人工审计（如 typosquatting 风险）。许可证合规同样需要人工把关：AI 输出可能混入受限许可证代码片段。可通过 Cursor Rules 与 <code>.cursorignore</code> 排除 secrets 目录。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例配置</h4>
+            <pre><code># .cursorignore
+.env
+*.pem
+**/secrets/**
+**/application-prod.yml
+
+# .gitignore 同样排除，双重保险</code></pre>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>为 debug 把完整 JWT/DB 连接串贴进 chat。</li>
+              <li>AI 建议 <code>curl | bash</code> 或不明 Maven 依赖未验证就引入。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「秘密不出库，依赖要 audit，输出当草稿必人工验。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="cursor-agent">
+        <h2>Cursor Agent 工作流</h2>
+        <article class="knowledge-card">
+          <h3>Agent 模式最佳实践</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>Cursor Agent 可跨文件读写、执行终端命令并调用 MCP。有效工作流：明确目标 → 限定范围（文件/模块）→ 分步验收 → 每步执行 git diff 人工审查。大重构先在 Plan 模式对齐方案，再进入 Agent 模式实施。用 Rules 固化项目约定（包结构、命名、测试风格）。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例工作流</h4>
+            <pre><code>1. @codebase 搜索现有 IdempotencyStore 实现
+2. Agent 任务：
+   「在 pay-order 用例接入幂等，仅改 application 层和测试」
+3. 验收：
+   - ./mvnw test -pl order-application
+   - 人工看 diff 事务边界
+4. 小步 commit（或 PR 一个 logical change）</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>复杂任务拆多个 Agent session，每 session 单一目标。</li>
+              <li>用 @file 精确引用，减少 AI 猜路径。</li>
+              <li>CI 红时把失败日志贴给 Agent，比描述现象高效。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="hermes-agent">
+        <h2>Hermes Agent</h2>
+        <article class="knowledge-card">
+          <h3>面向工程交付的多步骤执行代理</h3>
+          <div class="card-block block-explain">
+            <h4>定位与适用场景</h4>
+            <p><strong>Hermes Agent</strong> 可理解为「可编排的工程执行代理（Engineering Execution Agent）」，定位不是替代开发者，而是把需求拆解、检索上下文、调用工具、生成变更、执行验证串成一个可控闭环。它适合<strong>跨文件、跨步骤、需要验证门禁</strong>的任务，例如 Java 模块重构、测试补齐、故障复盘与文档同步。</p>
+            <p>当任务只是单文件小改时，普通 Prompt 足够；当任务涉及「分析 → 实施 → 校验 → 汇报」链路时，Hermes Agent 的价值更高。团队视角下，它更像一位受约束的「初级交付机器人」，由高级工程师定义边界和验收标准。</p>
+          </div>
+          <div class="card-block block-explain">
+            <h4>与现有 Agent / Workflow 的关系</h4>
+            <ul>
+              <li><strong>Prompt（提示词）</strong>：定义单轮意图（Intent）；Hermes Agent 在多轮执行中持续消费并细化 Prompt。</li>
+              <li><strong>Tool Calling（工具调用）</strong>：Hermes Agent 通过 Shell、代码编辑器、检索工具执行动作，工具是手脚，Agent 是调度中枢。</li>
+              <li><strong>RAG（检索增强生成）</strong>：RAG 负责拿到对的上下文，Hermes Agent 负责把上下文转成可交付改动与验证动作。</li>
+              <li><strong>Workflow Orchestration（工作流编排）</strong>：Hermes Agent 可作为编排节点，接收上游任务并将结果提交给 CI、审批流、知识库。</li>
+            </ul>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart LR
+    P[Prompt/需求] --> R[RAG 检索]
+    R --> H[Hermes Agent]
+    H --> T[Tool Calling]
+    T --> V[验证与评估]
+    V --> O[工作流编排/交付]</pre>
+              <p class="diagram-caption">图：Hermes Agent 与 Prompt / RAG / 工具 / 编排关系</p>
+            </div>
+          </div>
+          <div class="card-block block-explain">
+            <h4>核心能力</h4>
+            <ul>
+              <li><strong>任务分解（Task Decomposition）</strong>：将模糊需求拆成可执行子任务，显式列依赖与验收条件。</li>
+              <li><strong>工具调用（Tool Invocation）</strong>：按白名单调用读写代码、运行测试、查询日志等工具，失败可回退到上一步重试。</li>
+              <li><strong>上下文管理（Context Management）</strong>：按任务相关性动态裁剪上下文，避免整库灌入导致噪音与幻觉。</li>
+              <li><strong>记忆策略（Memory Strategy）</strong>：短期记忆保存本次任务状态，长期记忆沉淀规则、ADR、故障案例。</li>
+              <li><strong>安全边界（Security Boundary）</strong>：强制权限最小化、敏感数据脱敏、危险操作人工确认。</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>Java 项目接入路径（参考架构）</h4>
+            <pre><code>Step 1. 任务入口
+- 来自需求系统/Jira 的任务描述 + 验收标准
+
+Step 2. 上下文装配（Context Builder）
+- 读取模块 README、ADR、最近变更 diff、相关单测
+- RAG 检索业务术语与历史决策
+
+Step 3. Hermes Agent 执行
+- 子任务 A：生成实现草案
+- 子任务 B：补齐 JUnit5/Mockito 测试
+- 子任务 C：运行 ./mvnw -pl order-service test
+
+Step 4. 安全与质量门禁（Guardrails）
+- SpotBugs/Checkstyle/Sonar 规则检查
+- 敏感信息扫描（secrets scan）
+- 高风险操作触发人工审批
+
+Step 5. 结果回传
+- 输出变更文件清单、测试结果、风险提示、回滚建议</code></pre>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例：可执行流水线片段（GitHub Actions）</h4>
+            <pre><code>name: hermes-agent-assisted-pr
+on: [pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Unit tests
+        run: ./mvnw -B test
+      - name: Static analysis
+        run: ./mvnw -B spotbugs:check checkstyle:check
+      - name: Secrets scan
+        run: ./scripts/scan-secrets.sh</code></pre>
+          </div>
+          <div class="card-block block-example">
+            <h4>典型落地场景</h4>
+            <ul>
+              <li><strong>需求分析辅助</strong>：把 PRD 自动拆成技术任务、风险点与测试要点。</li>
+              <li><strong>代码生成/重构</strong>：生成模板代码、迁移旧 API、补充空值/事务边界处理。</li>
+              <li><strong>测试生成</strong>：基于 Given-When-Then 批量产出单测和参数化用例。</li>
+              <li><strong>排障（Troubleshooting）</strong>：聚合日志/指标/变更历史，给出最可能根因与验证步骤。</li>
+              <li><strong>文档维护</strong>：根据代码 diff 同步 README、接口文档、变更记录（changelog）。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>风险与治理</h4>
+            <ul>
+              <li><strong>幻觉（Hallucination）</strong>：要求 Agent 必须引用真实文件/日志证据，禁止无证据结论直接落库。</li>
+              <li><strong>越权（Over-Privilege）</strong>：按环境拆分权限（dev/staging/prod），生产仅允许只读诊断。</li>
+              <li><strong>数据泄露（Data Leakage）</strong>：敏感字段脱敏，外部模型调用前执行数据分类与拦截。</li>
+              <li><strong>成本失控（Cost Overrun）</strong>：设置 token/调用次数预算，优先小模型初筛，大模型复核关键步骤。</li>
+            </ul>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>生产落地 Checklist</h4>
+            <ul>
+              <li>定义 Hermes Agent 任务边界、可改文件范围、禁止操作清单。</li>
+              <li>建立 Prompt + RAG + Tool 调用模板，并版本化管理。</li>
+              <li>接入 CI 质量门禁（编译、测试、静态分析、Secrets Scan）。</li>
+              <li>高风险动作启用 Human-in-the-loop 审批。</li>
+              <li>记录可观测数据：成功率、返工率、缺陷逃逸率、调用成本。</li>
+              <li>建立周/月度评估机制，持续调优规则、记忆与模型路由策略。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「Hermes Agent = 多步执行 + 工具编排 + 记忆沉淀 + 安全门禁；目标是稳定交付，不是炫技自动化。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="harness-engineering">
+        <h2>Harness Engineering — AI 执行约束与评估框架</h2>
+        <article class="knowledge-card">
+          <h3>为 Agent 构建可控、可测、可复现的执行 Harness</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>Harness（执行约束框架）</strong>指包裹 LLM/Agent 的<strong>执行环境</strong>：不仅是一次性 Prompt，而是<strong>工具边界 + 上下文策略 + 输出契约 + 评估回路 + 人工审批</strong>的组合。裸 Prompt 容易让模型无约束扩写；Harness 让行为<strong>可预测、可审计、可回归</strong>。</p>
+            <p>Java 团队尤其需要 Harness：<strong>编译/测试/静态分析</strong>是硬 gate；金融/政务要求<strong>变更可追溯</strong>；多模块 monorepo 里 Agent 误改 <code>pom.xml</code>、事务边界或密钥文件代价极高。Harness 把「AI 当实习生」变成「AI 在受控流水线里干活」。</p>
+            <p><strong>核心组件</strong>（可分层落地）：</p>
+            <ul>
+              <li><strong>工具白名单</strong>：允许读写的路径 glob、禁止 <code>git push --force</code> / 改 <code>.git/config</code>、Shell 仅 <code>mvnw test</code> 等安全子集；MCP 按 server 开关（如只允许 <code>cursor-ide-browser</code> 读、禁止未授权云 API）。</li>
+              <li><strong>上下文策略</strong>：repo map / @file 精准引用、<code>.cursorignore</code> 排除 secrets；按 token 预算裁剪（当前 task 相关模块优先，而非整库 dump）。</li>
+              <li><strong>输出约束</strong>：最小 diff、禁止无关文件、生成代码必须附带测试、Schema 化输出（JSON 变更清单）便于机器校验。</li>
+              <li><strong>评测与回归（Eval）</strong>：维护 golden prompt 集（固定输入 → 期望 diff 模式或测试通过）；快照对比 Agent 输出；CI 跑「AI 辅助检查」脚本（可配置为非阻断或分级阻断）。</li>
+              <li><strong>Human-in-the-loop</strong>：危险操作（删库迁移、改生产配置）需显式确认；PR 必须人工批准；Agent 不得自行合并。</li>
+            </ul>
+            <p>与 <a href="#cursor-agent">Cursor Agent 工作流</a>、<a href="#prompt">Prompt 工程</a> 的关系：Prompt 定义<strong>单次意图</strong>，Agent 提供<strong>多步执行能力</strong>，Harness 定义<strong>允许做什么、如何验收、失败如何停</strong>。详见下文 Java 实践，安全与密钥边界交叉引用本章 <a href="#security">安全边界</a>。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart TB
+    AGENT[AI Agent] --> HAR[Harness 约束层]
+    HAR --> TOOLS[工具白名单 MCP/Shell]
+    HAR --> CTX[上下文/输出 Schema]
+    HAR --> EVAL[Eval 回归集]
+    EVAL --> GATE{通过?}
+    GATE -->|否| HITL[Human-in-the-loop]
+    GATE -->|是| MERGE[允许合并/发布]</pre>
+              <p class="diagram-caption">图：Agent Harness 执行约束与评估框架</p>
+            </div>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例：Cursor Rules 作为 Harness 配置</h4>
+            <pre><code># .cursor/rules/java-agent-harness.mdc
+---
+description: Java 服务 Agent 执行约束
+globs: ["**/*.java", "**/pom.xml"]
+---
+
+## 工具与变更范围
+- 仅修改任务列出的模块；禁止改 .git/config、CI 密钥、application-prod.yml
+- 不执行 git push、git reset --hard；commit 仅当用户明确要求
+
+## 输出契约
+- 先列变更文件清单，再写代码
+- 必须运行 ./mvnw -pl &lt;module&gt; test 并通过后再声称完成
+- 构造器注入；@Transactional 在 application 层（与项目 ADR 一致）
+
+## 失败处理
+- 测试失败：贴完整 surefire 日志，最多重试修复 2 轮后停止并汇报</code></pre>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例：pre-commit + CI Gate（伪流程）</h4>
+            <pre><code># .pre-commit-config.yaml（片段）
+repos:
+  - repo: local
+    hooks:
+      - id: mvn-compile-test
+        name: compile and unit test
+        entry: ./mvnw -q -DskipITs test
+        language: system
+        pass_filenames: false
+      - id: spotbugs
+        entry: ./mvnw -q spotbugs:check
+        language: system
+        pass_filenames: false
+
+# .github/workflows/ai-assisted-pr.yml（伪流程）
+on: pull_request
+jobs:
+  java-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./mvnw -B verify
+      - run: ./mvnw -q spotbugs:check
+  # 可选：对 PR diff 调本地 Review 服务，结果 comment 到 PR（失败不 merge 阻断，由 label 控制）
+  ai-review-hint:
+    if: contains(github.event.pull_request.labels.*.name, 'ai-generated')
+    steps:
+      - run: curl -s localhost:11434/v1/chat/completions ... # 见 gemma-local-deploy
+      - run: echo "AI review 仅供参考，blocker 须人工确认"</code></pre>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例：AGENTS.md 与 golden prompt 回归思路</h4>
+            <pre><code># AGENTS.md（仓库根，给 Cursor / SDK Agent 读）
+## 构建
+./mvnw test -pl order-application
+
+## Harness
+- 幂等改造见 docs/adr/005-idempotency.md
+- 禁止引入新 Maven 依赖未经架构组 label
+
+# evals/golden/idempotency-pay.prompt   （固定输入）
+# evals/expected/                       （期望：测试绿 + 无 gateway 双调）
+# 定期脚本：对 golden prompt 跑 Agent/SDK，diff 与期望目录对比或只断言 mvn test</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>把<strong>重复约束</strong>写进 Rules/AGENTS.md，把<strong>单次任务</strong>留在 chat Prompt——避免每轮重复长篇规范。</li>
+              <li>Harness 分层：IDE Rules（软）→ pre-commit（本地硬）→ CI verify（团队硬）→ 人工 Review（最终）。</li>
+              <li>为高频 Agent 任务维护 5–10 条 golden prompt，发版前跑一轮防回归。</li>
+              <li>危险 Shell 用「建议命令 + 用户确认」而非 Agent 静默执行。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>只有 Prompt 没有 gate——AI 生成「能编译但破坏事务/幂等」的代码照样 merge。</li>
+              <li>Harness 过严（禁止一切 Shell）导致 Agent 无法跑测试，人又懒得代跑——形同虚设。</li>
+              <li>把 eval 当绝对真理——golden 过期未更新会导致误杀合理重构。</li>
+              <li>本地模型 Review 阻断 merge 却无人看 false positive——应分级为 suggestion。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「白名单工具、精准上下文、diff+测试契约、golden 回归、人审危险操作；Rules 配置，CI 兜底。」</p>
+          </div>
+          <div class="card-block block-reading">
+            <p>延伸阅读：Anthropic《Building effective agents》、Promptfoo / Braintrust 的评测实践、<em>Accelerate</em> 中「质量门禁」思想</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="local-llm-selection">
+        <h2>本地开源大模型选用</h2>
+        <article class="knowledge-card">
+          <h3>Gemma / Llama / Qwen / DeepSeek 选型与部署方式概览</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>当代码含业务逻辑、未脱敏日志或内网架构时，<strong>本地开源模型</strong>比公有云 API 更可控（见本章「安全边界」）。主流家族简要对比：</p>
+            <ul>
+              <li><strong>Gemma</strong>（Google）：采用 Gemma 专用许可条款（非 Apache License）；英文与代码能力强，9B/27B 适合审查与补全；Gemma 3 支持更长上下文与多模态（图像理解）。</li>
+              <li><strong>Llama</strong>（Meta）：生态最大，Ollama/HuggingFace 模型最全；Llama 3.x 推理与工具调用成熟，许可需遵守 Acceptable Use Policy。</li>
+              <li><strong>Qwen</strong>（阿里）：<strong>中文与 Java/Spring 语境</strong>表现突出，Coder 系列专精代码；企业内中文文档、注释、PR 描述场景首选之一。</li>
+              <li><strong>DeepSeek</strong>：代码与数学推理性价比高，R1 系列偏深度推理；许可相对宽松，适合离线 Code Review 辅助。</li>
+            </ul>
+            <p><strong>选型维度</strong>（Java 开发场景）：</p>
+            <ul>
+              <li><strong>参数量 vs 显存</strong>：7B–9B Q4 量化约需 6–8 GB VRAM；27B 约 16–20 GB；无独显可用 CPU + 大内存（慢但可离线）。</li>
+              <li><strong>中文能力</strong>：中文需求高选 Qwen；纯英文代码库 Gemma/Llama 足够。</li>
+              <li><strong>许可证</strong>：商用前阅读 Gemma Terms、Llama License 与模型卡（Model Card）；不同家族对再分发、品牌使用与可接受用途（AUP）限制不同，需逐项核对。</li>
+              <li><strong>场景映射</strong>：代码补全 → 7B–9B Coder；PR 审查 → 9B–27B + 长上下文；私有数据问答 → 本地 RAG + 任意 7B+。</li>
+            </ul>
+            <p><strong>部署方式概览</strong>：</p>
+            <ul>
+              <li><strong>Ollama</strong>（推荐入门）：一键 pull/run，自带 OpenAI 兼容 API，Windows/macOS/Linux。</li>
+              <li><strong>llama.cpp</strong>：极致 CPU/边缘推理，无守护进程，适合嵌入式或脚本化。</li>
+              <li><strong>vLLM</strong>：生产级 GPU 吞吐，多并发 REST，适合团队内共享推理服务。</li>
+              <li><strong>LM Studio</strong>：Windows/macOS GUI，适合非 CLI 用户试模型与调参。</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>显存粗算（Q4 量化）</h4>
+            <pre><code>模型参数量    约需 VRAM（推理）    典型用途
+─────────────────────────────────────────────
+2B–4B         2–4 GB              轻量补全、笔记本 CPU 可跑
+7B–9B         6–8 GB              日常 Code Review / Agent
+12B–14B       10–12 GB            平衡质量与速度
+27B+          16–24 GB            复杂重构、长 diff 分析</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>先在小模型（7B–9B）验证 Prompt 与流程，满意后再换大模型——避免调 Prompt 烧显存。</li>
+              <li>Java 项目优先选<strong>代码专精</strong>权重（如 <code>qwen2.5-coder</code>、<code>deepseek-coder</code>、<code>gemma2</code>）。</li>
+              <li>团队统一用 Ollama + 同一 tag，避免「我本地 9B 你本地 70B」输出不一致。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>只看 benchmark 分数不看<strong>实际上手</strong>——Java 泛型、Spring 注解等需实测。</li>
+              <li>把 70B 全精度塞进 8 GB 显卡——OOM 或极慢；务必用量化（Q4_K_M 等）。</li>
+              <li>本地模型≠绝对安全——仍可能幻觉；敏感逻辑必须人工审查（交叉引用本章「AI 代码审查」）。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「中文 Qwen，代码 Gemma/DeepSeek，生态 Llama；Ollama 入门，vLLM 上生产。」</p>
+          </div>
+          <div class="card-block block-reading">
+            <p>延伸阅读：Ollama 官方文档、Hugging Face Model Cards、Google Gemma 技术报告</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="gemma-local-deploy">
+        <h2>Gemma 本地部署</h2>
+        <article class="knowledge-card">
+          <h3>Ollama 部署 Gemma 2/3 与 Java / Cursor 集成</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>Gemma</strong> 是 Google 发布的开源权重模型系列，当前主流：<strong>Gemma 2</strong>（2B / 9B / 27B，代码与推理较均衡）与 <strong>Gemma 3</strong>（1B / 4B / 12B / 27B，长上下文与多模态输入能力更强）。Java 开发场景可从 <code>gemma2:9b</code> 或 <code>gemma3:12b</code> 起步，再按延迟和质量逐步调参。</p>
+            <p><strong>硬件要求</strong>：NVIDIA GPU 8 GB+ 体验更稳定；16 GB 系统内存可 CPU 推理（tokens/s 会明显下降）。Apple Silicon 可通过 Ollama 原生加速。无 GPU 时建议选 2B–4B 或高量化版本，并接受更高延迟。</p>
+            <p><strong>隐私与离线优势</strong>：权重与推理可全部在本地执行，源码/配置/日志无需外发；适合金融、政务、内网 Maven 私服场景。即便如此，仍需用 <code>.cursorignore</code> 排除密钥文件并做好主机侧访问控制——本地部署不等于自动合规。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">graph TB
+    CUR[Cursor IDE] -->|OpenAI 兼容 API| OLL[Ollama Server]
+    JAVA[Spring Boot 应用] --> OLL
+    OLL --> GEM[Gemma 2/3 模型]
+    OLL --> GPU[GPU/CPU 推理]
+    subgraph OPT["可选"]
+      VLLM[vLLM 高吞吐]
+    end</pre>
+              <p class="diagram-caption">图：Gemma 本地部署架构（Ollama + Java/Cursor 集成）</p>
+            </div>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例：Ollama 安装与拉取（Windows / Linux）</h4>
+            <pre><code># Windows（PowerShell）— 官网安装包或 winget
+winget install Ollama.Ollama
+# 安装后托盘启动服务，默认监听 http://localhost:11434
+
+# Linux
+curl -fsSL https://ollama.com/install.sh | sh
+
+# 拉取并交互测试
+ollama pull gemma2:9b
+ollama run gemma2:9b
+# 或 Gemma 3（需 Ollama 已收录对应 tag）
+ollama pull gemma3:12b
+
+# 列出本地模型
+ollama list</code></pre>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例：Docker 运行 Ollama（可选，Linux 服务器）</h4>
+            <pre><code># 需 NVIDIA Container Toolkit（GPU 版）
+docker run -d --gpus=all -v ollama:/root/.ollama -p 11434:11434 \
+  --name ollama ollama/ollama
+
+docker exec -it ollama ollama pull gemma2:9b
+
+# Windows Docker Desktop：去掉 --gpus 则走 CPU（慢）
+docker run -d -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama</code></pre>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例：REST API 与 OpenAI 兼容端点</h4>
+            <pre><code># 原生 Ollama API（PowerShell / curl）
+curl http://localhost:11434/api/generate -d "{
+  \"model\": \"gemma2:9b\",
+  \"prompt\": \"Review 这段 Java 代码的 N+1 风险：@Transactional public void save(Order o) {...}\",
+  \"stream\": false
+}"
+
+# OpenAI 兼容（/v1）— Cursor / Spring AI 均可用
+curl http://localhost:11434/v1/chat/completions ^
+  -H "Content-Type: application/json" ^
+  -d "{\"model\":\"gemma2:9b\",\"messages\":[{\"role\":\"user\",\"content\":\"解释 Spring @Transactional 传播行为\"}]}"
+
+# Linux/macOS 将 ^ 换为 \</code></pre>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例：Cursor / IDE 集成本地模型</h4>
+            <pre><code># Cursor Settings → Models：若界面要求 OpenAI API Key，可填本地占位值（非空即可）
+# Override OpenAI Base URL：
+http://localhost:11434/v1
+
+# 模型名填 Ollama tag，如 gemma2:9b
+# 注意：复杂多步任务通常需要更强模型与更严格 Harness；本地 Gemma 更适合私有上下文下的审查与补全
+
+# 其他 IDE（Continue、Cline 等）同样配置 base URL + model name</code></pre>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例：Java 调用（WebClient + Spring AI）</h4>
+            <pre><code>// 方式 1 — WebClient 直连 Ollama OpenAI 兼容端点
+@Configuration
+public class LocalLlmConfig {
+  @Bean
+  WebClient ollamaClient() {
+    return WebClient.builder()
+        .baseUrl("http://localhost:11434/v1")
+        .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+        .build();
+  }
+}
+
+@Service
+public class CodeReviewAssistant {
+  private final WebClient ollama;
+
+  public CodeReviewAssistant(WebClient ollamaClient) { this.ollama = ollamaClient; }
+
+  public String reviewDiff(String diff) {
+    var body = Map.of(
+        "model", "gemma2:9b",
+        "messages", List.of(Map.of(
+            "role", "user",
+            "content", "你是 Java Reviewer，仅输出 blocker 级问题：\n" + diff)));
+    return ollama.post()
+        .uri("/chat/completions")
+        .bodyValue(body)
+        .retrieve()
+        .bodyToMono(JsonNode.class)
+        .map(json -> json.path("choices").get(0).path("message").path("content").asText())
+        .block();
+  }
+}
+
+// 方式 2 — Spring AI（spring-ai-ollama-spring-boot-starter）
+// application.yml:
+// spring.ai.ollama.base-url: http://localhost:11434
+// spring.ai.ollama.chat.options.model: gemma2:9b
+//
+// @Autowired ChatClient chatClient;
+// String answer = chatClient.prompt("解释这段 JPA 查询为何 N+1").call().content();</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li><code>OLLAMA_HOST=0.0.0.0:11434</code> 可让局域网同事共用——务必防火墙限制，勿暴露公网。</li>
+              <li>长 diff Review 用 Gemma 3 长上下文；单次 Prompt 仍控制在关键文件，避免噪音。</li>
+              <li><code>ollama ps</code> 查看加载模型；闲置后自动卸载可省 VRAM。</li>
+              <li>与 CI 集成：MR 阶段调用本地 HTTP 服务做 lint 级 Review，失败不阻断 merge，仅注释建议。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>Cursor Base URL 漏写 <code>/v1</code> 或模型名与 <code>ollama list</code> 不一致——报 404 / model not found。</li>
+              <li>Windows 防火墙拦截 11434——本机 curl 通但 IDE 不通，检查规则。</li>
+              <li>Docker 未挂载 GPU 却拉 27B——容器内 CPU 推理极慢，误以为「模型坏了」。</li>
+              <li>把 Gemma 当最终 Authority merge——幻觉与漏检仍存在，人工 Review 不可省。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「<code>ollama pull gemma2:9b</code>，API 走 <code>localhost:11434/v1</code>，Cursor 改 Base URL，Java 用 WebClient 或 Spring AI。」</p>
+          </div>
+          <div class="card-block block-reading">
+            <p>延伸阅读：Google Gemma 文档、Spring AI Ollama 参考、Ollama GitHub README</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="context">
+        <h2>上下文管理</h2>
+        <article class="knowledge-card">
+          <h3>Token 预算与知识沉淀</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>上下文窗口有限：优先给当前任务相关文件，而非整个 monorepo。重复性知识写入 Cursor Rules / Skills / ADR，而非每次会话重复粘贴。长会话后期 AI 容易遗忘早期约束——关键约束应写入 Rule 或每轮简要 recap。</p>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>项目级 Rule：「Spring 服务用构造器注入」「事务在 application 层」。</li>
+              <li>模块 README 给 Agent 当 local context，@ 引用即可。</li>
+              <li>新 feature 开新 chat，避免历史噪音。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「Rule 存惯例，@ 给精准上下文，大任务拆 session。」</p>
+          </div>
+        </article>
+      </section>
+      <section class="section" id="chapter-execution-checklist">
+        <h2>章末实战闭环</h2>
+        <article class="knowledge-card">
+          <h3>AI辅助开发落地清单</h3>
+          <div class="card-block block-deliverable">
+            <h4>输入</h4>
+            <ul>
+              <li>开发任务边界与安全约束</li>
+              <li>代码规范、Rule、Harness 配置</li>
+              <li>可用模型能力与成本预算</li>
+              <li>人工评审与责任归属机制</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>输出</h4>
+            <ul>
+              <li>可复用 Prompt/Agent 工作流模板</li>
+              <li>AI 生成代码审查与测试报告</li>
+              <li>模型效果评估与风险清单</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>验收标准</h4>
+            <ul>
+              <li>AI 输出均经过人工审查签字</li>
+              <li>关键改动有自动化测试兜底</li>
+              <li>敏感数据不外流并可审计</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>失败信号</h4>
+            <ul>
+              <li>将 AI 输出直接视为真理</li>
+              <li>缺少 Harness 导致行为失控</li>
+              <li>模型切换后无回归评估</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <nav class="chapter-nav">
+        <a href="20-devops-cloud-native.html">← 上一章：工程化·DevOps</a>
+        <a href="22-business-intelligence.html">下一章：业务智能化 →</a>
+      </nav>
+    </main>
+  </div>  <script src="assets/diagram.js" defer></script>
+  <script src="assets/explain-format.js" defer></script>
+  <script src="assets/chapter-toc.js" defer></script>
+</body>
+</html>

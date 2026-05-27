@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>02 原型设计 — 线框 · 交互 · Mock · 评审 — Java项目手册</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/sidebar.js" defer></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">Java项目手册</div>
+      <nav>
+        <div class="nav-group">
+          <ul class="nav-list">
+                                                                                                                                    <li><a href="index.html">目录首页</a></li>
+            <li><a href="01-requirements-analysis.html">01 需求分析</a></li>
+            <li><a href="02-prototype-design.html">02 原型设计</a></li>
+            <li><a href="03-architecture-design.html">03 架构设计</a></li>
+            <li><a href="04-project-scheduling.html">04 项目排期</a></li>
+            <li class="sidebar-group"><span class="sidebar-group-label"><a href="java-development.html">开发实现</a></span></li>
+            <li class="sidebar-subitem"><a href="05-dev-environment.html">05 开发环境搭建</a></li>
+            <li class="sidebar-subitem"><a href="06-java-basics.html">06 Java基础语法</a></li>
+            <li class="sidebar-subitem"><a href="07-oop.html">07 面向对象</a></li>
+            <li class="sidebar-subitem"><a href="08-jvm.html">08 JVM</a></li>
+            <li class="sidebar-subitem"><a href="09-concurrency.html">09 并发编程</a></li>
+            <li class="sidebar-subitem"><a href="10-io-nio-network.html">10 IO·NIO·网络</a></li>
+            <li class="sidebar-subitem"><a href="11-persistence.html">11 持久化</a></li>
+            <li class="sidebar-subitem"><a href="12-spring-framework.html">12 Spring Framework</a></li>
+            <li class="sidebar-subitem"><a href="13-build-packaging-deploy.html">13 构建·打包·部署</a></li>
+            <li class="sidebar-subitem"><a href="14-ruoyi-framework.html">14 RuoYi 框架</a></li>
+            <li class="sidebar-subitem"><a href="15-common-modules.html">15 常见功能模块</a></li>
+            <li class="sidebar-subitem"><a href="16-security-development.html">16 安全开发</a></li>
+            <li class="sidebar-subitem"><a href="17-test-driven-development.html">17 测试驱动开发</a></li>
+            <li><a href="18-testing-quality.html">18 测试·质量</a></li>
+            <li><a href="19-performance-tuning.html">19 性能调优</a></li>
+            <li><a href="20-devops-cloud-native.html">20 工程化·DevOps·CI/CD</a></li>
+            <li><a href="21-ai-development.html">21 AI 辅助开发</a></li>
+            <li><a href="22-business-intelligence.html">22 业务智能化</a></li>
+            <li><a href="glossary.html">术语字典</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="page-header">
+        <h1>02 原型设计 — 线框 · 交互 · Mock · 评审</h1>
+        <p>需求基线（<a href="01-requirements-analysis.html#user-stories-ac">第 01 章用户故事与 AC</a>）之后、<a href="03-architecture-design.html">第 03 章架构设计</a>之前，用<strong>可感知、可点击、可 Mock</strong>的原型把「做什么」翻译成「长什么样、如何交互、调用什么接口」。本章聚焦 UI/交互/API Mock 与评审冻结；前后端契约见<a href="03-architecture-design.html#api-design">第 03 章 API 设计</a>，排期见<a href="04-project-scheduling.html#scheduling-overview">第 04 章</a>。</p>
+        <div class="diagram-block">
+          <pre class="mermaid">flowchart LR
+    REQ[01 需求基线] --> PROTO[02 原型设计]
+    PROTO --> ARCH[03 架构设计]
+    PROTO --> MOCK[API Mock]
+    MOCK --> SB[14 Spring Boot]
+    PROTO --> REV[评审冻结]
+    REV --> SCHED[06 排期]</pre>
+          <p class="diagram-caption">图：原型设计在需求与架构之间的桥梁作用</p>
+        </div>
+      </header>
+
+      <section class="section" id="prototype-overview">
+        <h2>原型设计总览</h2>
+        <article class="knowledge-card">
+          <h3>为何在需求与架构之间做原型</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>文字需求与<a href="01-requirements-analysis.html#user-stories-ac">Given-When-Then</a>验收标准回答「对不对」，但干系人往往<strong>对界面与流程没有共同画面</strong>。原型设计在<strong>不写生产代码</strong>的前提下，低成本验证：信息架构是否合理、关键路径是否顺畅、异常态是否被看见、前后端边界是否清晰。对 Java 后端团队尤其重要——<strong>API Mock 原型</strong>让前端/移动端/联调方并行，架构师从原型反推聚合边界与 OpenAPI 草案。原型不是「美工稿」，而是<strong>需求澄清的第三媒介</strong>（文字 + 故事 + 可感知界面）。</p>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li><strong>原型范围说明</strong>：覆盖的用户旅程、页面/模块清单、In/Out Scope（含不做的高保真页面）</li>
+              <li><strong>干系人确认纪要</strong>：参与角色、确认日期、未决项列表</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>按<strong>用户旅程</strong>而非按「系统菜单」组织原型，与故事地图对齐。</li>
+              <li>MVP 先覆盖主路径 + 3 个高频异常（空态、权限不足、提交失败）。</li>
+              <li>原型阶段即标注「需后端字段/API」占位，避免架构阶段才发现缺口。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>跳过原型直接画架构图——集成接口与页面字段后期大面积返工。</li>
+              <li>原型范围与需求基线不一致，评审时才发现漏 Story。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「需求说 WHAT，原型显 HOW IT LOOKS，架构定 HOW TO BUILD。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="prototype-types">
+        <h2>原型类型选型</h2>
+        <article class="knowledge-card">
+          <h3>线框 / 高保真 / 可点击 / API Mock / 技术 Spike</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>低保真线框</strong>：灰盒布局，验证 IA 与流程，1–2 天可出全站骨架。<strong>高保真视觉稿</strong>：品牌/组件规范，适合对外演示或设计系统沉淀。<strong>可点击原型</strong>（Figma Prototype / Axure）：模拟跳转与状态，用于 UAT 预演。<strong>API Mock 原型</strong>：REST 场景以 OpenAPI 为契约，GraphQL 场景以 Schema/SDL 为契约，再配合 Mock Server 实现前后端并行（见 <code>#api-mock-prototype</code>）。<strong>技术 Spike</strong>：throwaway 代码验证性能/第三方 SDK，<em>不是</em> UI 原型，但可并行——结论写入 ADR 而非进主干。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart TB
+    Q{目标?}
+    Q -->|对齐流程| WF[低保真线框]
+    Q -->|品牌/组件| HI[高保真]
+    Q -->|演示/UAT| CL[可点击原型]
+    Q -->|前后端并行| API[API Mock]
+    Q -->|技术风险| SP[Spike 代码]
+    WF --> REV[评审冻结]
+    CL --> REV
+    API --> REV</pre>
+              <p class="diagram-caption">图：按目标选择原型形态</p>
+            </div>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li><strong>原型类型决策表</strong>：模块 × 类型 × 工具 × 负责人 × 截止日期</li>
+              <li><strong>Spike 结论摘要</strong>（若有）：可行/不可行、推荐方案、预估工作量</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>内部 B 端后台：线框 + 可点击往往足够；C 端营销页才需高保真。</li>
+              <li>Mock 与线框同步：页面上每个「提交」按钮对应一条 API 路径草稿。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>一上来全站高保真——改需求时成本爆炸。</li>
+              <li>Spike 代码未标注 throwaway，被误合并进生产仓库。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「线框定结构，Mock 定契约，Spike 证可行，高保真最后上。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="ui-prototype-tools">
+        <h2>UI 原型工具与实践</h2>
+        <article class="knowledge-card">
+          <h3>Figma · Axure · 墨刀与交付规范</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>Figma</strong>：组件化 + Dev Mode，适合与设计系统、<a href="03-architecture-design.html#api-design">第 03 章 API 设计</a>（Vue/React）协作；Prototype 链接触达移动端预览。<strong>Axure</strong>：复杂条件交互、动态面板，传统企业/政务常见。<strong>墨刀</strong>：国内协作与中文模板，中小团队上手快。无论工具，交付须含：<strong>页面清单</strong>（编号、路由、关联 Story ID）、<strong>交互说明</strong>（触发、校验、跳转、空态/错误态）、<strong>设计规范摘要</strong>（色板、字号、间距、组件命名与前端组件库映射）。</p>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li><strong>页面清单表</strong>：P-001 登录页 → US-012；含 Web/移动端变体</li>
+              <li><strong>交互说明文档</strong>：按页面附状态机或流程备注</li>
+              <li><strong>设计规范 v0</strong>：Token/组件与 Element Plus、Ant Design 等映射表</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>页面清单片段</h4>
+            <pre><code>P-003 | 订单列表 | /orders | US-045, US-046
+交互：筛选区折叠；空态引导创建；行内「取消」二次确认
+API 占位：GET /api/v1/orders, POST .../cancel</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>组件命名与前端一致（如 <code>OrderStatusTag</code>），减少翻译损耗。</li>
+              <li>异常态每页至少一帧：加载中、无数据、无权限、网络错误。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>只有 happy path 原型，测试验收时补异常 UI 导致延期。</li>
+              <li>设计稿分辨率与目标端不一致（PC 稿硬套小程序）。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「清单连 Story，交互写状态，规范对组件。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="ai-prototype-generation">
+        <h2>AI 生成原型页面 — Prompt · 工具 · 落地流程</h2>
+        <article class="knowledge-card">
+          <h3>v0 · Bolt · Cursor Canvas · Figma AI · 落地工作流</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>在已有<a href="01-requirements-analysis.html#user-stories-ac">用户故事与验收标准（AC）</a>基线上，用生成式 AI 从文字需求<strong>快速产出可感知页面</strong>——线框级布局、Landing 营销页、后台 CRUD 列表/表单、Dashboard 骨架。适用场景：需求评审前「先看见」、MVP 范围对齐、前端尚未到位时后端/产品自证流程。AI 原型<strong>不替代</strong> Figma 高保真与设计系统沉淀，而是与<a href="#ui-prototype-tools">传统原型工具</a>分工：AI 出速度，Figma/墨刀出规范与组件一致性。</p>
+            <p><strong>常用工具</strong>：<strong>v0.dev</strong>（Vercel，React/shadcn 输出）、<strong>Bolt.new</strong>（全栈沙箱，可运行预览）、<strong>Cursor + Canvas</strong>（在仓库内快速产出 HTML/React 原型稿）、<strong>Figma AI</strong> / <strong>Galileo AI</strong>（设计稿生成）、国内 <strong>即时设计 AI</strong>、<strong>MasterGo AI</strong> 等（中文模板与协作）。选型看：是否需可运行代码、是否对接现有组件库、团队是否以设计稿为单一事实源。</p>
+            <p><strong>Prompt 要点</strong>：① <strong>角色</strong>（B 端产品经理 + 前端架构师）；② <strong>页面类型</strong>（列表+筛选+分页 / 分步表单 / Landing）；③ <strong>组件库</strong>（Ant Design / Element Plus / shadcn）；④ <strong>交互说明</strong>（提交校验、空态、权限不足、加载中）；⑤ <strong>响应式</strong>（≥1280 桌面 / 375 移动）；⑥ <strong>输出格式</strong>（纯 HTML、React TSX、Vue SFC）。附 Story ID 与字段清单，减少幻觉字段。</p>
+            <p><strong>工作流</strong>：需求/Story → AI 生成初稿 → <strong>人工评审</strong>（产品/设计/前端/后端）→ 导入 Figma 精修或保留为<strong>开发参考</strong> → 标注 API 占位 → 与 <a href="#api-mock-prototype">API Mock</a> 对齐 → <a href="#prototype-review">评审冻结</a>。与<a href="21-ai-development.html#cursor-agent">第 21 章 AI 辅助开发</a>分工：<strong>本章 = 业务原型（What it looks like）</strong>；第 21 章 = 写生产代码、测试、Review（How to implement）。</p>
+            <p><strong>Java 团队视角</strong>：AI 页面作<strong>前端布局与字段参考</strong>，<strong>接口契约仍由后端 Tech Lead 主导</strong>——REST 使用 OpenAPI、GraphQL 使用 Schema；从页面操作反推资源与数据结构，Mock 与 SpringDoc/OpenAPI 文档对齐，避免「AI 臆造接口」直接进实现。生成物标注 throwaway，不进生产主干。</p>
+            <p><strong>风险与治理</strong>：幻觉布局/字段、无障碍（a11y）缺失、与设计系统 Token 不一致、训练数据版权争议。必须坚持 <strong>Human-in-the-loop（人工在环）</strong>：每条 Story 至少一人签字确认界面与 AC 一致后方可冻结。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart LR
+    STORY[01 用户故事 + AC] --> PROMPT[Prompt 工程]
+    PROMPT --> AI[v0 / Bolt / Cursor]
+    AI --> DRAFT[AI 原型初稿]
+    DRAFT --> REV{人工评审}
+    REV -->|通过| FIG[Figma 精修 或 开发参考]
+    REV -->|驳回| PROMPT
+    FIG --> MOCK[API Mock 对齐]
+    MOCK --> FREEZE[评审冻结 v1.0]</pre>
+              <p class="diagram-caption">图：AI 原型生成 → 人工评审 → Mock → 冻结</p>
+            </div>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li><strong>AI 原型包</strong>：页面链接/源码、关联 Story ID、Prompt 存档（可复现）</li>
+              <li><strong>Prompt 记录</strong>：可复用模板 + 本次约束（组件库、断点、输出格式）</li>
+              <li><strong>评审差异清单</strong>：AI 稿 vs 确认稿（布局/字段/交互）</li>
+              <li><strong>API 占位表</strong>：每按钮/表单域 → 拟议 REST 路径（纳入 <a href="#api-mock-prototype">Mock 章节</a>）</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>Prompt 片段示例</h4>
+            <pre><code>角色：资深 B 端产品经理 + Vue3 前端
+页面：订单管理 CRUD 列表（US-045, US-046）
+组件库：Element Plus；桌面端 1280px
+功能：顶部筛选（状态/日期/关键词）；表格列：订单号、客户、金额、状态 Tag、操作（详情/取消）
+交互：取消需二次确认；空态引导「创建订单」；加载 Skeleton
+异常：无权限显示 403 占位；提交失败 Toast
+输出：Vue 3 SFC + 假数据，不调用真实 API
+字段仅使用：orderNo, customerName, amount, status(enum: PENDING/PAID/CANCELLED)</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>一次生成<strong>单页或单流程</strong>，比「整站」可控；多页用相同 Prompt 前缀保持风格一致。</li>
+              <li>Prompt 中<strong>白名单字段</strong>（仅允许列出的 JSON 键），显著降低幻觉列。</li>
+              <li>生成后立即截屏 + 链入 RTM，与 GWT 场景并排，评审效率高于纯链接。</li>
+              <li>需要可点击演示：Bolt/v0 预览 → 录屏 30s 走主路径，供远程干系人确认。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>把 AI 生成代码<strong>直接合并进生产仓库</strong>——缺少鉴权、i18n、错误边界与测试。</li>
+              <li>未评审即冻结，开发按 AI 臆造字段写 DTO，与真实领域模型冲突。</li>
+              <li>忽略 a11y 与键盘导航，后期合规/政务项目返工。</li>
+              <li>混用多套 AI 工具且未统一组件库，视觉与交互碎片化。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「Story 进 Prompt，AI 出草稿，人审再 Mock，契约后端定。」</p>
+          </div>
+          <div class="card-block block-reading">
+            <p>?? 延伸阅读：<a href="https://v0.dev" target="_blank" rel="noopener">v0.dev</a>、<a href="https://bolt.new" target="_blank" rel="noopener">Bolt.new</a>、Figma AI 文档、<a href="21-ai-development.html#prompt">第 21 章 Prompt 工程</a>、<a href="21-ai-development.html#cursor-agent">Cursor Agent</a>、<a href="03-architecture-design.html#api-design">第 03 章 API 设计</a>（组件库映射）、NN/g《Wireframes 低保真原型》</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="api-mock-prototype">
+        <h2>API Mock 原型</h2>
+        <article class="knowledge-card">
+          <h3>Apifox · Postman · SpringDoc + WireMock</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>契约先行</strong>：由原型页面字段与操作反推资源模型。REST 场景在 Apifox/Postman 维护 OpenAPI 3.x，GraphQL 场景维护 Schema/SDL，并开启 Mock Server 返回示例 JSON。<strong>Java 侧</strong>：SpringDoc 从 Controller 生成 OpenAPI 文档，或先用 YAML 契约 + <strong>WireMock</strong>/<strong>Spring Cloud Contract</strong> 提供 Stub；前端通过环境变量切换 Mock Base URL 与真实 <a href="12-spring-framework.html">Spring Framework</a> 应用服务。Mock 数据应覆盖分页、错误码（4xx/5xx）、幂等冲突等场景，而非永远 200。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">sequenceDiagram
+    participant UI as 前端原型
+    participant Mock as Apifox/WireMock
+    participant API as Spring Boot
+    UI->>Mock: 开发期请求
+    Mock-->>UI: 契约示例 JSON
+    Note over Mock,API: 契约文档为单一事实源
+    API->>Mock: 契约测试/对齐
+    UI->>API: 联调期切换 Base URL</pre>
+              <p class="diagram-caption">图：契约先行的 Mock → 实装切换</p>
+            </div>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li><strong>OpenAPI v0 草案</strong>：路径、Schema、错误模型、鉴权占位</li>
+              <li><strong>Mock 环境说明</strong>：Base URL、场景切换、示例 curl</li>
+              <li><strong>契约变更日志</strong>：版本、Breaking 标记、影响页面清单</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>错误体统一结构（<code>code/message/traceId</code>），前端一次封装 Toast。</li>
+              <li>Mock 用例与 GWT 场景一一对应，便于后期自动化契约测试。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>Mock 返回「过于完美」的数据，联调才发现字段 nullable、枚举不全。</li>
+              <li>前后端各维护一份 API 文档，原型冻结后双份漂移。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「OpenAPI 单源，Mock 带异常，联调只换 URL。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="prototype-review">
+        <h2>原型评审与冻结</h2>
+        <article class="knowledge-card">
+          <h3>评审流程 · 签字冻结 · GWT 映射</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>原型评审参与方：产品、设计、前端、后端（Java）、测试、业务代表。议程：走主路径 → 过异常态 → 核对 API 清单 → 标记未决项。通过后<strong>签字冻结</strong>（版本号 + 日期），变更走 CR 与<a href="04-project-scheduling.html#scheduling-overview">排期</a>评估。每条<a href="01-requirements-analysis.html#user-stories-ac">GWT 验收场景</a>应映射到：页面/交互帧 + Mock 用例 ID，写入 RTM 扩展列，供第 03 章架构与第 18–19 章测试追溯。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart LR
+    STORY[User Story + GWT] --> PAGE[原型页面 P-xxx]
+    PAGE --> MOCK[Mock 用例 M-xxx]
+    STORY --> RTM[RTM 追溯]
+    PAGE --> RTM
+    MOCK --> RTM
+    RTM --> SIGN[签字冻结 v1.0]</pre>
+              <p class="diagram-caption">图：Story → 原型 → Mock → RTM 映射</p>
+            </div>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li><strong>原型评审纪要</strong>：结论、未决项、Action Owner</li>
+              <li><strong>冻结声明</strong>：版本、范围、变更流程</li>
+              <li><strong>GWT–原型映射表</strong>：Story ID ? 页面 ? Mock ID</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>评审用「可点击链接 + 投影」，避免只发静态 PDF 无人点开。</li>
+              <li>测试早期介入：按 GWT 在原型上标记「需自动化/需人工」。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>口头「差不多」未签字，开发中途需求仍当 bug 改。</li>
+              <li>GWT 与原型脱节，UAT 时才发现场景无对应界面。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「评审走场景，冻结靠签字，GWT 三线对齐。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="prototype-to-architecture">
+        <h2>原型结论回写架构</h2>
+        <article class="knowledge-card">
+          <h3>OpenAPI · ADR · 架构输入</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>原型冻结后，后端 Tech Lead 将结论<strong>回写</strong>至<a href="03-architecture-design.html#api-design">第 03 章 API 与集成设计</a>：OpenAPI 升版、聚合边界调整（页面过度聚合提示拆分 Bounded Context）、异步/批量操作写 ADR。前端组件选型与<a href="03-architecture-design.html#api-design">第 03 章 API 设计</a>对齐；复杂交互若影响性能（大列表、实时推送）在架构阶段提前标注 NFR。原型发现的<strong>集成点</strong>（支付、短信、OSS 上传）进入架构集成视图。</p>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li><strong>OpenAPI v1</strong>（自 v0 升级）：经架构评审的契约</li>
+              <li><strong>原型→架构差异清单</strong>：需 ADR 的决策项</li>
+              <li><strong>更新后的 RTM</strong>：Story → 原型 → API/模块</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>页面「跨模块」跳转往往是限界上下文集成信号，优先画在上下文图上。</li>
+              <li>Mock 已验证的枚举/分页参数直接进 Schema，减少架构会扯皮。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>原型冻结后不升 OpenAPI，开发各自理解字段含义。</li>
+              <li>为凑页面把多个聚合塞进一个「万能 DTO」，破坏 DDD 边界。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「原型出界面，架构出边界，OpenAPI 连两端。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="prototype-scheduling">
+        <h2>原型里程碑与变更控制</h2>
+        <article class="knowledge-card">
+          <h3>排期嵌入与 CR 流程</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>在<a href="04-project-scheduling.html#scheduling-overview">第 04 章项目排期</a>中，原型通常占 <strong>M1 需求冻结</strong> 与 <strong>M2 架构评审</strong> 之间的窗口：线框 3–5 天 → 可点击 + Mock 5–10 天 → 评审 1 天 → 冻结。WBS 单列「原型设计」工作包，含设计、前端、后端契约、评审。冻结后变更：提交 CR → 影响评估（页面/API/测试）→ 产品签字 → 更新版本号与 RTM；重大变更可触发「再评审」，避免静默改稿。</p>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li><strong>原型里程碑</strong>：线框完成日、Mock 就绪日、评审日、冻结日</li>
+              <li><strong>变更记录</strong>：CR 编号、原型版本 diff、排期影响人日</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>与 M2 架构 Gate 绑定：无冻结原型，架构评审 No-Go。</li>
+              <li>缓冲 20% 给「评审后小改」——集中在文案与布局，不动 API 语义。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>原型与开发并行且无冻结点，编码期持续改交互。</li>
+              <li>CR 只改文档不更新 Mock，前端与后端看到不同契约。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「里程碑卡 Gate，变更走 CR，Mock 随版走。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="prototype-anti-patterns">
+        <h2>原型反模式</h2>
+        <article class="knowledge-card">
+          <h3>无限改稿 · 原型当交付 · 无验收标准</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>无限改稿</strong>：无冻结、无 CR，设计/产品持续微调像素，开发永远等「最终版」。<strong>原型当交付</strong>：把 Figma 链接当上线标准，缺少 API、权限、性能与可访问性验收。<strong>无验收标准</strong>：原型精美但与<a href="01-requirements-analysis.html#user-stories-ac">GWT</a>无关，测试无法写用例。其他反模式：Mock 与实现长期双轨；Spike 代码进主干；跳过业务代表评审。</p>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li><strong>反模式检查单</strong>：评审前自检，命中则不允许冻结</li>
+              <li><strong>健康度指标</strong>：冻结后 CR 次数、原型–实现差异 Bug 数</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>设「改稿预算」：冻结后仅允许 P0 缺陷级交互修正。</li>
+              <li>Definition of Done 含「与冻结原型 vX 一致或 CR 已批准」。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>用原型演示签单，合同验收却按需求文档——交付争议。</li>
+              <li>追求动效细节，忽略 API 与权限模型——后端返工更大。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「能冻结、能验收、能追溯——否则只是画图。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="accessibility-a11y">
+        <h2>无障碍（a11y）原型 Checklist</h2>
+        <article class="knowledge-card">
+          <h3>WCAG 基线与 B 端后台可访问性</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>政务/金融/出海项目常要求 WCAG 2.1 AA。原型评审须覆盖：<strong>对比度</strong>（文本/背景 ≥4.5:1）、<strong>键盘导航</strong>（Tab 顺序、焦点可见）、<strong>屏幕阅读器</strong>（表单 label、aria-label）、<strong>错误提示</strong>不仅靠颜色。B 端后台同样适用——运营人员也可能依赖辅助技术。</p>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>评审 Checklist</h4>
+            <ul>
+              <li>□ 所有表单控件有可见 label 或 aria-labelledby</li>
+              <li>□ 主按钮与背景对比度达标</li>
+              <li>□ 模态框可 Esc 关闭、焦点 trap</li>
+              <li>□ 状态不仅用红绿色区分（配图标/文案）</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="chapter-execution-checklist">
+        <h2>章末实战闭环</h2>
+        <article class="knowledge-card">
+          <h3>原型设计落地清单</h3>
+          <div class="card-block block-deliverable">
+            <h4>输入</h4>
+            <ul>
+              <li>需求基线与 Story 优先级</li>
+              <li>关键页面/流程与异常态列表</li>
+              <li>后端接口草案与字段约束</li>
+              <li>设计系统/组件库约束</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>输出</h4>
+            <ul>
+              <li>可点击原型与页面清单（关联 Story）</li>
+              <li>API Mock 契约与错误码样例</li>
+              <li>评审冻结版本与差异清单</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>验收标准</h4>
+            <ul>
+              <li>主路径与高频异常均可演示</li>
+              <li>每个核心交互可映射到 API 契约</li>
+              <li>评审后变更均走 CR 并可追踪</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>失败信号</h4>
+            <ul>
+              <li>原型只有 happy path 无异常态</li>
+              <li>UI 字段与后端模型长期漂移</li>
+              <li>冻结前已开始大规模编码</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <nav class="chapter-nav">
+        <a href="01-requirements-analysis.html">← 上一章：需求分析</a>
+        <a href="03-architecture-design.html">下一章：架构设计 →</a>
+      </nav>
+    </main>
+  </div>  <script src="assets/diagram.js" defer></script>
+  <script src="assets/explain-format.js" defer></script>
+  <script src="assets/chapter-toc.js" defer></script>
+</body>
+</html>

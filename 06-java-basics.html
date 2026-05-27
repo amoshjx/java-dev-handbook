@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>06 Java基础语法 — Java项目手册</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/sidebar.js" defer></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">Java项目手册</div>
+      <nav>
+        <div class="nav-group">
+                    <ul class="nav-list">
+                                                                                                                                                <li><a href="index.html">目录首页</a></li>
+            <li><a href="01-requirements-analysis.html">01 需求分析</a></li>
+            <li><a href="02-prototype-design.html">02 原型设计</a></li>
+            <li><a href="03-architecture-design.html">03 架构设计</a></li>
+            <li><a href="04-project-scheduling.html">04 项目排期</a></li>
+            <li class="sidebar-group"><span class="sidebar-group-label"><a href="java-development.html">开发实现</a></span></li>
+            <li class="sidebar-subitem"><a href="05-dev-environment.html">05 开发环境搭建</a></li>
+            <li class="sidebar-subitem"><a href="06-java-basics.html">06 Java基础语法</a></li>
+            <li class="sidebar-subitem"><a href="07-oop.html">07 面向对象</a></li>
+            <li class="sidebar-subitem"><a href="08-jvm.html">08 JVM</a></li>
+            <li class="sidebar-subitem"><a href="09-concurrency.html">09 并发编程</a></li>
+            <li class="sidebar-subitem"><a href="10-io-nio-network.html">10 IO·NIO·网络</a></li>
+            <li class="sidebar-subitem"><a href="11-persistence.html">11 持久化</a></li>
+            <li class="sidebar-subitem"><a href="12-spring-framework.html">12 Spring Framework</a></li>
+            <li class="sidebar-subitem"><a href="13-build-packaging-deploy.html">13 构建·打包·部署</a></li>
+            <li class="sidebar-subitem"><a href="14-ruoyi-framework.html">14 RuoYi 框架</a></li>
+            <li class="sidebar-subitem"><a href="15-common-modules.html">15 常见功能模块</a></li>
+            <li class="sidebar-subitem"><a href="16-security-development.html">16 安全开发</a></li>
+            <li class="sidebar-subitem"><a href="17-test-driven-development.html">17 测试驱动开发</a></li>
+            <li><a href="18-testing-quality.html">18 测试·质量</a></li>
+            <li><a href="19-performance-tuning.html">19 性能调优</a></li>
+            <li><a href="20-devops-cloud-native.html">20 工程化·DevOps·CI/CD</a></li>
+            <li><a href="21-ai-development.html">21 AI 辅助开发</a></li>
+            <li><a href="22-business-intelligence.html">22 业务智能化</a></li>
+            <li><a href="glossary.html">术语字典</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="page-header">
+        <h1>06 Java基础语法</h1>
+        <p>语法、类型系统与现代 Java 编码习惯——高级开发者仍需反复校准的基本功。</p>
+      </header>
+
+      <section class="section" id="core-concepts-runtime">
+        <h2>1) 核心概念与运行机制</h2>
+        <article class="knowledge-card">
+          <h3>Java 程序最小认知框架</h3>
+          <div class="card-block block-explain">
+            <h4>总结概括</h4>
+            <ul>
+              <li><strong>关键字与标识符：</strong>关键字（保留字）不能作为标识符；标识符由字母、数字、下划线、美元符组成，不能以数字开头，命名应语义清晰。</li>
+              <li><strong>入口方法：</strong>JVM 启动入口是 <code>public static void main(String[] args)</code>，访问修饰符、静态性、返回值和参数签名需完整匹配。</li>
+              <li><strong>注释：</strong><code>//</code> 用于单行，<code>/* ... */</code> 用于多行，<code>/** ... */</code> 用于文档注释（可生成 API 文档）。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="data-types-variables">
+        <h2>2) 数据类型与变量</h2>
+        <article class="knowledge-card">
+          <h3>类型系统与变量规则</h3>
+          <div class="card-block block-explain">
+            <h4>总结概括</h4>
+            <ul>
+              <li><strong>基本数据类型：</strong><code>byte</code>、<code>short</code>、<code>int</code>、<code>long</code>、<code>float</code>、<code>double</code>、<code>char</code>、<code>boolean</code>。</li>
+              <li><strong>引用数据类型：</strong>主要包括 <code>Class</code>、<code>Interface</code>、<code>Array</code>。</li>
+              <li><strong>类型转换：</strong>自动类型提升是低精度向高精度；强制类型转换可能导致截断和精度风险，需要显式评估边界。</li>
+              <li><strong>变量与常量：</strong>变量分局部变量与成员变量；<code>final</code> 修饰后不可再次赋值，用于表达常量语义或不可变引用。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="operators">
+        <h2>3) 运算符</h2>
+        <article class="knowledge-card">
+          <h3>表达式计算的基础工具集</h3>
+          <div class="card-block block-explain">
+            <h4>总结概括</h4>
+            <ul>
+              <li><strong>算术运算：</strong><code>+</code> <code>-</code> <code>*</code> <code>/</code> <code>%</code> <code>++</code> <code>--</code>。</li>
+              <li><strong>关系运算：</strong><code>&gt;</code> <code>&lt;</code> <code>&gt;=</code> <code>&lt;=</code> <code>==</code> <code>!=</code>。</li>
+              <li><strong>逻辑运算：</strong><code>&amp;&amp;</code> <code>||</code> <code>!</code>。</li>
+              <li><strong>赋值与位运算：</strong><code>+=</code> <code>-=</code> 以及位移 <code>&lt;&lt;</code> <code>&gt;&gt;</code> <code>&gt;&gt;&gt;</code>。</li>
+              <li><strong>三元运算符：</strong><code>条件 ? 结果1 : 结果2</code>，用于简洁表达二选一分支。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="control-flow">
+        <h2>4) 流程控制语句</h2>
+        <article class="knowledge-card">
+          <h3>分支与循环的控制范式</h3>
+          <div class="card-block block-explain">
+            <h4>总结概括</h4>
+            <ul>
+              <li><strong>分支：</strong><code>if-else</code> 与 <code>switch-case</code>，<code>switch</code> 可用于 <code>String</code> 与枚举类型。</li>
+              <li><strong>循环：</strong><code>for</code>、<code>while</code>、<code>do-while</code> 覆盖不同迭代场景。</li>
+              <li><strong>循环控制：</strong><code>break</code> 用于跳出循环，<code>continue</code> 用于跳过当前轮次。</li>
+              <li><strong>增强 for：</strong><code>for-each</code> 用于集合与数组的顺序遍历，代码更简洁。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="arrays-methods">
+        <h2>5) 数组与方法</h2>
+        <article class="knowledge-card">
+          <h3>结构化数据与可复用逻辑</h3>
+          <div class="card-block block-explain">
+            <h4>总结概括</h4>
+            <ul>
+              <li><strong>数组声明与初始化：</strong>支持静态初始化与动态初始化两种方式。</li>
+              <li><strong>数组访问与内存：</strong>通过索引进行读写；数组对象在堆中连续存储，访问具有确定顺序。</li>
+              <li><strong>方法定义：</strong>由修饰符、返回值、方法名、参数列表与 <code>return</code> 语句组成。</li>
+              <li><strong>方法重载：</strong>同名方法可因参数个数、类型或顺序不同而共存。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="oop-core-syntax">
+        <h2>6) 面向对象基础语法（核心）</h2>
+        <article class="knowledge-card">
+          <h3>对象建模的最低必备语法</h3>
+          <div class="card-block block-explain">
+            <h4>总结概括</h4>
+            <ul>
+              <li><strong>类与对象：</strong>使用 <code>class</code> 定义模板，使用 <code>new</code> 创建对象实例。</li>
+              <li><strong>封装：</strong>通过访问修饰符控制可见性，结合 Getter/Setter 暴露受控访问。</li>
+              <li><strong>构造方法：</strong>包含无参和有参构造，常用 <code>this</code> 完成同类构造调用与成员区分。</li>
+              <li><strong>继承：</strong>通过 <code>extends</code> 复用父类能力，借助 <code>super</code> 调用父类构造或成员。</li>
+              <li><strong>多态：</strong>子类可 <code>Override</code> 父类方法，父类引用可指向子类对象以统一调用接口。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="collection-choice">
+        <h2>7) 集合框架（Collection/Map）</h2>
+        <article class="knowledge-card">
+          <h3>集合选型与复杂度意识</h3>
+          <div class="card-block block-explain">
+            <h4>总结概括</h4>
+            <ul>
+              <li><strong>List/Set/Map 基本分工：</strong><code>List</code> 保序可重复，<code>Set</code> 去重，<code>Map</code> 键值映射。</li>
+              <li><strong>常用选型：</strong>默认优先 <code>ArrayList</code> 与 <code>HashMap</code>；需要插入顺序可选 <code>LinkedHashSet/LinkedHashMap</code>；需要排序可选 <code>TreeSet/TreeMap</code>。</li>
+              <li><strong>并发容器：</strong>高并发场景优先 <code>ConcurrentHashMap</code>，避免直接在多线程下使用普通 <code>HashMap</code>。</li>
+              <li><strong>不可变视图：</strong>对外返回集合建议使用 <code>List.copyOf</code>/<code>Set.copyOf</code>，减少内部状态被误修改的风险。</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips" id="concurrent-collections">
+            <h4>并发集合补充</h4>
+            <ul>
+              <li>复合操作优先使用 <code>computeIfAbsent</code>、<code>merge</code> 等原子方法，避免「检查再写入」的 TOCTOU（check-then-act）竞态。</li>
+              <li><code>CopyOnWriteArrayList</code> 适合读多写少（如监听器列表），写操作整体复制成本较高，不要用于热点写场景。</li>
+              <li>需要弱一致迭代器和非阻塞读时优先 <code>ConcurrentHashMap</code>；它不支持 <code>null</code> key/value，配合 <code>Optional</code> 或哨兵值表达「不存在」。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>在 foreach 中执行 <code>remove</code> 触发 <code>ConcurrentModificationException</code>，应使用 <code>Iterator.remove</code> 或 <code>removeIf</code>。</li>
+              <li><code>Arrays.asList</code> 返回固定长度列表，不能直接 add/remove。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="generics">
+        <h2>8) 泛型（Generic）</h2>
+        <article class="knowledge-card">
+          <h3>类型安全与 API 边界表达</h3>
+          <div class="card-block block-explain">
+            <h4>总结概括</h4>
+            <ul>
+              <li><strong>核心价值：</strong>泛型在编译期约束类型，减少强制转型和运行时类型错误。</li>
+              <li><strong>PECS 原则：</strong>读多用 <code>? extends T</code>（生产者），写多用 <code>? super T</code>（消费者）。</li>
+              <li><strong>类型擦除认知：</strong>运行时通常拿不到具体泛型参数，不能直接 <code>new T()</code>。</li>
+              <li><strong>工程建议：</strong>避免原始类型 <code>List list</code>，逐步清理历史代码中的未参数化集合。</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>public static &lt;T&gt; void copy(List&lt;? extends T&gt; src, List&lt;? super T&gt; dest) {
+    for (T item : src) {
+        dest.add(item);
+    }
+}</code></pre>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="stream-ops">
+        <h2>9) Stream API</h2>
+
+        <article class="knowledge-card">
+          <h3>Stream 常用操作速查</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <ul>
+              <li><strong>心智模型：</strong>Stream 是声明式管道，不修改源数据；结构为 source → intermediate（惰性）→ terminal（触发求值）。</li>
+              <li><strong>入口：</strong>日常从 <code>list.stream()</code> 或 <code>Arrays.stream(arr)</code> 开始；无终止操作时中间步骤不执行。</li>
+              <li><strong>中间操作：</strong><code>filter</code> 筛选、<code>map</code> 一对一映射、<code>flatMap</code> 展开嵌套集合；<code>sorted</code>/<code>distinct</code>/<code>limit</code> 有状态，大数据集慎用。</li>
+              <li><strong>终止与聚合：</strong><code>toList()</code>（Java 16+，不可变）、<code>collect</code>、<code>reduce</code>；<code>findFirst</code>/<code>min</code>/<code>max</code> 返回 <code>Optional</code>，用 <code>orElse</code>/<code>map</code> 衔接，勿裸 <code>get()</code>。</li>
+              <li><strong>并行流：</strong><code>parallelStream()</code> 走公共 ForkJoinPool，仅适合大数据 + CPU 密集 + 无副作用；含 I/O 或 Web 请求时不要用。</li>
+            </ul>
+          </div>
+          <div class="diagram-block">
+            <pre class="mermaid">flowchart LR
+    S["source\nlist.stream()"] --> I1["filter / map / flatMap"]
+    I1 --> I2["sorted / distinct / limit"]
+    I2 --> T["terminal\ntoList / collect / reduce"]</pre>
+            <p class="diagram-caption">图：Stream 管道三段式（惰性中间操作 + 单次终止）</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>// filter → flatMap → map → distinct → sorted → limit → collect
+List&lt;String&gt; topTags = posts.stream()
+        .filter(p -&gt; p.isPublished())
+        .flatMap(p -&gt; p.tags().stream())
+        .map(String::toLowerCase)
+        .distinct()
+        .sorted()
+        .limit(20)
+        .toList();
+
+// reduce 与 Optional
+BigDecimal total = orders.stream()
+        .map(Order::amount)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+Optional&lt;User&gt; admin = users.stream()
+        .filter(u -&gt; "ADMIN".equals(u.role()))
+        .findFirst();
+
+// 数值流避免装箱
+double avgQty = orders.stream()
+        .mapToInt(Order::quantity)
+        .average()
+        .orElse(0d);</code></pre>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>lambda 里 <code>list.add</code>/<code>map.put</code>——副作用；并行流下数据竞争，应改用 <code>collect</code>。</li>
+              <li><code>peek</code> 仅调试用，勿写库或改对象；无终止操作或 <code>count()</code> 链路上可能被跳过。</li>
+              <li>同一 Stream 只能终止一次；<code>toList()</code> 返回不可变列表。</li>
+              <li>大集合 <code>sorted</code>/<code>distinct</code> 占 O(N) 内存；Top-N 优先考虑堆，能下推 SQL 就不要全量进内存。</li>
+              <li><code>parallelStream</code> 共享 commonPool，阻塞 I/O 会拖慢全 JVM；小数据集并行反而更慢。</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>速记</h4>
+            <ul>
+              <li>排序：<code>Comparator.comparing(Employee::dept).thenComparing(Employee::salary)</code>，数值用 <code>comparingInt</code>，勿写 <code>a - b</code>。</li>
+              <li>链路超过 5 步或 lambda 复杂时拆变量/抽方法；常规业务 Stream 与 for 性能接近，热点再优化。</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="knowledge-card" id="collectors">
+          <h3>Collectors：toList / toMap / groupingBy</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <ul>
+              <li><strong>toList：</strong>Java 16+ 优先 <code>.toList()</code>；需可变容器用 <code>Collectors.toCollection(ArrayList::new)</code>。</li>
+              <li><strong>toMap：</strong><code>toMap(keyFn, valueFn, mergeFn)</code>——key 可能重复时必须传 mergeFn，否则抛 <code>Duplicate key</code>；value 不可为 null。</li>
+              <li><strong>groupingBy：</strong>按字段分组，下游可接 <code>counting</code>、<code>mapping</code>、<code>reducing</code>、<code>averagingDouble</code> 等做组内聚合。</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>Map&lt;Long, Employee&gt; byId = employees.stream()
+        .collect(Collectors.toMap(
+            Employee::id, Function.identity(), (a, b) -&gt; a));
+
+Map&lt;String, Double&gt; avgByDept = employees.stream()
+        .collect(Collectors.groupingBy(
+            Employee::department,
+            Collectors.averagingDouble(Employee::salary)));
+
+Map&lt;Long, BigDecimal&gt; amountByCustomer = orders.stream()
+        .collect(Collectors.groupingBy(
+            Order::customerId,
+            Collectors.reducing(BigDecimal.ZERO, Order::amount, BigDecimal::add)));</code></pre>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li><code>toMap</code> 默认 HashMap 无序；需保序传 <code>LinkedHashMap::new</code>，需排序传 <code>TreeMap::new</code>。</li>
+              <li>分组结果 value 可为 null；<code>toMap</code> 的 valueFn 不允许 null——这类场景用 <code>groupingBy</code>。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="java20-features">
+        <h2>Java 21 现代特性速查</h2>
+        <article class="knowledge-card">
+          <h3>Sealed · Pattern Matching · Text Blocks · var</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>Java 21 LTS 常用语法增强：<strong>sealed class/interface</strong> 限制子类型，配合模式匹配做穷尽 switch；<strong>text blocks</strong> 多行字符串；<strong>var</strong> 局部类型推断（仅局部变量，禁止字段/参数滥用）。与<a href="07-oop.html#design-patterns">第 07 章设计模式</a>、<a href="09-concurrency.html">第 09 章虚拟线程</a>衔接。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>sealed interface Payment permits CardPay, WalletPay {}
+record CardPay(String last4) implements Payment {}
+record WalletPay(String provider) implements Payment {}
+
+String describe(Payment p) {
+  return switch (p) {
+    case CardPay c -&gt; "card ****" + c.last4();
+    case WalletPay w -&gt; "wallet " + w.provider();
+  };
+}
+
+var orders = repository.findPending();
+String sql = """
+    SELECT id, total FROM orders
+    WHERE status = 'PENDING'
+    """;</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>var 使用边界</h4>
+            <ul>
+              <li>✅ 右侧类型一眼可见：<code>var list = new ArrayList&lt;String&gt;();</code></li>
+              <li>❌ 返回值丢失：<code>var x = getSomething();</code> 看不出类型时写显式类型。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="chapter-execution-checklist">
+        <h2>结尾引导</h2>
+        <article class="knowledge-card">
+          <h3>从基础语法走向工程实践</h3>
+          <div class="card-block block-tips">
+            <h4>下一步建议</h4>
+            <p>掌握这些基础后可开始简单业务逻辑。接下来你可以二选一推进：</p>
+            <ul>
+              <li>先深入面向对象内存模型。</li>
+              <li>或看基础类源码（如 String 不可变性）。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <div id="primitives" hidden></div>
+      <div id="strings" hidden></div>
+      <div id="modern-java" hidden></div>
+      <div id="exceptions" hidden></div>
+      <div id="optional" hidden></div>
+      <div id="comparator" hidden></div>
+
+      <nav class="chapter-nav">
+        <a href="05-dev-environment.html">← 上一章：开发环境搭建</a>
+        <a href="07-oop.html">下一章：面向对象 →</a>
+      </nav>
+    </main>
+  </div>  <script src="assets/diagram.js" defer></script>
+  <script src="assets/explain-format.js" defer></script>
+  <script src="assets/chapter-toc.js" defer></script>
+</body>
+</html>

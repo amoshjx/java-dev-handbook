@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>开发实现 — Java项目手册</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/sidebar.js" defer></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">Java项目手册</div>
+      <nav>
+        <div class="nav-group">
+          <ul class="nav-list">
+                                    <li><a href="index.html">目录首页</a></li>
+            <li><a href="01-requirements-analysis.html">01 需求分析</a></li>
+            <li><a href="02-prototype-design.html">02 原型设计</a></li>
+            <li><a href="03-architecture-design.html">03 架构设计</a></li>
+            <li><a href="04-project-scheduling.html">04 项目排期</a></li>
+            <li class="sidebar-group"><span class="sidebar-group-label"><a href="java-development.html">开发实现</a></span></li>
+            <li class="sidebar-subitem"><a href="05-dev-environment.html">05 开发环境搭建</a></li>
+            <li class="sidebar-subitem"><a href="06-java-basics.html">06 Java基础语法</a></li>
+            <li class="sidebar-subitem"><a href="07-oop.html">07 面向对象</a></li>
+            <li class="sidebar-subitem"><a href="08-jvm.html">08 JVM</a></li>
+            <li class="sidebar-subitem"><a href="09-concurrency.html">09 并发编程</a></li>
+            <li class="sidebar-subitem"><a href="10-io-nio-network.html">10 IO·NIO·网络</a></li>
+            <li class="sidebar-subitem"><a href="11-persistence.html">11 持久化</a></li>
+            <li class="sidebar-subitem"><a href="12-spring-framework.html">12 Spring Framework</a></li>
+            <li class="sidebar-subitem"><a href="13-build-packaging-deploy.html">13 构建·打包·部署</a></li>
+            <li class="sidebar-subitem"><a href="14-ruoyi-framework.html">14 RuoYi 框架</a></li>
+            <li class="sidebar-subitem"><a href="15-common-modules.html">15 常见功能模块</a></li>
+            <li class="sidebar-subitem"><a href="16-security-development.html">16 安全开发</a></li>
+            <li class="sidebar-subitem"><a href="17-test-driven-development.html">17 测试驱动开发</a></li>
+            <li><a href="18-testing-quality.html">18 测试·质量</a></li>
+            <li><a href="19-performance-tuning.html">19 性能调优</a></li>
+            <li><a href="20-devops-cloud-native.html">20 工程化·DevOps·CI/CD</a></li>
+            <li><a href="21-ai-development.html">21 AI 辅助开发</a></li>
+            <li><a href="22-business-intelligence.html">22 业务智能化</a></li>
+            <li><a href="glossary.html">术语字典</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="page-header">
+        <h1>开发实现</h1>
+        <p>项目排期（第 04 章，独立一级）之后、测试与质量（第 18 章）之前的主线：<strong>环境 → 语言与运行时 → Spring → 构建部署 → RuoYi → 业务模块 → 安全 → TDD</strong>。本模块涵盖 <strong>05–17</strong> 章，便于跨章引用与 prev/next 线性阅读（03 → 04 → 05 → … → 17 → 18）。<strong>采用 Java 语言进行开发实现</strong>，默认基线与全书一致：<strong>Java 21 LTS</strong>、<strong>Spring Framework 6.x</strong> / <strong>Spring Boot 3.x</strong>（Jakarta EE 9+）。</p>
+        <div class="diagram-block">
+          <pre class="mermaid">flowchart LR
+    C05["05 开发环境"] --> LANG["06-11 语言与运行时"]
+    LANG --> C12["12 Spring Framework"]
+    C12 --> C13["13 构建·打包·部署"]
+    C13 --> C14["14 RuoYi"]
+    C14 --> BACK["15-16 业务与安全"]
+    BACK --> C17["17 TDD"]
+    C17 --> C18["18 测试·质量"]</pre>
+          <p class="diagram-caption">图：开发实现章组阅读顺序（05 → 17 → 18）</p>
+        </div>
+      </header>
+
+      <div class="toc-grid">
+        <article class="toc-card">
+          <h2><a href="05-dev-environment.html">05 开发环境搭建 — Windows/WSL 一站式安装</a></h2>
+          <p>覆盖 Java/Git/Maven/WSL、WSL 内 Docker/minikube、IDE、数据库与远程工具的安装、验证与排障。</p>
+        </article>
+        <article class="toc-card">
+          <h2><a href="06-java-basics.html">06 Java基础语法</a></h2>
+          <p>语法、类型系统与现代 Java 编码习惯，并整合集合/泛型/Stream 进阶基础。</p>
+        </article>
+        <article class="toc-card">
+          <h2><a href="07-oop.html">07 面向对象</a></h2>
+          <p>建模、封装、SOLID 与不可变对象。</p>
+        </article>
+        <article class="toc-card">
+          <h2><a href="08-jvm.html">08 JVM</a></h2>
+          <p>以 Java 21 为基线，系统讲解 JVM 定位、运行时数据区、类加载、JIT、GC、诊断与线上排障。</p>
+        </article>
+        <article class="toc-card">
+          <h2><a href="09-concurrency.html">09 并发编程</a></h2>
+          <p>线程、锁、线程池与异步编排。</p>
+        </article>
+        <article class="toc-card">
+          <h2><a href="10-io-nio-network.html">10 IO·NIO·网络</a></h2>
+          <p>文件 IO、NIO 与 HTTP 客户端。</p>
+        </article>
+        <article class="toc-card">
+          <h2><a href="11-persistence.html">11 持久化</a></h2>
+          <p>SQL 优化、索引、事务与连接池。</p>
+        </article>
+        <article class="toc-card">
+          <h2><a href="12-spring-framework.html">12 Spring Framework</a></h2>
+          <p>Spring Framework 6 应用开发：IoC/DI、AOP、MVC、数据访问、事务、配置、事件、校验与分层实践。</p>
+        </article>
+        <article class="toc-card">
+          <h2><a href="13-build-packaging-deploy.html">13 项目构建、打包与部署</a></h2>
+          <p>Maven 构建、Docker 镜像、Kubernetes 部署与 CI/CD 完整实操链路。</p>
+        </article>
+        <article class="toc-card">
+          <h2><a href="14-ruoyi-framework.html">14 RuoYi 框架</a></h2>
+          <p>企业后台脚手架简明介绍：管理后台、权限系统、代码生成、官方文档与生产注意点。</p>
+        </article>
+        <article class="toc-card">
+          <h2><a href="15-common-modules.html">15 常见功能模块</a></h2>
+          <p>RBAC、支付、校验、定时任务、消息、工作流等企业标配。</p>
+        </article>
+        <article class="toc-card">
+          <h2><a href="16-security-development.html">16 安全开发</a></h2>
+          <p>Spring Security、OWASP 防护、密钥/TLS 与审计合规。</p>
+        </article>
+        <article class="toc-card">
+          <h2><a href="17-test-driven-development.html">17 测试驱动开发</a></h2>
+          <p>TDD 红绿重构、测试金字塔、Fake/Mock 选型与团队 CI 实践。</p>
+        </article>
+      </div>
+
+      <nav class="chapter-nav">
+        <a href="04-project-scheduling.html">← 上一章：项目排期</a>
+        <a href="05-dev-environment.html">下一章：开发环境搭建 →</a>
+      </nav>
+    </main>
+  </div>
+  <script src="assets/diagram.js" defer></script>
+</body>
+</html>

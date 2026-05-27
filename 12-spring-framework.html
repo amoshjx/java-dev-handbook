@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>12 Spring Framework — Java项目手册</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/sidebar.js" defer></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">Java项目手册</div>
+      <nav>
+        <div class="nav-group">
+          <ul class="nav-list">
+                                    <li><a href="index.html">目录首页</a></li>
+            <li><a href="01-requirements-analysis.html">01 需求分析</a></li>
+            <li><a href="02-prototype-design.html">02 原型设计</a></li>
+            <li><a href="03-architecture-design.html">03 架构设计</a></li>
+            <li><a href="04-project-scheduling.html">04 项目排期</a></li>
+            <li class="sidebar-group"><span class="sidebar-group-label"><a href="java-development.html">开发实现</a></span></li>
+            <li class="sidebar-subitem"><a href="05-dev-environment.html">05 开发环境搭建</a></li>
+            <li class="sidebar-subitem"><a href="06-java-basics.html">06 Java基础语法</a></li>
+            <li class="sidebar-subitem"><a href="07-oop.html">07 面向对象</a></li>
+            <li class="sidebar-subitem"><a href="08-jvm.html">08 JVM</a></li>
+            <li class="sidebar-subitem"><a href="09-concurrency.html">09 并发编程</a></li>
+            <li class="sidebar-subitem"><a href="10-io-nio-network.html">10 IO·NIO·网络</a></li>
+            <li class="sidebar-subitem"><a href="11-persistence.html">11 持久化</a></li>
+            <li class="sidebar-subitem"><a href="12-spring-framework.html">12 Spring Framework</a></li>
+            <li class="sidebar-subitem"><a href="13-build-packaging-deploy.html">13 构建·打包·部署</a></li>
+            <li class="sidebar-subitem"><a href="14-ruoyi-framework.html">14 RuoYi 框架</a></li>
+            <li class="sidebar-subitem"><a href="15-common-modules.html">15 常见功能模块</a></li>
+            <li class="sidebar-subitem"><a href="16-security-development.html">16 安全开发</a></li>
+            <li class="sidebar-subitem"><a href="17-test-driven-development.html">17 测试驱动开发</a></li>
+            <li><a href="18-testing-quality.html">18 测试·质量</a></li>
+            <li><a href="19-performance-tuning.html">19 性能调优</a></li>
+            <li><a href="20-devops-cloud-native.html">20 工程化·DevOps·CI/CD</a></li>
+            <li><a href="21-ai-development.html">21 AI 辅助开发</a></li>
+            <li><a href="22-business-intelligence.html">22 业务智能化</a></li>
+            <li><a href="glossary.html">术语字典</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="page-header">
+        <h1>12 Spring Framework</h1>
+        <p>以 Java 21、Spring Framework 6 与 Jakarta EE 9+ 为基线，从 IoC/DI、AOP、MVC、数据访问、事务、配置、事件与分层实践理解企业级应用开发。</p>
+      </header>
+
+      <section class="section" id="what-is-spring-framework">
+        <span id="what-is-spring-boot"></span>
+        <h2>Spring Framework 是什么</h2>
+        <article class="knowledge-card">
+          <h3>企业 Java 应用开发的基础框架</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>Spring Framework</strong> 是企业级 Java 应用的基础框架，核心目标是把对象创建、依赖组装、横切能力、事务、Web 请求处理和数据访问统一到可测试、可替换、可演进的应用模型中。它不是某个单一 Web 框架，而是一组围绕 <strong>IoC Container（控制反转容器）</strong> 的开发能力。</p>
+            <p>应用开发时要把 Spring 理解为“业务对象运行的容器”：容器管理 Bean，<strong>DI（Dependency Injection，依赖注入）</strong>连接对象，<strong>AOP（Aspect-Oriented Programming，面向切面编程）</strong>承载日志、审计、权限、事务等横切逻辑，<strong>Spring MVC</strong>处理 HTTP，<strong>Data Access Abstraction（数据访问抽象）</strong>统一 JDBC、事务与 ORM 集成。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart TB
+    APP["业务应用"] --> IOC["IoC Container<br/>BeanFactory · ApplicationContext"]
+    IOC --> DI["DI<br/>构造器注入 · 配置类 · 作用域"]
+    IOC --> AOP["AOP<br/>代理 · 切面 · 通知"]
+    IOC --> MVC["Spring MVC<br/>DispatcherServlet · Controller"]
+    IOC --> DATA["Data Access<br/>JdbcTemplate · Tx · ORM 集成"]
+    IOC --> ENV["Environment<br/>Profile · PropertySource"]</pre>
+              <p class="diagram-caption">图：Spring Framework 应用开发能力地图</p>
+
+            </div>
+            <div class="diagram-block diagram-image">
+              <img src="spring-multi-module-project.png" alt="Spring Framework 多模块项目结构——父模块 spring-multi-module-demo 下含 common、service、web 三个子模块及依赖关系" loading="lazy" />
+              <p class="diagram-caption">图：Spring Framework 多模块项目结构图（示例）</p>
+            </div>
+            <p>上图是典型的 Maven 多模块 Spring 项目：<strong>父 pom 管聚合与版本，子 pom 管各自依赖与打包</strong>。父模块没有 <code>src/</code>，只负责把 <code>common</code>、<code>service</code>、<code>web</code> 三个子模块串成一次构建；依赖方向是 <code>web → service → common</code>，与图中箭头一致。</p>
+            <p><strong>父 pom（<code>spring-multi-module-demo/pom.xml</code>）</strong> 的 <code>packaging</code> 必须是 <code>pom</code>，核心内容如下：</p>
+            <ul>
+              <li><code>&lt;modules&gt;</code>：声明子模块目录名 <code>common</code>、<code>service</code>、<code>web</code>，执行 <code>mvn install</code> 时按顺序递归构建。</li>
+              <li><code>&lt;dependencyManagement&gt;</code>：统一 Spring Boot BOM、MyBatis、Flyway 等第三方版本，以及内部模块 <code>common</code> / <code>service</code> 的版本（通常写 <code>${project.version}</code>）。</li>
+              <li><code>&lt;pluginManagement&gt;</code>：统一 <code>maven-compiler-plugin</code>、<code>spring-boot-maven-plugin</code> 等插件版本与配置，子模块引用时不必重复写版本号。</li>
+              <li><code>&lt;properties&gt;</code>：如 <code>java.version</code>、编码、Spring 版本等全局属性，供子模块和插件继承。</li>
+            </ul>
+            <pre><code>&lt;project&gt;
+    &lt;groupId&gt;com.example&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-multi-module-demo&lt;/artifactId&gt;
+    &lt;version&gt;1.0.0&lt;/version&gt;
+    &lt;packaging&gt;pom&lt;/packaging&gt;
+
+    &lt;modules&gt;
+        &lt;module&gt;common&lt;/module&gt;
+        &lt;module&gt;service&lt;/module&gt;
+        &lt;module&gt;web&lt;/module&gt;
+    &lt;/modules&gt;
+
+    &lt;dependencyManagement&gt;
+        &lt;dependencies&gt;
+            &lt;dependency&gt;
+                &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+                &lt;artifactId&gt;spring-boot-dependencies&lt;/artifactId&gt;
+                &lt;version&gt;3.4.0&lt;/version&gt;
+                &lt;type&gt;pom&lt;/type&gt;
+                &lt;scope&gt;import&lt;/scope&gt;
+            &lt;/dependency&gt;
+            &lt;dependency&gt;
+                &lt;groupId&gt;com.example&lt;/groupId&gt;
+                &lt;artifactId&gt;common&lt;/artifactId&gt;
+                &lt;version&gt;${project.version}&lt;/version&gt;
+            &lt;/dependency&gt;
+            &lt;dependency&gt;
+                &lt;groupId&gt;com.example&lt;/groupId&gt;
+                &lt;artifactId&gt;service&lt;/artifactId&gt;
+                &lt;version&gt;${project.version}&lt;/version&gt;
+            &lt;/dependency&gt;
+        &lt;/dependencies&gt;
+    &lt;/dependencyManagement&gt;
+&lt;/project&gt;</code></pre>
+            <p><strong>子 pom</strong> 都要通过 <code>&lt;parent&gt;</code> 指向父模块，继承 groupId、version 和 dependencyManagement；各自 <code>packaging</code> 为 <code>jar</code>，只声明本模块真正用到的依赖：</p>
+            <ul>
+              <li><strong><code>common/pom.xml</code></strong>：放 <code>Result</code>、<code>PageRequest</code>、<code>Constants</code> 等通用类，依赖尽量轻（如 validation、commons），<strong>不依赖</strong>其他内部模块，也不引入 Web 或数据库 starter。</li>
+              <li><strong><code>service/pom.xml</code></strong>：承载 Controller / Service / Repository 与 MyBatis、Flyway 配置，声明对 <code>common</code> 的依赖，并引入 <code>spring-boot-starter-jdbc</code>、MyBatis、数据库驱动、Flyway 等。</li>
+              <li><strong><code>web/pom.xml</code></strong>：启动模块，含 <code>DemoApplication.java</code>；依赖 <code>service</code>（会传递引入 <code>common</code>）和 <code>spring-boot-starter-web</code>；在 <code>&lt;build&gt;</code> 里配置 <code>spring-boot-maven-plugin</code> 打出可执行 fat jar。</li>
+            </ul>
+            <pre><code>&lt;!-- common/pom.xml：无内部模块依赖 --&gt;
+&lt;parent&gt;
+    &lt;groupId&gt;com.example&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-multi-module-demo&lt;/artifactId&gt;
+    &lt;version&gt;1.0.0&lt;/version&gt;
+&lt;/parent&gt;
+&lt;artifactId&gt;common&lt;/artifactId&gt;
+&lt;packaging&gt;jar&lt;/packaging&gt;
+
+&lt;!-- service/pom.xml：依赖 common --&gt;
+&lt;artifactId&gt;service&lt;/artifactId&gt;
+&lt;dependencies&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;com.example&lt;/groupId&gt;
+        &lt;artifactId&gt;common&lt;/artifactId&gt;
+    &lt;/dependency&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.mybatis.spring.boot&lt;/groupId&gt;
+        &lt;artifactId&gt;mybatis-spring-boot-starter&lt;/artifactId&gt;
+    &lt;/dependency&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.flywaydb&lt;/groupId&gt;
+        &lt;artifactId&gt;flyway-core&lt;/artifactId&gt;
+    &lt;/dependency&gt;
+&lt;/dependencies&gt;
+
+&lt;!-- web/pom.xml：启动模块，打可执行 jar --&gt;
+&lt;artifactId&gt;web&lt;/artifactId&gt;
+&lt;dependencies&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;com.example&lt;/groupId&gt;
+        &lt;artifactId&gt;service&lt;/artifactId&gt;
+    &lt;/dependency&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+        &lt;artifactId&gt;spring-boot-starter-web&lt;/artifactId&gt;
+    &lt;/dependency&gt;
+&lt;/dependencies&gt;
+&lt;build&gt;
+    &lt;plugins&gt;
+        &lt;plugin&gt;
+            &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-boot-maven-plugin&lt;/artifactId&gt;
+        &lt;/plugin&gt;
+    &lt;/plugins&gt;
+&lt;/build&gt;</code></pre>
+            <p>子模块写依赖时通常<strong>只写 groupId + artifactId</strong>，版本由父 pom 的 <code>dependencyManagement</code> 统一管理；在根目录执行 <code>mvn clean install</code> 即可一次构建全部模块。更完整的多模块构建命令见<a href="13-build-packaging-deploy.html#multi-env-module">第 13 章 · 多模块项目</a>。</p>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li><strong>IoC Container</strong> 解决对象创建和依赖装配，不让业务代码到处 <code>new</code> 基础设施对象。</li>
+              <li><strong>ApplicationContext</strong> 在 BeanFactory 之上提供事件、资源、国际化、环境和生命周期管理。</li>
+              <li><strong>声明式能力</strong> 的本质通常是代理，例如 <code>@Transactional</code>、<code>@Cacheable</code>、<code>@Async</code>。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>Spring Framework 管对象、管边界、管横切；业务代码专注用例和领域规则。</p>
+          </div>
+        </article>
+
+      </section>
+
+      <section class="section" id="di">
+        <h2>IoC / DI 应用</h2>
+        <article class="knowledge-card">
+          <h3>Bean 定义、组件扫描、构造器注入与生命周期</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>Bean</strong> 是由 Spring 容器创建和管理的对象。业务类通常用 <code>@Component</code>、<code>@Service</code>、<code>@Repository</code>、<code>@Controller</code> 通过 <strong>Component Scan（组件扫描）</strong>注册；第三方客户端、连接工厂、策略对象更适合通过 <code>@Configuration</code> + <code>@Bean</code> 显式定义。</p>
+            <p>依赖注入优先使用<strong>构造器注入</strong>：依赖可见、字段可 <code>final</code>、测试可直接 new。默认 <strong>Scope（作用域）</strong> 是 singleton，每个 ApplicationContext 一个实例；prototype 每次获取新实例；Web 场景还有 request、session。生命周期从 BeanDefinition 加载、实例化、属性填充、Aware 回调、BeanPostProcessor、初始化，到容器关闭时销毁。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>@Service
+public class OrderApplicationService {
+    private final OrderRepository orderRepository;
+    private final PaymentGateway paymentGateway;
+
+    public OrderApplicationService(OrderRepository orderRepository,
+                                   PaymentGateway paymentGateway) {
+        this.orderRepository = orderRepository;
+        this.paymentGateway = paymentGateway;
+    }
+
+    public OrderId placeOrder(PlaceOrderCommand command) {
+        Order order = Order.create(command.customerId(), command.lines());
+        paymentGateway.authorize(order.totalAmount());
+        orderRepository.save(order);
+        return order.id();
+    }
+}
+
+@Configuration
+class PaymentConfig {
+    @Bean
+    PaymentGateway paymentGateway(PaymentProperties props) {
+        return new StripePaymentGateway(props.endpoint(), props.apiKey());
+    }
+}</code></pre>
+            <pre><code>&lt;!-- XML 仍可用于历史系统兼容，新项目优先 Java Config --&gt;
+&lt;bean id="paymentGateway" class="com.acme.pay.StripePaymentGateway"&gt;
+  &lt;constructor-arg value="${payment.endpoint}" /&gt;
+&lt;/bean&gt;</code></pre>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>字段注入隐藏依赖，单元测试困难；优先构造器注入。</li>
+              <li>多个实现未使用 <code>@Qualifier</code> 或 <code>@Primary</code>，会导致 <code>NoUniqueBeanDefinitionException</code>。</li>
+              <li>singleton 注入 prototype 不会每次自动刷新，必要时用 <code>ObjectProvider&lt;T&gt;</code>。</li>
+              <li>循环依赖通常是职责边界问题，应拆服务、抽端口或改用事件。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="aop">
+        <h2>AOP 应用</h2>
+        <article class="knowledge-card">
+          <h3>日志、审计、权限与事务背后的代理机制</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>AOP</strong> 用于把横切逻辑从业务方法中抽离。典型场景包括接口访问日志、操作审计、权限校验、幂等、限流、缓存和声明式事务。Spring AOP 默认基于代理：目标类有接口时可用 <strong>JDK Dynamic Proxy（JDK 动态代理）</strong>，无接口时常用 <strong>CGLIB</strong> 创建子类代理。</p>
+            <p>理解代理是排障关键：调用方必须通过 Spring 代理对象进入方法，通知才会执行；同类 <code>this.method()</code> 自调用、<code>private</code> 方法、<code>final</code> 方法、非 Spring Bean 方法都容易让切面和事务失效。切面顺序用 <code>@Order</code> 控制，权限、事务、审计的先后要有明确策略。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart LR
+    CALLER["调用方"] --> PROXY["Spring Proxy<br/>JDK / CGLIB"]
+    PROXY --> ADVICE["Advice<br/>日志 · 权限 · 事务"]
+    ADVICE --> TARGET["Target Bean<br/>业务方法"]
+    TARGET --> ADVICE
+    ADVICE --> CALLER</pre>
+              <p class="diagram-caption">图：Spring AOP 代理调用链</p>
+            </div>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Audited {
+    String action();
+}
+
+@Aspect
+@Component
+class AuditAspect {
+    @Around("@annotation(audited)")
+    Object audit(ProceedingJoinPoint pjp, Audited audited) throws Throwable {
+        long start = System.nanoTime();
+        try {
+            Object result = pjp.proceed();
+            // 记录操作者、动作、业务主键、耗时和 traceId，不记录敏感字段。
+            return result;
+        } catch (Throwable ex) {
+            // 审计失败结果，但不能吞异常。
+            throw ex;
+        }
+    }
+}</code></pre>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="rest">
+        <h2>Web MVC 应用</h2>
+        <article class="knowledge-card">
+          <h3>DispatcherServlet、Controller、绑定、校验与异常处理</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>Spring MVC</strong> 的入口是 <strong>DispatcherServlet（前端控制器）</strong>。请求进入后依次经过 FilterChain、HandlerMapping、HandlerAdapter、Controller、参数绑定、校验、业务调用、返回值处理和 HttpMessageConverter。Controller 应保持薄：完成协议适配、入参校验、调用 Application Service、返回 DTO。</p>
+            <p><strong>Filter（过滤器）</strong> 位于 Servlet 层，适合 TraceId、编码、认证入口、CORS；<strong>HandlerInterceptor（拦截器）</strong> 位于 MVC 层，适合审计、幂等、灰度标签。异常处理集中到 <code>@RestControllerAdvice</code>，把领域异常、校验异常和系统异常映射为稳定错误码与 <code>ProblemDetail</code>。</p>
+            <div class="diagram-block diagram-rest-chain">
+              <pre class="mermaid">sequenceDiagram
+    participant C as Client
+    participant F as FilterChain
+    participant D as DispatcherServlet
+    participant H as HandlerAdapter
+    participant CT as Controller
+    participant S as ApplicationService
+    C->>F: "HTTP 请求"
+    F->>D: "TraceId / CORS / Security"
+    D->>H: "匹配 Handler"
+    H->>CT: "参数绑定与 Bean Validation"
+    CT->>S: "调用用例"
+    S-->>CT: "DTO"
+    CT-->>D: "ResponseEntity / ProblemDetail"
+    D-->>C: "JSON 响应"</pre>
+              <p class="diagram-caption">图：Spring MVC 请求处理链路</p>
+            </div>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>@RestController
+@RequestMapping("/api/v1/orders")
+class OrderController {
+    private final CreateOrderUseCase createOrder;
+
+    OrderController(CreateOrderUseCase createOrder) {
+        this.createOrder = createOrder;
+    }
+
+    @PostMapping
+    ResponseEntity&lt;OrderResponse&gt; create(@Valid @RequestBody CreateOrderRequest request) {
+        OrderView order = createOrder.execute(request.toCommand());
+        URI location = URI.create("/api/v1/orders/" + order.id());
+        return ResponseEntity.created(location).body(OrderResponse.from(order));
+    }
+}
+
+@RestControllerAdvice
+class ApiExceptionHandler {
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    ResponseEntity&lt;ProblemDetail&gt; validation(MethodArgumentNotValidException ex) {
+        ProblemDetail body = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+        body.setProperty("errorCode", "REQUEST_INVALID");
+        body.setProperty("errors", ex.getBindingResult().getFieldErrors().stream()
+            .collect(Collectors.toMap(FieldError::getField, FieldError::getDefaultMessage)));
+        return ResponseEntity.badRequest().body(body);
+    }
+}</code></pre>
+          </div>
+          <div class="card-block block-tips" id="exception">
+            <h4>异常映射要点</h4>
+            <ul>
+              <li>业务异常映射 4xx，系统异常映射 500，日志包含 traceId。</li>
+              <li>对外错误体给稳定业务码，不泄露 SQL、堆栈、类名和敏感数据。</li>
+              <li>参数绑定失败通常来自字段名不一致、日期格式、枚举值、Content-Type 或嵌套对象未加 <code>@Valid</code>。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="data-jpa">
+        <h2>数据访问抽象</h2>
+        <article class="knowledge-card">
+          <h3>JdbcTemplate、事务管理与 MyBatis / JPA 集成位置</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>Spring 的数据访问抽象把连接获取、资源释放、异常转换和事务同步统一起来。<strong>JdbcTemplate</strong> 适合显式 SQL、批处理和性能敏感路径；<strong>MyBatis</strong> 适合 SQL 可控、复杂报表和已有 SQL 资产；<strong>JPA</strong> 适合领域模型清晰、对象关系映射收益高的系统。它们都应位于 Repository / Infrastructure 层，由 Application Service 定义事务边界。</p>
+            <p><strong>PlatformTransactionManager</strong> 是事务管理抽象：JDBC 使用 <code>DataSourceTransactionManager</code>，JPA 使用 <code>JpaTransactionManager</code>。Spring 还提供 <code>DataAccessException</code> 统一异常层，避免业务层直接依赖不同驱动的 SQLException。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>@Repository
+class JdbcOrderRepository implements OrderRepository {
+    private final JdbcTemplate jdbcTemplate;
+
+    JdbcOrderRepository(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
+
+    @Override
+    public void save(Order order) {
+        jdbcTemplate.update("""
+            insert into orders(id, customer_id, status, total_amount)
+            values (?, ?, ?, ?)
+            """, order.id(), order.customerId(), order.status().name(), order.totalAmount());
+    }
+}
+
+@Mapper
+interface OrderMapper {
+    List&lt;OrderRow&gt; selectByCustomerId(String customerId);
+}
+
+public interface JpaOrderRepository extends JpaRepository&lt;OrderEntity, UUID&gt; {
+    @Query("select o from OrderEntity o join fetch o.lines where o.id = :id")
+    Optional&lt;OrderEntity&gt; findWithLines(UUID id);
+}</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>复杂写操作优先把事务放在应用服务层，而不是 Repository 内部。</li>
+              <li>批量写入使用 JDBC batch 或数据库原生能力，避免循环单条 ORM save。</li>
+              <li>JPA Entity 不直接作为 REST DTO 返回，避免懒加载、循环引用和字段泄漏。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="transaction">
+        <h2>声明式事务</h2>
+        <article class="knowledge-card">
+          <h3>@Transactional 的传播、隔离、回滚规则与失效场景</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><code>@Transactional</code> 通过 AOP 代理在方法前后开启、提交或回滚事务。常用 <strong>Propagation（传播行为）</strong>：<code>REQUIRED</code> 加入当前事务或新建；<code>REQUIRES_NEW</code> 挂起当前事务新开事务；<code>NESTED</code> 使用保存点；<code>SUPPORTS</code> 有事务则加入。常用 <strong>Isolation（隔离级别）</strong> 包括 READ_COMMITTED、REPEATABLE_READ、SERIALIZABLE，默认通常交给数据库。</p>
+            <p>默认只对 <code>RuntimeException</code> 和 <code>Error</code> 回滚，checked 异常需要 <code>rollbackFor</code>。事务边界应尽量短，不要把慢 HTTP、MQ 等外部调用长时间包在数据库事务里；跨服务一致性优先使用 Outbox、消息最终一致或 Saga，而不是分布式大事务。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>@Service
+class PlaceOrderService {
+    private final OrderRepository orders;
+    private final DomainEventPublisher events;
+
+    @Transactional(rollbackFor = BusinessException.class)
+    public OrderId place(PlaceOrderCommand command) throws BusinessException {
+        Order order = Order.create(command.customerId(), command.lines());
+        orders.save(order);
+        events.publish(new OrderPlacedEvent(order.id()));
+        return order.id();
+    }
+
+    @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
+    public OrderView get(OrderId id) {
+        return orders.findView(id).orElseThrow(OrderNotFoundException::new);
+    }
+}</code></pre>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>失效场景</h4>
+            <ul>
+              <li>同类自调用没有经过代理：<code>this.inner()</code> 不会触发事务。</li>
+              <li>方法不是 public、类或方法 final、对象不是 Spring Bean。</li>
+              <li>异常被 catch 后吞掉，或 checked 异常未配置 <code>rollbackFor</code>。</li>
+              <li><code>@Async</code> 新线程、手写线程池不会自动继承当前事务。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="config">
+        <h2>配置与环境</h2>
+        <article class="knowledge-card">
+          <h3>Environment、Profile、PropertySource 与外部化配置</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>Environment（环境抽象）</strong> 统一读取系统属性、环境变量、配置文件、命令行参数和自定义 <strong>PropertySource（属性源）</strong>。<strong>Profile</strong> 用于按环境启用 Bean 或配置，例如 dev、test、prod。应用代码应读取类型安全配置对象，而不是散落字符串 key。</p>
+            <p>新项目优先使用 Java Config 和外部化配置：本地使用 YAML / properties，生产由环境变量、Secret、配置中心或部署平台注入。Profile 管环境差异，不应承载复杂业务分支。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>@Configuration
+@Profile("prod")
+class ProdDataSourceConfig {
+    @Bean
+    DataSource dataSource(DatabaseProperties props) {
+        return DataSourceBuilder.create()
+            .url(props.url())
+            .username(props.username())
+            .password(props.password())
+            .build();
+    }
+}
+
+@Validated
+@ConfigurationProperties(prefix = "app.payment")
+public record PaymentProperties(
+    @NotBlank String endpoint,
+    @NotNull Duration timeout
+) {}</code></pre>
+            <pre><code># application.yml
+spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+app:
+  payment:
+    endpoint: ${PAYMENT_ENDPOINT:http://localhost:8081}
+    timeout: 3s</code></pre>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="events">
+        <h2>事件机制</h2>
+        <article class="knowledge-card">
+          <h3>ApplicationEvent、监听器与同步 / 异步事件</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>ApplicationEvent（应用事件）</strong> 适合在同一应用内解耦模块，例如订单创建后发送站内信、记录审计、触发缓存刷新。默认事件是同步发布，监听器异常会影响发布方；启用 <code>@Async</code> 后可异步执行，但事务上下文、异常处理和重试策略需要单独设计。</p>
+            <p>事件不是消息队列替代品。进程内事件适合同一 JVM 内的模块解耦；跨服务、可靠投递和削峰应使用 MQ，并配合 Outbox 或事务消息。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>public record OrderPlacedEvent(UUID orderId, Instant occurredAt) {}
+
+@Service
+class OrderService {
+    private final ApplicationEventPublisher publisher;
+
+    @Transactional
+    public UUID place(PlaceOrderCommand command) {
+        UUID orderId = saveOrder(command);
+        publisher.publishEvent(new OrderPlacedEvent(orderId, Instant.now()));
+        return orderId;
+    }
+}
+
+@Component
+class OrderEventListener {
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    void afterCommit(OrderPlacedEvent event) {
+        // 事务提交后再发通知，避免回滚后外部已感知。
+    }
+
+    @Async
+    @EventListener
+    void buildReadModel(OrderPlacedEvent event) {
+        // 异步监听器需要独立异常日志、重试和线程池配置。
+    }
+}</code></pre>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="validation">
+        <h2>Bean Validation</h2>
+        <article class="knowledge-card">
+          <h3>JSR 380 / Jakarta Validation 在入参与业务模型中的使用</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>Spring Framework 6 使用 Jakarta EE 9+ 命名空间，因此校验注解来自 <code>jakarta.validation</code>。Web 入参使用 <code>@Valid</code> 触发对象图校验，Service 方法级校验可用 <code>@Validated</code>。校验适合表达格式、长度、必填、范围、集合元素等规则；涉及库存、额度、状态流转的业务规则应放在领域对象或应用服务中。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>public record CreateOrderRequest(
+    @NotBlank String customerId,
+    @NotEmpty List&lt;@Valid LineRequest&gt; lines
+) {}
+
+public record LineRequest(
+    @NotBlank String sku,
+    @Positive int quantity
+) {}
+
+@Service
+@Validated
+class CustomerService {
+    public CustomerView get(@NotNull UUID customerId) {
+        return findCustomer(customerId);
+    }
+}</code></pre>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>嵌套对象或集合元素忘记加 <code>@Valid</code>，内层约束不会执行。</li>
+              <li>把业务规则全写成注解，导致规则难测试、难组合、错误信息难表达。</li>
+              <li>Spring 6 / Boot 3 项目误用 <code>javax.validation</code> 包。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="project-structure">
+        <h2>应用分层实践</h2>
+        <article class="knowledge-card">
+          <h3>Controller / Application Service / Domain / Repository / Infrastructure</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>Spring 应用不是把所有类放进 service 包就结束。推荐按业务上下文组织包，再在上下文内分层：<strong>Controller</strong> 负责 HTTP 适配；<strong>Application Service</strong> 编排用例和事务；<strong>Domain</strong> 承载实体、值对象、领域服务和规则；<strong>Repository</strong> 表达持久化端口；<strong>Infrastructure</strong> 实现数据库、MQ、第三方客户端等技术细节。</p>
+            <p>物理目录遵循 Maven/Gradle 标准布局（<code>src/main/java</code>、<code>src/main/resources</code>、<code>src/test/java</code>），源码包内再按业务上下文与分层职责划分；启动类与全局 <code>@Configuration</code> 通常放在根包，便于组件扫描覆盖全部业务模块。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart TB
+    ROOT["shop-service/"] --> POM["pom.xml<br/>依赖 · 插件 · Profile"]
+    ROOT --> SRC["src/"]
+    SRC --> MAIN["main/"]
+    SRC --> TEST["test/"]
+    MAIN --> JAVA["java/com/acme/shop/"]
+    MAIN --> RES["resources/"]
+    JAVA --> APP["ShopApplication.java<br/>@SpringBootApplication 入口"]
+    JAVA --> CFG["config/<br/>@Configuration · AOP · WebMvc"]
+    JAVA --> ORDER["order/ 订单上下文"]
+    ORDER --> WEB["web/<br/>Controller · Request · Response"]
+    ORDER --> APPL["application/<br/>UseCase · @Transactional"]
+    ORDER --> DOM["domain/<br/>Entity · ValueObject · 领域规则"]
+    ORDER --> PORT["repository/<br/>持久化端口接口"]
+    ORDER --> INFRA["infrastructure/<br/>Jdbc · MyBatis · JPA · MQ"]
+    JAVA --> SHARED["shared/<br/>异常 · ProblemDetail · 工具"]
+    RES --> YML["application*.yml<br/>Profile · 外部化配置"]
+    RES --> DB["db/migration/<br/>Flyway / Liquibase 脚本"]
+    RES --> XML["mapper/<br/>MyBatis XML 可选"]
+    TEST --> TJAVA["java/<br/>MockMvc · @SpringBootTest · 集成测试"]</pre>
+              <p class="diagram-caption">图：Spring Framework 典型 Maven 项目结构</p>
+            </div>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart TB
+    HTTP["HTTP / JSON"] --> CTRL["Controller<br/>协议适配"]
+    CTRL --> APP["Application Service<br/>用例编排 · 事务边界"]
+    APP --> DOM["Domain<br/>实体 · 值对象 · 领域规则"]
+    APP --> PORT["Repository Port<br/>接口"]
+    INFRA["Infrastructure<br/>JDBC · MyBatis · JPA · MQ"] -. "实现" .-> PORT
+    INFRA --> DB[("Database")]
+    DOM -. "不依赖 Spring" .-> HTTP</pre>
+              <p class="diagram-caption">图：面向应用开发的 Spring 分层依赖方向</p>
+            </div>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例目录</h4>
+            <pre><code>com.acme.shop.order
+├─ web              # Controller、Request、Response、异常映射
+├─ application      # UseCase、ApplicationService、事务边界
+├─ domain           # Entity、ValueObject、DomainService、DomainEvent
+├─ repository       # Repository 端口接口
+└─ infrastructure   # Jdbc/MyBatis/JPA 实现、MQ、第三方客户端</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>Controller 不写业务分支，Repository 不写业务流程。</li>
+              <li>事务边界通常在 Application Service，不在 Controller 或 DAO。</li>
+              <li>DTO 对外、Command 进应用层、Entity 留在领域内部。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="spring-boot-relationship">
+        <span id="auto-config"></span>
+        <h2>与 Spring Boot 的关系</h2>
+        <article class="knowledge-card">
+          <h3>Boot 是基于 Spring 的工程化快速启动层</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>Spring Boot</strong> 不是 Spring Framework 的替代品，而是基于 Spring 的工程化快速启动层。Boot 提供 Starter 依赖组合、Auto Configuration（自动配置）、内嵌 Web Server、配置绑定、Actuator、测试切片与打包部署约定，让团队更快创建可运行应用。</p>
+            <p>本章主角是 Spring Framework 的应用开发模型。Boot 在真实项目中通常作为脚手架和运行时约定使用：它减少样板配置，但底层仍是 IoC、AOP、MVC、事务、数据访问、Environment 与事件机制。高级开发者需要能解释 Boot 默认 Bean 从哪里来、如何覆盖和如何排障，但设计业务边界时仍以 Spring Framework 能力和分层原则为核心。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>@SpringBootApplication
+public class ShopApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(ShopApplication.class, args);
+    }
+}
+
+// @SpringBootApplication 组合了 @Configuration、@ComponentScan 和 Boot 自动配置入口。
+// 业务类仍由 Spring IoC 管理，事务和 MVC 仍来自 Spring Framework。</code></pre>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="spring-boot-ops">
+        <h2>Spring Boot 工程化</h2>
+        <article class="knowledge-card">
+          <h3>Actuator · 健康探针 · 优雅停机</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>生产环境 Spring Boot 应用须与 K8s 探针、发布策略对齐。<strong>Actuator</strong> 暴露运维端点；<strong>Liveness</strong> 判断进程是否存活（失败则重启 Pod）；<strong>Readiness</strong> 判断能否接流量（失败则从 Service 摘除）。<strong>Graceful Shutdown</strong> 在 SIGTERM 后停止接收新请求、等待在途请求完成再退出，避免发布时 502。</p>
+            <p>安全：生产仅暴露 <code>health</code>、<code>info</code>、<code>prometheus</code>（若用），且须认证或网络隔离——详见<a href="16-security-development.html">第 16 章安全开发</a>。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>配置示例</h4>
+            <pre><code># application-prod.yml
+server:
+  shutdown: graceful
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+  threads:
+    virtual:
+      enabled: true   # IO 密集可选，见第 09 章
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true   # /actuator/health/liveness &amp; /readiness
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+
+# K8s Deployment 片段
+# livenessProbe:  httpGet /actuator/health/liveness  initialDelaySeconds: 60
+# readinessProbe: httpGet /actuator/health/readiness initialDelaySeconds: 30
+# preStop: exec sleep 5  # 给 Endpoint 摘除留窗口</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>Readiness 可绑定 DB/Redis 连通性；启动慢的服务调大 <code>initialDelaySeconds</code>。</li>
+              <li>优雅停机 + MQ 消费者：停止 poll 前完成当前 batch ack。</li>
+              <li>与<a href="20-devops-cloud-native.html#cicd">第 20 章 CI/CD</a>蓝绿/金丝雀发布配合验证无 502 尖刺。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「Liveness 重启，Readiness 摘流；graceful 等完，preStop 缓冲。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="springdoc-openapi">
+        <h2>SpringDoc 与 OpenAPI</h2>
+        <article class="knowledge-card">
+          <h3>契约先行在 Spring Boot 的落地</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>springdoc-openapi</strong> 从 Controller 注解生成 OpenAPI 3 文档，或配合<strong>契约先行</strong>：先写 <code>openapi.yaml</code>，再生成接口骨架。与<a href="03-architecture-design.html#api-design">第 03 章 API 契约</a>、<a href="02-prototype-design.html">第 02 章 Mock</a>对齐：文档即单一事实源，CI 用 Spectral lint + 契约测试门禁。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>&lt;!-- pom.xml --&gt;
+&lt;dependency&gt;
+  &lt;groupId&gt;org.springdoc&lt;/groupId&gt;
+  &lt;artifactId&gt;springdoc-openapi-starter-webmvc-ui&lt;/artifactId&gt;
+&lt;/dependency&gt;
+
+@Configuration
+public class OpenApiConfig {
+  @Bean
+  OpenAPI shopApi() {
+    return new OpenAPI()
+        .info(new Info().title("Shop API").version("v1"))
+        .components(new Components().addSecuritySchemes("bearer",
+            new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("bearer")));
+  }
+}
+
+@RestController
+@RequestMapping("/api/v1/orders")
+@Tag(name = "Orders")
+public class OrderController {
+  @Operation(summary = "创建订单")
+  @ApiResponse(responseCode = "201", description = "Created")
+  @PostMapping
+  public ResponseEntity&lt;OrderResponse&gt; create(@Valid @RequestBody CreateOrderRequest req) { ... }
+}
+# 访问 /swagger-ui.html 或 /v3/api-docs</code></pre>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>生产 Swagger UI 未鉴权暴露——应仅 dev/test 开启或加 Security 链。</li>
+              <li>生成文档与契约仓库 YAML 漂移——契约仓库为 SSOT，生成物仅作校验。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="mapstruct-dto">
+        <h2>DTO 映射（MapStruct）</h2>
+        <article class="knowledge-card">
+          <h3>Entity / DTO / VO 转换规范</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>分层边界要求：<strong>Controller 只暴露 DTO/VO</strong>，不泄漏 JPA Entity 或懒加载关联。<strong>MapStruct</strong> 在编译期生成映射代码，性能优于反射，类型安全。复杂映射（枚举翻译、嵌套聚合）在 <code>@Mapper</code> 中声明 <code>@Mapping</code> 或 default 方法。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>@Mapper(componentModel = "spring")
+public interface OrderMapper {
+  OrderResponse toResponse(Order entity);
+  @Mapping(target = "id", ignore = true)
+  @Mapping(target = "status", constant = "PENDING")
+  Order toEntity(CreateOrderRequest dto);
+}
+
+@Service
+@RequiredArgsConstructor
+public class OrderQueryService {
+  private final OrderRepository repo;
+  private final OrderMapper mapper;
+  public OrderResponse get(UUID id) {
+    return repo.findById(id).map(mapper::toResponse).orElseThrow(...);
+  }
+}</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>写操作 Command 与读模型 Response 分离，避免同一 DTO 双向映射歧义。</li>
+              <li>MapStruct + Lombok 需配置 <code>lombok-mapstruct-binding</code> 注解处理器顺序。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="async-virtual-threads">
+        <h2>异步边界</h2>
+        <article class="knowledge-card">
+          <h3>@Async · 事件 · 虚拟线程与上下文传播</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><code>@Async</code> 将方法提交到线程池执行，适合非阻塞通知、审计落库。<strong>虚拟线程</strong>（<code>spring.threads.virtual.enabled=true</code>）适合高并发阻塞 IO，见<a href="09-concurrency.html">第 09 章</a>。异步线程默认<strong>无</strong> SecurityContext / MDC / Locale——需 <code>DelegatingSecurityContextAsyncTaskExecutor</code> 或手动传播（见<a href="16-security-development.html">第 16 章</a>）。领域事件：事务提交后再发布（<code>@TransactionalEventListener(phase = AFTER_COMMIT)</code>）。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>@Configuration
+@EnableAsync
+class AsyncConfig {
+  @Bean
+  Executor taskExecutor() {
+    return new DelegatingSecurityContextAsyncTaskExecutor(
+        Executors.newVirtualThreadPerTaskExecutor());
+  }
+}
+
+@Service
+class OrderAppService {
+  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  void onOrderPlaced(OrderPlacedEvent e) {
+    notificationService.sendAsync(e.orderId());
+  }
+}</code></pre>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="resilience4j">
+        <h2>Resilience4j 容错</h2>
+        <article class="knowledge-card">
+          <h3>超时 · 重试 · 熔断 · 舱壁 · 限流</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>Resilience4j</strong> 为 Spring Boot 3 推荐的轻量容错库，替代 Hystrix。与<a href="03-architecture-design.html#api-design">第 03 章 API 幂等/重试</a>对齐：仅对幂等请求重试；熔断打开后快速失败，避免级联故障。网关层限流（Sentinel/Gateway）与应用层 Resilience4j 互补。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>配置示例</h4>
+            <pre><code># application.yml
+resilience4j:
+  circuitbreaker:
+    instances:
+      payment:
+        slidingWindowSize: 20
+        failureRateThreshold: 50
+        waitDurationInOpenState: 30s
+  retry:
+    instances:
+      payment:
+        maxAttempts: 3
+        waitDuration: 200ms
+  timelimiter:
+    instances:
+      payment:
+        timeoutDuration: 3s
+
+@Service
+class PaymentClient {
+  @CircuitBreaker(name = "payment", fallbackMethod = "chargeFallback")
+  @Retry(name = "payment")
+  @TimeLimiter(name = "payment")
+  public CompletableFuture&lt;Receipt&gt; charge(Money amount) { ... }
+}</code></pre>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「超时先定，幂等才重试；熔断防雪崩，舱壁隔离慢依赖。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="exception-handling">
+        <h2>统一异常与错误码</h2>
+        <article class="knowledge-card">
+          <h3>业务异常 · Problem Details · @ControllerAdvice</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>异常分层：<strong>业务异常</strong>（可预期，4xx，稳定 error code）vs <strong>系统异常</strong>（5xx，日志告警）。对外响应遵循 RFC 9457 <strong>Problem Details</strong>，与<a href="03-architecture-design.html#api-design">第 03 章错误规范</a>一致。错误码用英文常量（如 <code>order.not_found</code>），用户可见文案走 MessageSource（见<a href="15-common-modules.html#i18n">第 15 章 i18n</a>）。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>public class BusinessException extends RuntimeException {
+  private final String code;
+  private final HttpStatus status;
+}
+
+@RestControllerAdvice
+class GlobalExceptionHandler {
+  @ExceptionHandler(BusinessException.class)
+  ProblemDetail handle(BusinessException ex) {
+    return ProblemDetail.forStatusAndDetail(ex.getStatus(), ex.getCode())
+        .setProperty("code", ex.getCode());
+  }
+  @ExceptionHandler(Exception.class)
+  ProblemDetail handleSystem(Exception ex) {
+    log.error("unexpected", ex);
+    return ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+        .setDetail("internal.error");
+  }
+}</code></pre>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="development-flow">
+        <h2>典型项目开发流程</h2>
+        <article class="knowledge-card">
+          <h3>从业务模块到测试闭环</h3>
+          <div class="card-block block-deliverable">
+            <h4>落地步骤</h4>
+            <ol>
+              <li>创建业务模块与包结构，明确上下文边界和依赖方向。</li>
+              <li>定义 REST 接口、Request / Response DTO、错误码和校验规则。</li>
+              <li>编写 Application Service，确定事务边界、用例输入输出和领域事件。</li>
+              <li>实现 Domain 模型、Repository 端口和 Infrastructure 持久化适配。</li>
+              <li>集成 JdbcTemplate、MyBatis 或 JPA，并补充迁移脚本和真实方言测试。</li>
+              <li>编写 Controller 测试、Service 单元测试、Repository 集成测试和关键链路验收测试。</li>
+              <li>接入配置、日志、指标、异常映射、安全拦截和发布 checklist。</li>
+            </ol>
+          </div>
+          <div class="card-block block-example">
+            <h4>用例骨架</h4>
+            <pre><code>public record PlaceOrderCommand(String customerId, List&lt;OrderLineCommand&gt; lines) {}
+
+public interface PlaceOrderUseCase {
+    OrderId execute(PlaceOrderCommand command);
+}
+
+@Service
+class PlaceOrderApplicationService implements PlaceOrderUseCase {
+    @Override
+    @Transactional
+    public OrderId execute(PlaceOrderCommand command) {
+        // 1. 校验用例级前置条件
+        // 2. 调用领域模型完成状态变化
+        // 3. 保存聚合并发布领域事件
+        return orderId;
+    }
+}</code></pre>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="troubleshooting">
+        <h2>常见问题与排障</h2>
+        <article class="knowledge-card">
+          <h3>从 Bean、代理、事务、绑定到 Web 行为</h3>
+          <div class="card-block block-pitfalls">
+            <h4>排障清单</h4>
+            <ul>
+              <li><strong>Bean 找不到</strong>：检查包扫描根路径、Profile、条件 Bean、模块依赖、Bean 名称和测试切片加载范围。</li>
+              <li><strong>循环依赖</strong>：优先拆职责、抽端口、改事件；不要把允许循环依赖作为长期方案。</li>
+              <li><strong>代理失效</strong>：排查自调用、final/private 方法、对象未交给 Spring、切点表达式过窄或代理类型不匹配。</li>
+              <li><strong>事务不生效</strong>：检查异常是否被吞、checked 异常回滚规则、事务管理器、方法可见性和异步线程。</li>
+              <li><strong>参数绑定失败</strong>：检查 JSON 字段名、Content-Type、日期格式、枚举值、嵌套 <code>@Valid</code> 和构造器。</li>
+              <li><strong>跨域 CORS</strong>：区分浏览器预检与服务端错误，统一在 MVC 或 Security 层配置。</li>
+              <li><strong>JSON 序列化</strong>：避免 Entity 直出，处理懒加载、循环引用、时间格式、BigDecimal 精度和枚举兼容。</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>诊断入口</h4>
+            <ul>
+              <li>启动日志、Bean 创建异常栈和条件装配报告能定位大多数容器问题。</li>
+              <li>MVC 问题优先看请求日志、异常映射、MockMvc 回归测试和浏览器 Network 面板。</li>
+              <li>事务问题用集成测试验证提交/回滚结果，不只看日志是否打印。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="chapter-execution-checklist">
+        <h2>生产开发 Checklist</h2>
+        <article class="knowledge-card">
+          <h3>上线前必须确认的应用工程项</h3>
+          <div class="card-block block-deliverable">
+            <h4>代码与分层</h4>
+            <ul>
+              <li>Controller 薄，Application Service 定义用例和事务边界，Domain 不依赖 Web / ORM 细节。</li>
+              <li>Bean 使用构造器注入，无隐藏字段注入、无无意义循环依赖、无静态可变状态。</li>
+              <li>DTO、Command、Entity 边界清晰，外部接口不直接暴露持久化模型。</li>
+              <li>AOP 切点明确，审计、权限、事务、缓存顺序可解释。</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>配置与数据</h4>
+            <ul>
+              <li>Profile、PropertySource 和外部化配置来源清晰，密钥不入 Git。</li>
+              <li>JdbcTemplate / MyBatis / JPA 选型与模块位置明确，SQL 和迁移脚本可追踪。</li>
+              <li><code>@Transactional</code> 的传播、隔离、回滚规则经过集成测试覆盖。</li>
+              <li>事件监听器区分同步、异步和事务后发布，失败策略明确。</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>接口与质量</h4>
+            <ul>
+              <li>入参校验、异常响应、错误码、CORS、JSON 序列化和安全入口有回归测试。</li>
+              <li>核心用例有单元测试，Repository 有真实数据库方言测试，Web 层有 MockMvc 或等价测试。</li>
+              <li>日志包含 traceId，关键业务操作有审计，生产排障不依赖临时改代码。</li>
+              <li>使用 Boot 时能说明自动配置覆盖点、Actuator 暴露范围和运行时配置来源。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <nav class="chapter-nav">
+        <a href="11-persistence.html">← 上一章：持久化</a>
+        <a href="13-build-packaging-deploy.html">下一章：项目构建、打包与部署 →</a>
+      </nav>
+    </main>
+  </div>
+  <script src="assets/diagram.js" defer></script>
+  <script src="assets/explain-format.js" defer></script>
+  <script src="assets/chapter-toc.js" defer></script>
+</body>
+</html>

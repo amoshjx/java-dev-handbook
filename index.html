@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Java项目手册 — 目录</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/sidebar.js" defer></script>
+</head>
+<body class="index-page">
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">Java项目手册</div>
+      <nav>
+        <div class="nav-group">
+          <ul class="nav-list">
+                                    <li><a href="index.html">目录首页</a></li>
+            <li><a href="01-requirements-analysis.html">01 需求分析</a></li>
+            <li><a href="02-prototype-design.html">02 原型设计</a></li>
+            <li><a href="03-architecture-design.html">03 架构设计</a></li>
+            <li><a href="04-project-scheduling.html">04 项目排期</a></li>
+            <li class="sidebar-group"><span class="sidebar-group-label"><a href="java-development.html">开发实现</a></span></li>
+            <li class="sidebar-subitem"><a href="05-dev-environment.html">05 开发环境搭建</a></li>
+            <li class="sidebar-subitem"><a href="06-java-basics.html">06 Java基础语法</a></li>
+            <li class="sidebar-subitem"><a href="07-oop.html">07 面向对象</a></li>
+            <li class="sidebar-subitem"><a href="08-jvm.html">08 JVM</a></li>
+            <li class="sidebar-subitem"><a href="09-concurrency.html">09 并发编程</a></li>
+            <li class="sidebar-subitem"><a href="10-io-nio-network.html">10 IO·NIO·网络</a></li>
+            <li class="sidebar-subitem"><a href="11-persistence.html">11 持久化</a></li>
+            <li class="sidebar-subitem"><a href="12-spring-framework.html">12 Spring Framework</a></li>
+            <li class="sidebar-subitem"><a href="13-build-packaging-deploy.html">13 构建·打包·部署</a></li>
+            <li class="sidebar-subitem"><a href="14-ruoyi-framework.html">14 RuoYi 框架</a></li>
+            <li class="sidebar-subitem"><a href="15-common-modules.html">15 常见功能模块</a></li>
+            <li class="sidebar-subitem"><a href="16-security-development.html">16 安全开发</a></li>
+            <li class="sidebar-subitem"><a href="17-test-driven-development.html">17 测试驱动开发</a></li>
+            <li><a href="18-testing-quality.html">18 测试·质量</a></li>
+            <li><a href="19-performance-tuning.html">19 性能调优</a></li>
+            <li><a href="20-devops-cloud-native.html">20 工程化·DevOps·CI/CD</a></li>
+            <li><a href="21-ai-development.html">21 AI 辅助开发</a></li>
+            <li><a href="22-business-intelligence.html">22 业务智能化</a></li>
+            <li><a href="glossary.html">术语字典</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="index-hero">
+        <h1>Java项目手册</h1>
+        <p class="index-subtitle">按项目生命周期组织的 Java 后端实践手册</p>
+        <p class="index-stats">22 章 · 240+ 知识点 · 离线可用</p>
+        <p class="index-baseline">默认基线：Java 21 LTS · Spring Boot 3.x · JUnit 5</p>
+      </header>
+
+      <div class="diagram-block index-diagram">
+        <pre class="mermaid">flowchart LR
+    P1["规划与设计<br/>01–04"] --> P2["环境与语言<br/>05–11"]
+    P2 --> P3["应用开发<br/>12–16"]
+    P3 --> P4["质量与交付<br/>17–20"]
+    P4 --> P5["AI 赋能<br/>21–22"]</pre>
+        <p class="diagram-caption">五阶段知识域总览</p>
+      </div>
+
+      <section class="index-phase" id="phase-planning">
+        <h2 class="index-phase-title">规划与设计</h2>
+        <p class="index-phase-note">01 章含业务侧 AI 需求（Part B），衔接 <a href="22-business-intelligence.html">第 21 章</a></p>
+        <div class="index-chapter-grid">
+          <a class="index-chapter-card" href="01-requirements-analysis.html">
+            <span class="index-chapter-num">01</span>
+            <span class="index-chapter-title">需求分析</span>
+            <span class="index-chapter-desc">价值定位、用户故事、NFR 与需求变更追溯</span>
+          </a>
+          <a class="index-chapter-card" href="02-prototype-design.html">
+            <span class="index-chapter-num">02</span>
+            <span class="index-chapter-title">原型设计</span>
+            <span class="index-chapter-desc">线框、交互、Mock 契约与评审冻结</span>
+          </a>
+          <a class="index-chapter-card" href="03-architecture-design.html">
+            <span class="index-chapter-num">03</span>
+            <span class="index-chapter-title">架构设计</span>
+            <span class="index-chapter-desc">模式选型、质量属性权衡与 ADR 决策</span>
+          </a>
+          <a class="index-chapter-card" href="04-project-scheduling.html">
+            <span class="index-chapter-num">04</span>
+            <span class="index-chapter-title">项目排期</span>
+            <span class="index-chapter-desc">WBS、里程碑 Gate 与交付时间窗</span>
+          </a>
+        </div>
+      </section>
+
+      <section class="index-phase" id="phase-foundation">
+        <h2 class="index-phase-title">环境与语言基础</h2>
+        <div class="index-chapter-grid">
+          <a class="index-chapter-card" href="05-dev-environment.html">
+            <span class="index-chapter-num">05</span>
+            <span class="index-chapter-title">开发环境搭建</span>
+            <span class="index-chapter-desc">Java、Git、Maven、IDE 安装与验证</span>
+          </a>
+          <a class="index-chapter-card" href="06-java-basics.html">
+            <span class="index-chapter-num">06</span>
+            <span class="index-chapter-title">Java 基础语法</span>
+            <span class="index-chapter-desc">语法、类型系统、集合与 Stream</span>
+          </a>
+          <a class="index-chapter-card" href="07-oop.html">
+            <span class="index-chapter-num">07</span>
+            <span class="index-chapter-title">面向对象</span>
+            <span class="index-chapter-desc">建模、封装、SOLID 与不可变对象</span>
+          </a>
+          <a class="index-chapter-card" href="08-jvm.html">
+            <span class="index-chapter-num">08</span>
+            <span class="index-chapter-title">JVM</span>
+            <span class="index-chapter-desc">运行时、GC、诊断与线上排障</span>
+          </a>
+          <a class="index-chapter-card" href="09-concurrency.html">
+            <span class="index-chapter-num">09</span>
+            <span class="index-chapter-title">并发编程</span>
+            <span class="index-chapter-desc">线程、锁、线程池与异步编排</span>
+          </a>
+          <a class="index-chapter-card" href="10-io-nio-network.html">
+            <span class="index-chapter-num">10</span>
+            <span class="index-chapter-title">IO·NIO·网络</span>
+            <span class="index-chapter-desc">文件 IO、NIO 与 HTTP 客户端</span>
+          </a>
+          <a class="index-chapter-card" href="11-persistence.html">
+            <span class="index-chapter-num">11</span>
+            <span class="index-chapter-title">持久化</span>
+            <span class="index-chapter-desc">SQL 优化、索引、事务与连接池</span>
+          </a>
+        </div>
+      </section>
+
+      <section class="index-phase" id="phase-application">
+        <h2 class="index-phase-title">应用开发</h2>
+        <div class="index-chapter-grid">
+          <a class="index-chapter-card" href="12-spring-framework.html">
+            <span class="index-chapter-num">12</span>
+            <span class="index-chapter-title">Spring Framework</span>
+            <span class="index-chapter-desc">IoC、AOP、MVC、事务与分层实践</span>
+          </a>
+          <a class="index-chapter-card" href="13-build-packaging-deploy.html">
+            <span class="index-chapter-num">13</span>
+            <span class="index-chapter-title">构建·打包·部署</span>
+            <span class="index-chapter-desc">Maven 构建、Docker 镜像、K8s 部署与 CI/CD</span>
+          </a>
+          <a class="index-chapter-card" href="14-ruoyi-framework.html">
+            <span class="index-chapter-num">14</span>
+            <span class="index-chapter-title">RuoYi 框架</span>
+            <span class="index-chapter-desc">企业后台脚手架、权限与代码生成</span>
+          </a>
+          <a class="index-chapter-card" href="15-common-modules.html">
+            <span class="index-chapter-num">15</span>
+            <span class="index-chapter-title">常见功能模块</span>
+            <span class="index-chapter-desc">RBAC、支付、消息、工作流等企业标配</span>
+          </a>
+          <a class="index-chapter-card" href="16-security-development.html">
+            <span class="index-chapter-num">16</span>
+            <span class="index-chapter-title">安全开发</span>
+            <span class="index-chapter-desc">Spring Security、OWASP 与审计合规</span>
+          </a>
+        </div>
+      </section>
+
+      <section class="index-phase" id="phase-quality">
+        <h2 class="index-phase-title">质量与交付</h2>
+        <div class="index-chapter-grid">
+          <a class="index-chapter-card" href="17-test-driven-development.html">
+            <span class="index-chapter-num">17</span>
+            <span class="index-chapter-title">测试驱动开发</span>
+            <span class="index-chapter-desc">TDD 红绿重构与测试金字塔</span>
+          </a>
+          <a class="index-chapter-card" href="18-testing-quality.html">
+            <span class="index-chapter-num">18</span>
+            <span class="index-chapter-title">测试·质量</span>
+            <span class="index-chapter-desc">单元/集成测试、UAT 与静态分析</span>
+          </a>
+          <a class="index-chapter-card" href="19-performance-tuning.html">
+            <span class="index-chapter-num">19</span>
+            <span class="index-chapter-title">性能调优</span>
+            <span class="index-chapter-desc">指标观测、压测验证与调优闭环</span>
+          </a>
+          <a class="index-chapter-card" href="20-devops-cloud-native.html">
+            <span class="index-chapter-num">20</span>
+            <span class="index-chapter-title">工程化·DevOps·CI/CD</span>
+            <span class="index-chapter-desc">流水线设计、GitLab 实战与多环境发布</span>
+          </a>
+        </div>
+      </section>
+
+      <section class="index-phase" id="phase-ai">
+        <h2 class="index-phase-title">AI 赋能</h2>
+        <p class="index-phase-note">第 21 章面向开发者 AI 实践；第 22 章面向业务侧 LLM 落地</p>
+        <div class="index-chapter-grid">
+          <a class="index-chapter-card" href="21-ai-development.html">
+            <span class="index-chapter-num">21</span>
+            <span class="index-chapter-title">AI 辅助开发</span>
+            <span class="index-chapter-desc">Prompt、Code Review 与本地模型部署</span>
+          </a>
+          <a class="index-chapter-card" href="22-business-intelligence.html">
+            <span class="index-chapter-num">22</span>
+            <span class="index-chapter-title">业务智能化</span>
+            <span class="index-chapter-desc">LLM 场景、RAG、Eval 与 Java 集成</span>
+          </a>
+        </div>
+      </section>
+
+      <footer class="index-footer">
+        <a href="glossary.html">术语字典</a> · 双击 <code>index.html</code> 即可离线浏览
+      </footer>
+    </main>
+  </div>
+  <script src="assets/diagram.js" defer></script>
+</body>
+</html>

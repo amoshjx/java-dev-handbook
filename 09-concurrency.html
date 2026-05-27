@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>09 并发编程 — Java项目手册</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/sidebar.js" defer></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">Java项目手册</div>
+      <nav>
+        <div class="nav-group">
+                    <ul class="nav-list">
+                                                                                                                                                <li><a href="index.html">目录首页</a></li>
+            <li><a href="01-requirements-analysis.html">01 需求分析</a></li>
+            <li><a href="02-prototype-design.html">02 原型设计</a></li>
+            <li><a href="03-architecture-design.html">03 架构设计</a></li>
+            <li><a href="04-project-scheduling.html">04 项目排期</a></li>
+            <li class="sidebar-group"><span class="sidebar-group-label"><a href="java-development.html">开发实现</a></span></li>
+            <li class="sidebar-subitem"><a href="05-dev-environment.html">05 开发环境搭建</a></li>
+            <li class="sidebar-subitem"><a href="06-java-basics.html">06 Java基础语法</a></li>
+            <li class="sidebar-subitem"><a href="07-oop.html">07 面向对象</a></li>
+            <li class="sidebar-subitem"><a href="08-jvm.html">08 JVM</a></li>
+            <li class="sidebar-subitem"><a href="09-concurrency.html">09 并发编程</a></li>
+            <li class="sidebar-subitem"><a href="10-io-nio-network.html">10 IO·NIO·网络</a></li>
+            <li class="sidebar-subitem"><a href="11-persistence.html">11 持久化</a></li>
+            <li class="sidebar-subitem"><a href="12-spring-framework.html">12 Spring Framework</a></li>
+            <li class="sidebar-subitem"><a href="13-build-packaging-deploy.html">13 构建·打包·部署</a></li>
+            <li class="sidebar-subitem"><a href="14-ruoyi-framework.html">14 RuoYi 框架</a></li>
+            <li class="sidebar-subitem"><a href="15-common-modules.html">15 常见功能模块</a></li>
+            <li class="sidebar-subitem"><a href="16-security-development.html">16 安全开发</a></li>
+            <li class="sidebar-subitem"><a href="17-test-driven-development.html">17 测试驱动开发</a></li>
+            <li><a href="18-testing-quality.html">18 测试·质量</a></li>
+            <li><a href="19-performance-tuning.html">19 性能调优</a></li>
+            <li><a href="20-devops-cloud-native.html">20 工程化·DevOps·CI/CD</a></li>
+            <li><a href="21-ai-development.html">21 AI 辅助开发</a></li>
+            <li><a href="22-business-intelligence.html">22 业务智能化</a></li>
+            <li><a href="glossary.html">术语字典</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="page-header">
+        <h1>09 并发编程</h1>
+        <p>线程、锁与线程池——正确性优先于性能，性能靠度量而非猜测。</p>
+      </header>
+
+      <section class="section" id="fundamentals">
+        <h2>1. 线程基础与生命周期（The Fundamentals）</h2>
+        <p>并发编程的起点是“如何创建和控制线程”。在工程实践中，线程不是越多越好，而是要在资源上限内建立可控的并发模型。</p>
+        <h3>1.1 创建线程的四种方式</h3>
+        <ul>
+          <li>继承 <code>Thread</code> 类：简单直接，但不利于业务逻辑复用。</li>
+          <li>实现 <code>Runnable</code> 接口：任务与线程分离，工程中更常用。</li>
+          <li>实现 <code>Callable</code> 接口：支持返回值和异常传播，配合 <code>Future</code> 使用。</li>
+          <li>线程池（最推荐）：复用线程、统一管理、支持监控与限流。</li>
+        </ul>
+        <h3>1.2 线程生命周期与状态切换</h3>
+        <p>Java 线程包含 6 种状态：<code>NEW</code>、<code>RUNNABLE</code>、<code>BLOCKED</code>、<code>WAITING</code>、<code>TIMED_WAITING</code>、<code>TERMINATED</code>。理解状态切换是排查线程问题（阻塞、死锁、长等待）的基本功。</p>
+        <div class="diagram-block">
+          <pre class="mermaid">stateDiagram-v2
+    [*] --> NEW
+    NEW --> RUNNABLE: "start"
+    RUNNABLE --> BLOCKED: "等待监视器锁"
+    RUNNABLE --> WAITING: "wait/join"
+    RUNNABLE --> TIMED_WAITING: "sleep/timeout"
+    BLOCKED --> RUNNABLE: "获得锁"
+    WAITING --> RUNNABLE: "notify/interrupt"
+    TIMED_WAITING --> RUNNABLE: "超时/interrupt"
+    RUNNABLE --> TERMINATED: "run 结束"</pre>
+          <p class="diagram-caption">图：Java 线程状态机</p>
+        </div>
+        <h3>1.3 常用控制方法</h3>
+        <ul>
+          <li><code>start()</code>：启动线程并进入就绪队列。</li>
+          <li><code>sleep()</code>：当前线程休眠一段时间，进入 <code>TIMED_WAITING</code>。</li>
+          <li><code>wait()</code> / <code>notify()</code>：对象监视器等待与唤醒，必须在同步块中使用。</li>
+          <li><code>join()</code>：等待目标线程执行完成。</li>
+          <li><code>yield()</code>：提示调度器让出 CPU，不保证立即生效。</li>
+        </ul>
+        <h3>1.4 参考实现：中断驱动的优雅退出</h3>
+        <pre><code>public void runLoop() {
+    while (!Thread.currentThread().isInterrupted()) {
+        try {
+            Task task = queue.take();
+            process(task);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            break;
+        }
+    }
+}</code></pre>
+      </section>
+
+      <section class="section" id="core-principles">
+        <h2>2. 线程安全与并发三大特性（Core Principles）</h2>
+        <p>多个线程同时访问共享变量时，若缺乏同步约束，就会产生线程安全问题。要保证正确性，必须理解并落实原子性、可见性、有序性这三大特性。</p>
+        <h3>2.1 原子性（Atomicity）</h3>
+        <p>一个或多个操作要么全部完成，要么全部不执行。像 <code>i++</code> 这类复合操作在并发下不是原子的。</p>
+        <ul>
+          <li>解决手段：<code>synchronized</code>、<code>Lock</code>、原子类（如 <code>AtomicInteger</code>）。</li>
+        </ul>
+        <h3>2.2 可见性（Visibility）</h3>
+        <p>一个线程修改共享变量后，其他线程必须能够及时看到最新值。由于 CPU 高速缓存与工作内存机制，可见性不会天然成立。</p>
+        <ul>
+          <li>解决手段：<code>volatile</code>、<code>synchronized</code>、<code>Lock</code>。</li>
+        </ul>
+        <h3>2.3 有序性（Ordering）</h3>
+        <p>程序执行不总是严格按代码顺序进行。编译器和处理器会做指令重排以优化性能，因此并发下需要借助内存模型规则限制重排影响。</p>
+        <ul>
+          <li>解决手段：<code>volatile</code>（内存屏障）与 Happens-Before 原则。</li>
+        </ul>
+      </section>
+
+      <section class="section" id="locking-and-sync">
+        <h2>3. 锁与同步机制（Locking &amp; Synchronization）</h2>
+        <p>为了实现并发三大特性，Java 提供了从关键字锁到 JUC 显式锁的一整套机制。选型原则是：先保证正确性，再通过压测做性能优化。</p>
+        <h3>3.1 关键字锁</h3>
+        <p><code>synchronized</code> 是 Java 内置锁，可修饰方法或代码块。它在 Java 1.6 后有偏向锁、轻量级锁、重量级锁等升级优化。<code>volatile</code> 是轻量级同步机制，只保证可见性和有序性，不保证原子性。</p>
+        <h3>3.2 JUC 显式锁</h3>
+        <ul>
+          <li><code>ReentrantLock</code>（可重入锁）：支持公平/非公平、可中断等待、超时获取锁。</li>
+          <li><code>ReentrantReadWriteLock</code>（读写锁）：读读共享，读写互斥，写写互斥，适合读多写少。</li>
+          <li><code>StampedLock</code>（邮戳锁）：支持乐观读，读场景吞吐通常更高。</li>
+        </ul>
+        <h3>3.3 Happens-Before 关键规则</h3>
+        <div class="diagram-block">
+          <pre class="mermaid">flowchart LR
+    W1[volatile 写] -->|happens-before| R1[volatile 读]
+    UNLOCK[synchronized 解锁] -->|happens-before| LOCK[synchronized 加锁]
+    START[Thread.start] -->|happens-before| RUN[线程内动作]
+    JOIN[线程结束] -->|happens-before| RET[join 返回]</pre>
+          <p class="diagram-caption">图：happens-before 核心规则</p>
+        </div>
+      </section>
+
+      <section class="section" id="juc-toolkits">
+        <h2>4. JUC 工具包与高级并发组件（Advanced Toolkits）</h2>
+        <p><code>java.util.concurrent</code>（JUC）是 Java 并发编程的核心工具箱，覆盖线程调度、并发容器、同步器和无锁并发等关键能力。</p>
+        <h3>4.1 线程池（Executor Framework）</h3>
+        <p>线程池用于避免频繁创建和销毁线程带来的高开销。核心实现类是 <code>ThreadPoolExecutor</code>。</p>
+        <p><strong>核心 7 大参数：</strong>核心线程数、最大线程数、空闲线程存活时间、时间单位、工作队列（WorkQueue）、线程工厂、拒绝策略（如 <code>AbortPolicy</code>、<code>CallerRunsPolicy</code>）。</p>
+        <div class="diagram-block">
+          <pre class="mermaid">flowchart TD
+    TASK[新任务] --> CORE{核心线程未满?}
+    CORE -->|是| EXEC1[核心线程执行]
+    CORE -->|否| QUEUE{队列未满?}
+    QUEUE -->|是| ENQ[入队等待]
+    QUEUE -->|否| MAX{未达 max?}
+    MAX -->|是| EXEC2[扩展线程执行]
+    MAX -->|否| REJECT[拒绝策略]</pre>
+          <p class="diagram-caption">图：ThreadPoolExecutor 任务提交流程</p>
+        </div>
+        <h3>参考配置：生产可控线程池</h3>
+        <pre><code>int cores = Runtime.getRuntime().availableProcessors();
+ThreadPoolExecutor pool = new ThreadPoolExecutor(
+    cores,
+    cores * 2,
+    60L,
+    TimeUnit.SECONDS,
+    new ArrayBlockingQueue&lt;&gt;(1000),
+    Executors.defaultThreadFactory(),
+    new ThreadPoolExecutor.CallerRunsPolicy()
+);</code></pre>
+        <h3>4.2 并发容器（Concurrent Collections）</h3>
+        <ul>
+          <li><code>ConcurrentHashMap</code>：高并发下的首选 Map，Java 8 典型实现思路为 CAS + synchronized + 红黑树。</li>
+          <li><code>CopyOnWriteArrayList</code>：写时复制，适合读多写少场景。</li>
+          <li><code>ArrayBlockingQueue</code> / <code>LinkedBlockingQueue</code>：阻塞队列，生产者-消费者模型基础组件。</li>
+        </ul>
+        <h3>4.3 同步工具类（Synchronizers）</h3>
+        <ul>
+          <li><code>CountDownLatch</code>：一个或多个线程等待其他线程完成后再继续，只能使用一次。</li>
+          <li><code>CyclicBarrier</code>：多个线程互相等待到达同一同步点，可循环复用。</li>
+          <li><code>Semaphore</code>：控制同一时间访问资源的线程数量，常用于限流。</li>
+        </ul>
+        <h3>4.4 原子类与无锁并发（Atomic &amp; CAS）</h3>
+        <p>CAS（Compare And Swap，比较并交换）是无锁并发的基础。常见类包括 <code>AtomicInteger</code>、<code>AtomicReference</code>，以及高并发计数性能更优的 <code>LongAdder</code>。</p>
+        <pre><code>Semaphore permits = new Semaphore(50);
+LongAdder successCounter = new LongAdder();
+
+public void invokeDownstream() throws InterruptedException {
+    permits.acquire();
+    try {
+        client.invoke();
+        successCounter.increment();
+    } finally {
+        permits.release();
+    }
+}</code></pre>
+      </section>
+
+      <section class="section" id="modern-java-concurrency">
+        <h2>5. 补充：现代 Java 并发新发展</h2>
+        <h3>虚拟线程（Virtual Threads / Project Loom）</h3>
+        <p>在 Java 21+ 中，虚拟线程是并发模型的重要演进。它是极轻量的用户态线程，能够以更低成本创建海量并发任务，显著降低“一个 Java 线程对应一个操作系统线程”带来的资源压力。</p>
+        <p>对于高并发阻塞 IO 场景，虚拟线程通常比传统平台线程更易扩展；但 CPU 密集任务依然应以线程池并发度控制为主。工程上仍要保留超时、隔离、熔断、监控等治理能力，避免“线程变轻了就忽略容量边界”。</p>
+        <pre><code>try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+    for (Order order : orders) {
+        executor.submit(() -&gt; notifyPartner(order));
+    }
+}</code></pre>
+      </section>
+
+      <section class="section" id="chapter-execution-checklist">
+        <h2>章末落地清单</h2>
+        <p><strong>输入：</strong>并发场景、SLA 目标、资源边界（CPU/内存/连接）、失败策略（超时/重试/熔断）。</p>
+        <p><strong>输出：</strong>线程模型设计、锁与容器选型说明、线程池参数文档、并发压测报告、监控告警规则。</p>
+        <p><strong>验收标准：</strong>线程安全可证明、峰值下可降级、故障可观测、恢复路径可执行。</p>
+        <h3>反模式预警</h3>
+        <ul>
+          <li>把 <code>volatile</code> 当作“万能线程安全方案”，导致复合操作出现竞态。</li>
+          <li>线程池使用无界队列或默认参数，流量峰值时内存和延迟失控。</li>
+          <li>并发问题只靠线上日志排查，缺乏压测、线程转储和指标联动。</li>
+        </ul>
+      </section>
+
+      <nav class="chapter-nav">
+        <a href="08-jvm.html">← 上一章：JVM</a>
+        <a href="10-io-nio-network.html">下一章：IO·NIO·网络 →</a>
+      </nav>
+    </main>
+  </div>  <script src="assets/diagram.js" defer></script>
+  <script src="assets/explain-format.js" defer></script>
+  <script src="assets/chapter-toc.js" defer></script>
+</body>
+</html>

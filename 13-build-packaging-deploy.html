@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>13 项目构建、打包与部署 — Java项目手册</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/sidebar.js" defer></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">Java项目手册</div>
+      <nav>
+        <div class="nav-group">
+          <ul class="nav-list">
+                        <li><a href="index.html">目录首页</a></li>
+            <li><a href="01-requirements-analysis.html">01 需求分析</a></li>
+            <li><a href="02-prototype-design.html">02 原型设计</a></li>
+            <li><a href="03-architecture-design.html">03 架构设计</a></li>
+            <li><a href="04-project-scheduling.html">04 项目排期</a></li>
+            <li class="sidebar-group"><span class="sidebar-group-label"><a href="java-development.html">开发实现</a></span></li>
+            <li class="sidebar-subitem"><a href="05-dev-environment.html">05 开发环境搭建</a></li>
+            <li class="sidebar-subitem"><a href="06-java-basics.html">06 Java基础语法</a></li>
+            <li class="sidebar-subitem"><a href="07-oop.html">07 面向对象</a></li>
+            <li class="sidebar-subitem"><a href="08-jvm.html">08 JVM</a></li>
+            <li class="sidebar-subitem"><a href="09-concurrency.html">09 并发编程</a></li>
+            <li class="sidebar-subitem"><a href="10-io-nio-network.html">10 IO·NIO·网络</a></li>
+            <li class="sidebar-subitem"><a href="11-persistence.html">11 持久化</a></li>
+            <li class="sidebar-subitem"><a href="12-spring-framework.html">12 Spring Framework</a></li>
+            <li class="sidebar-subitem"><a href="13-build-packaging-deploy.html">13 构建·打包·部署</a></li>
+            <li class="sidebar-subitem"><a href="14-ruoyi-framework.html">14 RuoYi 框架</a></li>
+            <li class="sidebar-subitem"><a href="15-common-modules.html">15 常见功能模块</a></li>
+            <li class="sidebar-subitem"><a href="16-security-development.html">16 安全开发</a></li>
+            <li class="sidebar-subitem"><a href="17-test-driven-development.html">17 测试驱动开发</a></li>
+            <li><a href="18-testing-quality.html">18 测试·质量</a></li>
+            <li><a href="19-performance-tuning.html">19 性能调优</a></li>
+            <li><a href="20-devops-cloud-native.html">20 工程化·DevOps</a></li>
+            <li><a href="21-ai-development.html">21 AI 辅助开发</a></li>
+            <li><a href="22-business-intelligence.html">22 业务智能化</a></li>
+            <li><a href="glossary.html">术语字典</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="page-header">
+        <h1>13 项目构建、打包与部署</h1>
+        <p>围绕 Spring Boot 示例项目 <code>fdc-webservice</code>，从原始 <code>javac</code> 命令一路演进到 Maven 构建、Docker 镜像、Kubernetes 部署与 CI/CD 流水线。每一部分的产物都会被下一部分直接使用——跟着做完一遍，即掌握 Java 后端从源码到生产环境的完整链路。</p>
+        <p>默认基线：<strong>Java 21 LTS</strong> · Spring Boot 3.x · Maven 3.9+ · Docker 24+。Maven 安装见<a href="05-dev-environment.html">第 05 章</a>；Spring Boot 探针与优雅停机见<a href="12-spring-framework.html#spring-boot-ops">第 12 章</a>；CI/CD 流水线实战见<a href="20-devops-cloud-native.html">第 20 章</a>。</p>
+      </header>
+
+      <section class="section" id="overview">
+        <h2>本章概览</h2>
+        <p>建议按顺序实操：<a href="#raw-build">手工构建</a> → <a href="#maven-spring-boot">Maven 打包</a> → <a href="#multi-env-module">多环境与多模块</a> → <a href="#docker">容器化</a> → <a href="#jvm-container">JVM 容器调优</a> → <a href="#kubernetes">K8s 部署</a> → <a href="#cicd">CI/CD</a> → <a href="#troubleshooting">排障</a> → <a href="#release-checklist">上线清单</a>。</p>
+        <p><strong>预设环境：</strong></p>
+        <ul>
+          <li>JDK 21+（LTS，Spring Boot 3.x 基线）</li>
+          <li>Maven 3.9+ · Docker 24+</li>
+          <li>可访问的 Kubernetes 集群（本地见<a href="05-dev-environment.html#minikube-wsl">第 05 章 WSL minikube</a>，或 k3d/公司测试集群）</li>
+          <li>镜像仓库（教程以 <code>harbor-pro.com</code> 为例）</li>
+        </ul>
+      </section>
+
+      <section class="section" id="raw-build">
+        <h2>从最原始的方式认识构建</h2>
+        <p>在用 Maven 之前，先用最朴素的方式跑一个 Java 程序，理解构建工具到底替我们做了什么。</p>
+
+        <h3>手工编译与运行</h3>
+        <pre><code>mkdir -p src/com/example
+cat &gt; src/com/example/Hello.java &lt;&lt; 'EOF'
+package com.example;
+
+public class Hello {
+    public static void main(String[] args) {
+        System.out.println("Hello, Java build!");
+    }
+}
+EOF
+
+# 编译: 源码 .java -&gt; 字节码 .class
+javac -d build src/com/example/Hello.java
+
+# 运行: 指定 classpath 和全限定类名
+java -cp build com.example.Hello</code></pre>
+
+        <h3>手工打 JAR</h3>
+        <pre><code>cat &gt; manifest.txt &lt;&lt; 'EOF'
+Main-Class: com.example.Hello
+EOF
+
+jar cfm hello.jar manifest.txt -C build .
+java -jar hello.jar</code></pre>
+
+        <p>这里要看明白几件事：</p>
+        <ol>
+          <li><strong>Java 源码必须先编译成字节码才能运行，跨平台靠的是 JVM 而不是源码。</strong></li>
+          <li><code>classpath</code> 告诉 JVM「去哪里找 class 文件」——所有依赖管理工具本质上都在解决这个问题。</li>
+          <li>JAR 就是带元信息的 ZIP，<code>MANIFEST.MF</code> 里告诉 JVM 入口在哪。</li>
+          <li>一旦项目有几十个依赖，手工管 classpath 就不现实了——这就是 Maven 存在的原因。</li>
+        </ol>
+      </section>
+
+      <section class="section" id="maven-spring-boot">
+        <h2>用 Maven 构建 Spring Boot 服务</h2>
+
+        <h3>项目结构</h3>
+        <pre><code>fdc-webservice/
+├── pom.xml
+├── src/
+│   ├── main/
+│   │   ├── java/com/fdc/webservice/
+│   │   │   ├── FdcWebserviceApplication.java
+│   │   │   └── api/HelloController.java
+│   │   └── resources/
+│   │       ├── application.yml
+│   │       ├── application-dev.yml
+│   │       └── application-prod.yml
+│   └── test/
+│       └── java/com/fdc/webservice/
+│           └── HelloControllerTest.java
+└── Dockerfile</code></pre>
+
+        <h3>pom.xml</h3>
+        <pre><code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0"&gt;
+    &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+
+    &lt;parent&gt;
+        &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+        &lt;artifactId&gt;spring-boot-starter-parent&lt;/artifactId&gt;
+        &lt;version&gt;3.3.0&lt;/version&gt;
+        &lt;relativePath/&gt;
+    &lt;/parent&gt;
+
+    &lt;groupId&gt;com.fdc&lt;/groupId&gt;
+    &lt;artifactId&gt;fdc-webservice&lt;/artifactId&gt;
+    &lt;version&gt;1.0.0&lt;/version&gt;
+    &lt;packaging&gt;jar&lt;/packaging&gt;
+
+    &lt;properties&gt;
+        &lt;java.version&gt;21&lt;/java.version&gt;
+        &lt;project.build.sourceEncoding&gt;UTF-8&lt;/project.build.sourceEncoding&gt;
+    &lt;/properties&gt;
+
+    &lt;dependencies&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-boot-starter-web&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-boot-starter-actuator&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-boot-starter-test&lt;/artifactId&gt;
+            &lt;scope&gt;test&lt;/scope&gt;
+        &lt;/dependency&gt;
+    &lt;/dependencies&gt;
+
+    &lt;build&gt;
+        &lt;plugins&gt;
+            &lt;plugin&gt;
+                &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+                &lt;artifactId&gt;spring-boot-maven-plugin&lt;/artifactId&gt;
+                &lt;configuration&gt;
+                    &lt;layers&gt;
+                        &lt;enabled&gt;true&lt;/enabled&gt;
+                    &lt;/layers&gt;
+                &lt;/configuration&gt;
+            &lt;/plugin&gt;
+        &lt;/plugins&gt;
+    &lt;/build&gt;
+&lt;/project&gt;</code></pre>
+
+        <h3>应用代码</h3>
+        <p><code>FdcWebserviceApplication.java</code>：</p>
+        <pre><code>package com.fdc.webservice;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class FdcWebserviceApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(FdcWebserviceApplication.class, args);
+    }
+}</code></pre>
+
+        <p><code>api/HelloController.java</code>：</p>
+        <pre><code>package com.fdc.webservice.api;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
+
+@RestController
+public class HelloController {
+
+    @Value("${app.env:unknown}")
+    private String env;
+
+    @GetMapping("/hello")
+    public Map&lt;String, String&gt; hello() {
+        return Map.of("message", "Hello", "env", env);
+    }
+}</code></pre>
+
+        <h3>配置文件</h3>
+        <p><code>application.yml</code>：</p>
+        <pre><code>spring:
+  application:
+    name: fdc-webservice
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+server:
+  port: 8080
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+
+app:
+  env: default</code></pre>
+
+        <p><code>application-dev.yml</code>：</p>
+        <pre><code>app:
+  env: dev
+logging:
+  level:
+    root: INFO
+    com.fdc: DEBUG</code></pre>
+
+        <p><code>application-prod.yml</code>：</p>
+        <pre><code>app:
+  env: prod
+logging:
+  level:
+    root: WARN
+    com.fdc: INFO</code></pre>
+
+        <h3>Maven 核心命令</h3>
+        <table class="compare-table">
+          <thead>
+            <tr><th>命令</th><th>作用</th><th>何时用</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>mvn clean</code></td><td>清除 target 目录</td><td>构建前重置</td></tr>
+            <tr><td><code>mvn compile</code></td><td>只编译主代码</td><td>快速验证编译</td></tr>
+            <tr><td><code>mvn test</code></td><td>编译并跑单元测试</td><td>CI 中验证</td></tr>
+            <tr><td><code>mvn package</code></td><td>打包成 jar/war（运行测试）</td><td>出产物</td></tr>
+            <tr><td><code>mvn package -DskipTests</code></td><td>跳过测试打包</td><td>紧急出包</td></tr>
+            <tr><td><code>mvn install</code></td><td>安装到本地仓库</td><td>多模块开发</td></tr>
+            <tr><td><code>mvn deploy</code></td><td>推到远程仓库</td><td>发布 SDK/库</td></tr>
+            <tr><td><code>mvn dependency:tree</code></td><td>打印依赖树</td><td>排查冲突</td></tr>
+            <tr><td><code>mvn dependency:tree -Dverbose -Dincludes=xxx</code></td><td>看某个依赖被谁引入</td><td>精确定位</td></tr>
+            <tr><td><code>mvn help:effective-pom</code></td><td>看实际生效的 pom</td><td>排查继承问题</td></tr>
+          </tbody>
+        </table>
+
+        <h3>第一次成功构建</h3>
+        <pre><code>cd fdc-webservice
+mvn clean package
+
+ls target/
+# fdc-webservice-1.0.0.jar          &lt;- Spring Boot 可执行 jar
+# fdc-webservice-1.0.0.jar.original &lt;- 原始 jar (没打依赖)
+
+java -jar target/fdc-webservice-1.0.0.jar
+java -jar target/fdc-webservice-1.0.0.jar --spring.profiles.active=prod
+
+curl http://localhost:8080/hello
+curl http://localhost:8080/actuator/health</code></pre>
+
+        <h3>Spring Boot 可执行 JAR 的结构</h3>
+        <pre><code>META-INF/MANIFEST.MF             &lt;- 入口是 JarLauncher
+org/springframework/boot/loader/ &lt;- Spring Boot 自带的启动器
+BOOT-INF/classes/                &lt;- 你写的代码
+BOOT-INF/lib/                    &lt;- 所有依赖 jar
+BOOT-INF/layers.idx              &lt;- 分层信息 (Docker 优化用)</code></pre>
+        <p>Spring Boot 不是把所有 class 平铺，而是用自己的 <code>JarLauncher</code> 在运行时加载 <code>BOOT-INF/lib/</code> 下的 jar。这就是为什么不能用 <code>java -cp</code> 直接跑，只能用 <code>java -jar</code>。</p>
+
+        <h3>依赖冲突排查</h3>
+        <p>最常见的问题：<code>NoSuchMethodError</code> 或 <code>ClassNotFoundException</code>，几乎都是依赖冲突导致的。</p>
+        <pre><code>mvn dependency:tree
+mvn dependency:tree -Dverbose -Dincludes=com.fasterxml.jackson.core:jackson-databind</code></pre>
+        <p>找到冲突后，在 pom 中排除：</p>
+        <pre><code>&lt;dependency&gt;
+    &lt;groupId&gt;some.group&lt;/groupId&gt;
+    &lt;artifactId&gt;some-artifact&lt;/artifactId&gt;
+    &lt;exclusions&gt;
+        &lt;exclusion&gt;
+            &lt;groupId&gt;com.fasterxml.jackson.core&lt;/groupId&gt;
+            &lt;artifactId&gt;jackson-databind&lt;/artifactId&gt;
+        &lt;/exclusion&gt;
+    &lt;/exclusions&gt;
+&lt;/dependency&gt;</code></pre>
+        <p><strong>Maven 版本仲裁规则：</strong></p>
+        <ol>
+          <li>最短路径优先：依赖树中距离根节点近的版本胜出。</li>
+          <li>同距离时，先声明的胜出。</li>
+          <li>在 <code>&lt;dependencyManagement&gt;</code> 中显式锁版本，优先级最高。</li>
+        </ol>
+      </section>
+
+      <section class="section" id="multi-env-module">
+        <h2>多环境配置与多模块项目</h2>
+
+        <h3>配置外置化优先级</h3>
+        <pre><code>application.yml (打包在 jar 里)
+  ↓
+application-{profile}.yml
+  ↓
+外部 application.yml (jar 同目录)
+  ↓
+环境变量 SPRING_PROFILES_ACTIVE / SERVER_PORT
+  ↓
+JVM 参数 -Dspring.profiles.active=prod
+  ↓
+命令行参数 --spring.profiles.active=prod</code></pre>
+        <p>实际生产环境推荐：<strong>配置文件放代码里，环境差异走环境变量</strong>。这是 11-Factor App 的核心思想，也是 K8s 时代的标准做法。Spring Boot 自动支持 <code>SPRING_DATASOURCE_URL</code> 这种命名映射到 <code>spring.datasource.url</code>。</p>
+        <pre><code>export SPRING_PROFILES_ACTIVE=prod
+export SERVER_PORT=9090
+export APP_ENV=production
+java -jar fdc-webservice-1.0.0.jar</code></pre>
+
+        <h3>多模块项目结构</h3>
+        <pre><code>fdc-platform/
+├── pom.xml                   &lt;- 父 pom (packaging=pom)
+├── fdc-common/               &lt;- 工具、DTO、常量
+├── fdc-dao/                  &lt;- 持久层
+├── fdc-core/                 &lt;- 业务逻辑
+└── fdc-webservice/           &lt;- 对外接口 (Spring Boot 启动模块，可部署)</code></pre>
+
+        <p>父 pom 关键写法：</p>
+        <pre><code>&lt;project&gt;
+    &lt;groupId&gt;com.fdc&lt;/groupId&gt;
+    &lt;artifactId&gt;fdc-platform&lt;/artifactId&gt;
+    &lt;version&gt;1.0.0&lt;/version&gt;
+    &lt;packaging&gt;pom&lt;/packaging&gt;
+
+    &lt;modules&gt;
+        &lt;module&gt;fdc-common&lt;/module&gt;
+        &lt;module&gt;fdc-dao&lt;/module&gt;
+        &lt;module&gt;fdc-core&lt;/module&gt;
+        &lt;module&gt;fdc-webservice&lt;/module&gt;
+    &lt;/modules&gt;
+
+    &lt;dependencyManagement&gt;
+        &lt;dependencies&gt;
+            &lt;dependency&gt;
+                &lt;groupId&gt;com.fdc&lt;/groupId&gt;
+                &lt;artifactId&gt;fdc-common&lt;/artifactId&gt;
+                &lt;version&gt;${project.version}&lt;/version&gt;
+            &lt;/dependency&gt;
+        &lt;/dependencies&gt;
+    &lt;/dependencyManagement&gt;
+&lt;/project&gt;</code></pre>
+
+        <p>子模块（以 <code>fdc-webservice</code> 为例）只写 <code>groupId</code> 和 <code>artifactId</code>，版本从 <code>dependencyManagement</code> 取。常用命令：</p>
+        <pre><code>mvn clean install
+mvn clean install -pl fdc-webservice -am
+mvn clean install -DskipTests -T 4</code></pre>
+        <p>多模块拆分与架构分层见<a href="03-architecture-design.html">第 03 章</a>、<a href="04-project-scheduling.html">第 04 章排期</a>。</p>
+      </section>
+
+      <section class="section" id="docker">
+        <h2>容器化：从 Dockerfile 到镜像</h2>
+
+        <h3>反面教材</h3>
+        <p>下面这份 Dockerfile 能跑，但有几个典型问题：</p>
+        <pre><code>FROM openjdk:17
+COPY target/fdc-webservice-1.0.0.jar app.jar
+ENTRYPOINT ["java", "-jar", "/app.jar"]</code></pre>
+        <ul>
+          <li><code>openjdk:17</code> 镜像已废弃，体积大（400MB+）。</li>
+          <li>用了完整 JDK，运行时只需要 JRE。</li>
+          <li>没有多阶段，镜像里残留构建过程。</li>
+          <li>没考虑容器内存与 JVM 的关系；代码变化就要重打整层依赖。</li>
+          <li>用 root 用户跑，安全风险。</li>
+        </ul>
+
+        <h3>生产级 Dockerfile（多阶段 + 分层）</h3>
+        <pre><code># ============ 第一阶段: 构建 ============
+FROM maven:3.9-eclipse-temurin-21 AS builder
+
+WORKDIR /build
+COPY pom.xml .
+RUN mvn dependency:go-offline -B
+COPY src ./src
+RUN mvn clean package -DskipTests -B
+RUN java -Djarmode=layertools -jar target/fdc-webservice-*.jar extract --destination target/extracted
+
+# ============ 第二阶段: 运行 ============
+FROM eclipse-temurin:20-jre-jammy
+
+RUN groupadd -r app &amp;&amp; useradd -r -g app -d /app app
+WORKDIR /app
+
+COPY --from=builder --chown=app:app /build/target/extracted/dependencies/          ./
+COPY --from=builder --chown=app:app /build/target/extracted/spring-boot-loader/    ./
+COPY --from=builder --chown=app:app /build/target/extracted/snapshot-dependencies/ ./
+COPY --from=builder --chown=app:app /build/target/extracted/application/           ./
+
+USER app
+EXPOSE 8080
+
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0 -XX:+UseG1GC -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/app/dumps/"
+
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS org.springframework.boot.loader.launch.JarLauncher"]</code></pre>
+
+        <h3>为什么要分层</h3>
+        <p>Spring Boot 把 jar 拆成四层，Docker 镜像每一行 <code>COPY</code> 是一层——只要某层没变化就走缓存。把变化频率低的放前面，绝大多数 commit 只会推送 KB 级的 application 层，而不是几百 MB 的整包。</p>
+        <table class="compare-table">
+          <thead>
+            <tr><th>层</th><th>内容</th><th>变化频率</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>dependencies</code></td><td>第三方稳定依赖（如 Spring Web）</td><td>极低</td></tr>
+            <tr><td><code>spring-boot-loader</code></td><td>Spring Boot 加载器 class</td><td>几乎不变</td></tr>
+            <tr><td><code>snapshot-dependencies</code></td><td>SNAPSHOT 版本依赖</td><td>中</td></tr>
+            <tr><td><code>application</code></td><td>业务代码和资源</td><td>高</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Java 镜像怎么选</h3>
+        <table class="compare-table">
+          <thead>
+            <tr><th>镜像</th><th>维护方</th><th>特点</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>eclipse-temurin</code></td><td>Eclipse Adoptium</td><td>社区主流，推荐</td></tr>
+            <tr><td><code>amazoncorretto</code></td><td>AWS</td><td>AWS 环境首选，长期支持</td></tr>
+            <tr><td><code>bellsoft/liberica</code></td><td>BellSoft</td><td>性能优，体积小</td></tr>
+            <tr><td><code>gcr.io/distroless/java21</code></td><td>Google</td><td>极简，无 shell，安全性高</td></tr>
+          </tbody>
+        </table>
+        <p>以 temurin 为例：<code>20-jdk-jammy</code> 是完整 JDK；<code>20-jre-jammy</code> 只有 JRE，适合运行环境；<code>20-jre-alpine</code> 体积最小但 musl libc 偶有兼容性问题。生产最稳妥的选择是 <code>20-jre-jammy</code>。</p>
+
+        <h3>构建、运行与推送</h3>
+        <pre><code>docker build -t harbor-pro.com/fdc/fdc-webservice:1.0.0 .
+
+docker run --rm -p 8080:8080 \
+  -e SPRING_PROFILES_ACTIVE=dev \
+  -e APP_ENV=docker-local \
+  harbor-pro.com/fdc/fdc-webservice:1.0.0
+
+docker login harbor-pro.com
+docker push harbor-pro.com/fdc/fdc-webservice:1.0.0</code></pre>
+
+        <h3>镜像 tag 策略</h3>
+        <table class="compare-table">
+          <thead>
+            <tr><th>策略</th><th>说明</th><th>建议</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>latest</code></td><td>永远指向最新</td><td>生产环境永远不用，回滚困难、缓存易错乱</td></tr>
+            <tr><td>语义化版本 <code>1.2.3</code></td><td>与 Maven 版本一致</td><td>适合对外发布</td></tr>
+            <tr><td>Git commit <code>abc1234</code></td><td>短 hash</td><td>适合 CI 内部追溯</td></tr>
+            <tr><td>组合 <code>1.2.3-abc1234</code></td><td>版本 + hash</td><td>推荐，可读性与追溯性兼顾</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="section" id="jvm-container">
+        <h2>JVM 在容器中的考量</h2>
+        <p>从传统部署转到云原生时最容易踩的坑。JVM 原理详见<a href="08-jvm.html">第 08 章</a>。</p>
+
+        <h3>容器感知</h3>
+        <p>JDK 10 以前，JVM 看不到 cgroup 限制，会按宿主机内存算堆——容器限制 2G、宿主机 64G 时，JVM 仍可能按 16G 默认堆，直接 OOMKilled。JDK 10+ 默认开启 <code>-XX:+UseContainerSupport</code>，会正确读取 cgroup 限制，但默认堆只占容器内存的 25%，对 Java 应用来说太浪费。</p>
+
+        <h3>堆大小配置</h3>
+        <pre><code># 不推荐: 写死
+java -Xmx1g -Xms1g -jar app.jar
+
+# 推荐: 按容器内存的百分比
+java -XX:InitialRAMPercentage=70.0 -XX:MaxRAMPercentage=75.0 -jar app.jar</code></pre>
+        <p>为什么是 75% 而不是 100%？容器里除了堆，还有 Metaspace、Code Cache、Direct Buffer、线程栈、GC 开销与系统页缓存。经验值：堆占 70–80%，留 20–30% 给非堆和系统。</p>
+
+        <h3>容器内存组成</h3>
+        <pre><code>容器 memory.usage_in_bytes (= K8s 看到的 working_set_bytes)
+├── JVM 堆 (heap)          ← -Xmx 控制
+├── JVM 非堆 (non-heap)
+│   ├── Metaspace          ← 类元数据
+│   ├── Code Cache         ← JIT 编译后代码
+│   └── Direct Buffer      ← NIO 用
+├── 线程栈                  ← 每个线程默认 1MB
+├── GC overhead
+└── Native memory</code></pre>
+        <p>K8s 报 OOMKilled 但 Actuator 显示堆才用了 50%，八成是非堆爆了。用 <code>jcmd &lt;pid&gt; VM.native_memory summary</code>（需启动加 <code>-XX:NativeMemoryTracking=summary</code>）定位；持续监控 Actuator <code>/actuator/metrics/jvm.memory.used</code> 按 area 分组。</p>
+
+        <h3>GC 与 Heap Dump</h3>
+        <p>生产环境一定要预留 dump 能力。K8s 上配套要把 <code>/app/dumps</code> 挂载到 PVC，否则 Pod 重启 dump 就丢了。</p>
+        <pre><code>JAVA_OPTS="
+  -XX:+UseG1GC
+  -XX:MaxGCPauseMillis=200
+  -XX:MaxRAMPercentage=75.0
+  -XX:+HeapDumpOnOutOfMemoryError
+  -XX:HeapDumpPath=/app/dumps/
+  -Xlog:gc*:/app/logs/gc.log:time,level,tags:filecount=10,filesize=10M
+  -XX:NativeMemoryTracking=summary
+"</code></pre>
+
+        <h3>信号处理与优雅停机</h3>
+        <p>K8s 删 Pod 时发 <code>SIGTERM</code>。若 Dockerfile 写成 shell 形式的 <code>ENTRYPOINT java -jar app.jar</code>，实际跑的是 <code>/bin/sh -c "java -jar app.jar"</code>，sh 不会把 SIGTERM 转发给 java，最后变成强杀 <code>SIGKILL</code>。</p>
+        <pre><code># 写法一: exec 数组形式
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+
+# 写法二: exec sh，让 java 替换 sh 进程
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]</code></pre>
+        <p>配合 Spring Boot 的 <code>server.shutdown=graceful</code>，容器收到 SIGTERM 后会：停止接收新请求 → 等待进行中的请求完成（默认 30s 超时）→ 关闭线程池和连接池 → 退出。</p>
+      </section>
+
+      <section class="section" id="kubernetes">
+        <h2>Kubernetes 部署</h2>
+        <p>下面是一份完整的 Java 应用（以 Spring Boot 为例）K8s 部署指南，结合 Harbor 镜像仓库与生产 namespace（<code>fdc-prod</code>）场景。建议将所有 YAML 放在 <code>k8s/</code> 目录，按编号顺序 apply。</p>
+
+        <h3>一、准备阶段</h3>
+
+        <h4>1. 构建可运行的 Jar 包</h4>
+        <pre><code>mvn clean package -DskipTests
+# 产物: target/fdc-webservice-1.0.0.jar</code></pre>
+
+        <h4>2. 编写 Dockerfile</h4>
+        <p>推荐多阶段构建 + 非 root 用户运行（此处为简化示例，单阶段直接复制 jar）：</p>
+        <pre><code># 使用精简基础镜像
+FROM eclipse-temurin:16-jre-jammy
+
+# 创建非 root 用户
+RUN groupadd -r app &amp;&amp; useradd -r -g app app
+WORKDIR /app
+
+# 复制 jar
+COPY target/fdc-webservice-*.jar app.jar
+RUN chown -R app:app /app
+USER app
+
+# 暴露端口
+EXPOSE 8080
+
+# JVM 参数通过环境变量传入，便于 K8s 调优
+ENV JAVA_OPTS="-XX:+UseG1GC -XX:MaxRAMPercentage=75.0 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/app/dumps"
+
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]</code></pre>
+        <p>关键点：用 <code>MaxRAMPercentage</code> 而不是 <code>-Xmx</code>，让 JVM 自适应 K8s 容器 memory limit。详见上文<a href="#jvm-container">JVM 容器调优</a>。</p>
+
+        <h4>3. 构建并推送镜像到 Harbor</h4>
+        <pre><code>docker build -t harbor-pro.com/fdc/fdc-webservice:1.0.0 .
+docker login harbor-pro.com
+docker push harbor-pro.com/fdc/fdc-webservice:1.0.0</code></pre>
+
+        <h3>二、K8s 资源清单</h3>
+
+        <h4>1. Namespace（如果还没建）</h4>
+        <pre><code># 00-namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: fdc-prod</code></pre>
+
+        <h4>2. Secret —— 敏感配置（DB 密码、API Key 等）</h4>
+        <pre><code># 01-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: fdc-webservice-secret
+  namespace: fdc-prod
+type: Opaque
+stringData:
+  DB_PASSWORD: "your-db-password"
+  REDIS_PASSWORD: "your-redis-password"
+  JWT_SECRET: "your-jwt-secret"</code></pre>
+        <p>也可以用命令行创建，避免明文进 Git：</p>
+        <pre><code>kubectl create secret generic fdc-webservice-secret \
+  --from-literal=DB_PASSWORD='xxx' \
+  --from-literal=REDIS_PASSWORD='yyy' \
+  -n fdc-prod</code></pre>
+
+        <h4>3. Harbor 镜像拉取 Secret</h4>
+        <pre><code>kubectl create secret docker-registry harbor-cred \
+  --docker-server=harbor-pro.com \
+  --docker-username=&lt;user&gt; \
+  --docker-password=&lt;pwd&gt; \
+  -n fdc-prod</code></pre>
+
+        <h4>4. ConfigMap —— 非敏感配置</h4>
+        <pre><code># 02-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fdc-webservice-config
+  namespace: fdc-prod
+data:
+  SPRING_PROFILES_ACTIVE: "prod"
+  DB_HOST: "mysql.fdc-prod.svc.cluster.local"
+  DB_PORT: "3306"
+  DB_NAME: "fdc"
+  REDIS_HOST: "redis.fdc-prod.svc.cluster.local"
+  # 也可以直接挂载 application.yml
+  application.yml: |
+    server:
+      port: 8080
+      tomcat:
+        threads:
+          max: 200
+    spring:
+      datasource:
+        url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+        hikari:
+          maximum-pool-size: 20
+    management:
+      endpoints:
+        web:
+          exposure:
+            include: health,info,prometheus,metrics
+      endpoint:
+        health:
+          probes:
+            enabled: true
+          group:
+            liveness:
+              include: livenessState
+            readiness:
+              include: readinessState,db,redis</code></pre>
+
+        <h4>5. Deployment —— 核心部署</h4>
+        <pre><code># 03-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fdc-webservice
+  namespace: fdc-prod
+  labels:
+    app: fdc-webservice
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0          # 保证滚动更新不掉容量
+  selector:
+    matchLabels:
+      app: fdc-webservice
+  template:
+    metadata:
+      labels:
+        app: fdc-webservice
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/actuator/prometheus"
+        prometheus.io/port: "8080"
+    spec:
+      imagePullSecrets:
+        - name: harbor-cred
+      containers:
+        - name: fdc-webservice
+          image: harbor-pro.com/fdc/fdc-webservice:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          # 环境变量：ConfigMap + Secret 注入
+          envFrom:
+            - configMapRef:
+                name: fdc-webservice-config
+            - secretRef:
+                name: fdc-webservice-secret
+          env:
+            - name: JAVA_OPTS
+              value: &gt;-
+                -XX:+UseG1GC
+                -XX:MaxRAMPercentage=75.0
+                -XX:InitialRAMPercentage=50.0
+                -XX:+HeapDumpOnOutOfMemoryError
+                -XX:HeapDumpPath=/app/dumps
+                -XX:+PrintGCDetails
+                -Xlog:gc*:/app/logs/gc.log:time,uptime:filecount=5,filesize=10M
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          # 资源限制 —— 关键!
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2000m"
+              memory: "2Gi"
+          # 探针配置 —— Spring Boot Actuator
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            failureThreshold: 30       # JVM 启动慢，多给点时间
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+          # 优雅停机
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "sleep 15"]   # 等流量摘除
+          # 挂载 ConfigMap 中的 application.yml（可选）
+          volumeMounts:
+            - name: config-volume
+              mountPath: /app/config
+            - name: logs
+              mountPath: /app/logs
+            - name: dumps
+              mountPath: /app/dumps
+      terminationGracePeriodSeconds: 60   # 配合 preStop
+      volumes:
+        - name: config-volume
+          configMap:
+            name: fdc-webservice-config
+            items:
+              - key: application.yml
+                path: application.yml
+        - name: logs
+          emptyDir: {}
+        - name: dumps
+          emptyDir: {}</code></pre>
+        <p>几个 Java 部署的关键细节：</p>
+        <ul>
+          <li><strong>MaxRAMPercentage 配合 limits.memory</strong>：JVM 自动拿到 container memory 的 75%，留 25% 给 Metaspace / 直接内存 / 线程栈。</li>
+          <li><strong>startupProbe</strong>：Spring Boot 冷启动可能 30s+，必须用 startupProbe，否则 liveness 会反复杀容器。</li>
+          <li><strong>preStop + terminationGracePeriodSeconds</strong>：先 sleep 让 Service 摘除流量，再 SIGTERM，避免请求中断。</li>
+          <li><strong>maxUnavailable: 0</strong>：滚动更新时不丢容量。</li>
+        </ul>
+
+        <h4>6. Service —— 集群内访问</h4>
+        <pre><code># 04-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: fdc-webservice
+  namespace: fdc-prod
+spec:
+  type: ClusterIP
+  selector:
+    app: fdc-webservice
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080</code></pre>
+
+        <h4>7. Ingress —— 对外暴露（如果需要）</h4>
+        <pre><code># 05-ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fdc-webservice
+  namespace: fdc-prod
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: fdc.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: fdc-webservice
+                port:
+                  number: 80
+  tls:
+    - hosts: [fdc.example.com]
+      secretName: fdc-tls</code></pre>
+
+        <h4>8. HPA —— 自动扩缩容（可选但建议加）</h4>
+        <pre><code># 06-hpa.yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: fdc-webservice
+  namespace: fdc-prod
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: fdc-webservice
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80</code></pre>
+
+        <h3>三、部署与验证</h3>
+        <pre><code># 按顺序 apply
+kubectl apply -f 00-namespace.yaml
+kubectl apply -f 01-secret.yaml
+kubectl apply -f 02-configmap.yaml
+kubectl apply -f 03-deployment.yaml
+kubectl apply -f 04-service.yaml
+kubectl apply -f 05-ingress.yaml
+kubectl apply -f 06-hpa.yaml
+
+# 或者直接整个目录
+kubectl apply -f ./k8s/ -n fdc-prod
+
+# 验证
+kubectl get pods -n fdc-prod -w
+kubectl describe pod &lt;pod-name&gt; -n fdc-prod
+kubectl logs -f &lt;pod-name&gt; -n fdc-prod
+
+# 进入容器排查
+kubectl exec -it &lt;pod-name&gt; -n fdc-prod -- /bin/sh
+
+# 端口转发本地调试
+kubectl port-forward svc/fdc-webservice 8080:80 -n fdc-prod
+
+# 滚动重启（配置变更后）
+kubectl rollout restart deployment/fdc-webservice -n fdc-prod
+kubectl rollout status deployment/fdc-webservice -n fdc-prod
+
+# 回滚
+kubectl rollout undo deployment/fdc-webservice -n fdc-prod</code></pre>
+
+        <h3>四、Java 应用在 K8s 上的避坑要点</h3>
+        <table class="compare-table">
+          <thead>
+            <tr><th>坑</th><th>解决方案</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>OOMKilled 频繁</td><td>用 MaxRAMPercentage，memory limit 至少留 25% 给非堆</td></tr>
+            <tr><td>启动慢被 liveness 杀</td><td>必加 startupProbe，failureThreshold 给够</td></tr>
+            <tr><td>滚动更新请求 502</td><td>preStop sleep 15 + terminationGracePeriodSeconds: 60</td></tr>
+            <tr><td>GC 日志找不到</td><td>挂 emptyDir 或 PVC 到 /app/logs</td></tr>
+            <tr><td>内存指标对不上</td><td>区分 working_set_bytes (K8s) 和 JVM heap，详见<a href="#jvm-container">JVM 容器调优</a></td></tr>
+            <tr><td>配置变更需重启</td><td>ConfigMap 改完手动 rollout restart，或用 Reloader</td></tr>
+            <tr><td>单 Pod 节点故障全挂</td><td>加 podAntiAffinity 把副本打散到不同节点</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="section" id="cicd">
+        <h2>CI/CD 流水线</h2>
+        <div class="diagram-block">
+          <pre class="mermaid">flowchart TD
+    CODE[代码提交] --> BUILD[编译]
+    BUILD --> TEST[单元测试 + 覆盖率]
+    TEST --> SCAN[代码/安全扫描]
+    SCAN --> PKG[打 jar]
+    PKG --> IMG[构建镜像]
+    IMG --> PUSH[推镜像]
+    PUSH --> DEPLOY[部署 dev/sit]
+    DEPLOY --> E2E[自动化测试]
+    E2E --> APPROVE[人工确认]
+    APPROVE --> PROD[部署 prod]</pre>
+          <p class="diagram-caption">图：Java 后端 CI/CD 标准阶段</p>
+        </div>
+        <p>GitLab 自建与 Java 流水线配置见<a href="20-devops-cloud-native.html#gitlab-java-cicd">第 20 章 · CI/CD 实战</a>。</p>
+      </section>
+
+      <section class="section" id="troubleshooting">
+        <h2>常见问题速查</h2>
+
+        <h3>构建期</h3>
+        <table class="compare-table">
+          <thead>
+            <tr><th>现象</th><th>可能原因</th><th>解决</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>Could not resolve dependencies</code></td><td>仓库地址不通 / 私服认证错</td><td>检查 <code>~/.m2/settings.xml</code> 的 mirror 和 server</td></tr>
+            <tr><td><code>mvn package</code> 极慢</td><td>第一次下依赖 / 没用 mirror</td><td>配阿里云镜像或公司私服</td></tr>
+            <tr><td><code>NoSuchMethodError</code> 运行时报错</td><td>依赖冲突，多个版本共存</td><td><code>mvn dependency:tree -Dverbose</code> 找冲突</td></tr>
+            <tr><td>编译过但 IDE 报红</td><td>IDE 没刷新 / Maven 索引旧</td><td>IDEA: Reload Maven Project</td></tr>
+          </tbody>
+        </table>
+
+        <h3>容器期</h3>
+        <table class="compare-table">
+          <thead>
+            <tr><th>现象</th><th>可能原因</th><th>解决</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>镜像几百 MB</td><td>用了 jdk 不是 jre / 没多阶段</td><td>换 <code>eclipse-temurin:20-jre-jammy</code>，用多阶段构建</td></tr>
+            <tr><td>每次 commit 镜像都全量推</td><td>没用 Spring Boot 分层</td><td>启用 <code>layers</code>，Dockerfile 分层 COPY</td></tr>
+            <tr><td>容器内收不到 SIGTERM</td><td>ENTRYPOINT 用了 shell 形式</td><td>改成 exec 数组形式，或 <code>sh -c "exec java..."</code></td></tr>
+            <tr><td>容器启动慢，占用 CPU 高</td><td>JIT 编译期</td><td>考虑 AOT 或调大 startupProbe 等待时间</td></tr>
+          </tbody>
+        </table>
+
+        <h3>部署期</h3>
+        <table class="compare-table">
+          <thead>
+            <tr><th>现象</th><th>可能原因</th><th>解决</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Pod 一直 CrashLoopBackOff</td><td>启动失败 / liveness 太严</td><td><code>kubectl logs --previous</code> 看上次日志，加 startupProbe</td></tr>
+            <tr><td>OOMKilled，但堆使用正常</td><td>非堆内存爆了</td><td>NativeMemoryTracking 排查 Metaspace/Direct Buffer</td></tr>
+            <tr><td>部署后偶发 502</td><td>优雅停机没做好</td><td>加 preStop sleep + graceful shutdown + 调大 terminationGracePeriodSeconds</td></tr>
+            <tr><td>ConfigMap 更新后不生效</td><td>环境变量挂载不会热更新</td><td>重新 rollout，或改用挂载文件 + Spring Cloud refresh</td></tr>
+            <tr><td><code>imagePullBackOff</code></td><td>镜像仓库认证 / tag 不存在</td><td>检查 imagePullSecrets，确认 tag 推上去了</td></tr>
+          </tbody>
+        </table>
+
+        <h3>运行期</h3>
+        <table class="compare-table">
+          <thead>
+            <tr><th>现象</th><th>排查工具</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>内存持续增长</td><td><code>jcmd VM.native_memory</code>，heap dump 比对</td></tr>
+            <tr><td>CPU 飙高</td><td><code>top -Hp &lt;pid&gt;</code> 找线程 → <code>jstack</code> 看栈</td></tr>
+            <tr><td>GC 频繁</td><td>gc.log + GCViewer / GCEasy 分析</td></tr>
+            <tr><td>接口慢</td><td>Actuator metrics + 链路追踪</td></tr>
+            <tr><td>内存泄漏</td><td>MAT 分析 hprof，看 dominator tree</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="section" id="release-checklist">
+        <h2>上线前自检清单</h2>
+        <p>每次发版前逐项核对：</p>
+
+        <h3>构建</h3>
+        <ul>
+          <li><code>mvn clean package</code> 在干净环境能过</li>
+          <li>单元测试覆盖率达标（团队约定值）</li>
+          <li>没有 SNAPSHOT 依赖（生产版本）</li>
+          <li>依赖漏洞扫描通过</li>
+        </ul>
+
+        <h3>镜像</h3>
+        <ul>
+          <li>使用 jre 不是 jdk</li>
+          <li>多阶段构建，体积 &lt; 300MB</li>
+          <li>用非 root 用户运行</li>
+          <li>tag 不是 latest，可追溯到 commit</li>
+        </ul>
+
+        <h3>JVM</h3>
+        <ul>
+          <li>用 <code>MaxRAMPercentage</code> 而不是写死 <code>-Xmx</code></li>
+          <li>开启 HeapDumpOnOutOfMemoryError 并挂载到 PVC</li>
+          <li>GC 日志输出且滚动</li>
+          <li>选定 GC 算法（G1 通常足够）</li>
+        </ul>
+
+        <h3>K8s</h3>
+        <ul>
+          <li>request == limit</li>
+          <li>三种探针配齐</li>
+          <li>preStop sleep 配置</li>
+          <li>terminationGracePeriodSeconds 大于 graceful timeout + preStop</li>
+          <li>副本数 ≥ 2 且配 PDB（PodDisruptionBudget）</li>
+          <li>配置走 ConfigMap/Secret，不写死</li>
+        </ul>
+
+        <h3>可观测与发布</h3>
+        <ul>
+          <li>日志输出到 stdout</li>
+          <li>Prometheus 抓取注解</li>
+          <li>暴露 actuator 但限制访问（不要把 /env /heapdump 暴露到公网）</li>
+          <li>有回滚预案</li>
+          <li>灰度或金丝雀策略</li>
+          <li>监控告警预设</li>
+        </ul>
+
+        <h3>推荐资源</h3>
+        <ul>
+          <li>《深入理解 Java 虚拟机》周志明 — JVM 部分</li>
+          <li>Spring Boot 官方文档 Production-ready features</li>
+          <li>Kubernetes 官方文档 Configure Liveness/Readiness/Startup Probes</li>
+          <li><a href="https://12factor.net" target="_blank" rel="noopener">11-Factor App</a></li>
+        </ul>
+        <p>建议跟着把 fdc-webservice 完整跑一遍——从 <code>mvn package</code> 开始，到 K8s 上看到 Pod Ready，再做一次滚动更新和回滚。把每个命令都自己敲一遍，远比看文档收获大。</p>
+      </section>
+
+      <nav class="chapter-nav">
+        <a href="12-spring-framework.html">← 上一章：Spring Framework</a>
+        <a href="14-ruoyi-framework.html">下一章：RuoYi 框架 →</a>
+      </nav>
+    </main>
+  </div>
+  <script src="assets/diagram.js" defer></script>
+  <script src="assets/explain-format.js" defer></script>
+  <script src="assets/chapter-toc.js" defer></script>
+</body>
+</html>

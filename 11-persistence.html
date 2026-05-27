@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>11 持久化 — Java项目手册</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/sidebar.js" defer></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">Java项目手册</div>
+      <nav>
+        <div class="nav-group">
+                    <ul class="nav-list">
+                                                                                                                                                <li><a href="index.html">目录首页</a></li>
+            <li><a href="01-requirements-analysis.html">01 需求分析</a></li>
+            <li><a href="02-prototype-design.html">02 原型设计</a></li>
+            <li><a href="03-architecture-design.html">03 架构设计</a></li>
+            <li><a href="04-project-scheduling.html">04 项目排期</a></li>
+            <li class="sidebar-group"><span class="sidebar-group-label"><a href="java-development.html">开发实现</a></span></li>
+            <li class="sidebar-subitem"><a href="05-dev-environment.html">05 开发环境搭建</a></li>
+            <li class="sidebar-subitem"><a href="06-java-basics.html">06 Java基础语法</a></li>
+            <li class="sidebar-subitem"><a href="07-oop.html">07 面向对象</a></li>
+            <li class="sidebar-subitem"><a href="08-jvm.html">08 JVM</a></li>
+            <li class="sidebar-subitem"><a href="09-concurrency.html">09 并发编程</a></li>
+            <li class="sidebar-subitem"><a href="10-io-nio-network.html">10 IO·NIO·网络</a></li>
+            <li class="sidebar-subitem"><a href="11-persistence.html">11 持久化</a></li>
+            <li class="sidebar-subitem"><a href="12-spring-framework.html">12 Spring Framework</a></li>
+            <li class="sidebar-subitem"><a href="13-build-packaging-deploy.html">13 构建·打包·部署</a></li>
+            <li class="sidebar-subitem"><a href="14-ruoyi-framework.html">14 RuoYi 框架</a></li>
+            <li class="sidebar-subitem"><a href="15-common-modules.html">15 常见功能模块</a></li>
+            <li class="sidebar-subitem"><a href="16-security-development.html">16 安全开发</a></li>
+            <li class="sidebar-subitem"><a href="17-test-driven-development.html">17 测试驱动开发</a></li>
+            <li><a href="18-testing-quality.html">18 测试·质量</a></li>
+            <li><a href="19-performance-tuning.html">19 性能调优</a></li>
+            <li><a href="20-devops-cloud-native.html">20 工程化·DevOps·CI/CD</a></li>
+            <li><a href="21-ai-development.html">21 AI 辅助开发</a></li>
+            <li><a href="22-business-intelligence.html">22 业务智能化</a></li>
+            <li><a href="glossary.html">术语字典</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="page-header">
+        <h1>11 持久化</h1>
+        <p>持久层是大多数性能事故与一致性 bug 的源头——SQL 要会写，更要会解释。</p>
+      </header>
+
+      <section class="section" id="mybatis-jpa-selection">
+        <h2>MyBatis vs JPA 选型</h2>
+        <article class="knowledge-card">
+          <h3>持久化框架决策矩阵</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <pre><code>| 场景                     | 推荐        | 理由                          |
+|--------------------------|-------------|-------------------------------|
+| 复杂报表/SQL 可控/遗留 SQL | MyBatis     | SQL 显式、优化透明            |
+| 领域模型清晰/CRUD 为主     | JPA         | 对象映射、Specification 查询  |
+| 混合项目                   | 分模块选型  | 核心域 JPA，报表 MyBatis      |</code></pre>
+            <p>与<a href="12-spring-framework.html#data-jpa">第 12 章数据访问</a>、<a href="14-ruoyi-framework.html">RuoYi（MyBatis）</a>对照：同一项目可共存，但<strong>同一聚合勿双栈</strong>。</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="sql-tuning">
+        <h2>SQL 优化</h2>
+        <article class="knowledge-card">
+          <h3>EXPLAIN 与慢查询治理</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>优化流程：定位慢 SQL（慢日志/pg_stat_statements/AWR/APM）→ <code>EXPLAIN</code> 看 type/key/rows/Extra → 改索引或改写 SQL。避免 <code>SELECT *</code>、隐式类型转换、函数包裹索引列、大 offset 分页。深翻页优先 keyset（seek）分页；同时结合业务排序字段保证翻页稳定性。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>-- 反模式：offset 深分页
+SELECT * FROM orders ORDER BY id LIMIT 1000000, 20;
+
+-- 正模式：keyset 分页
+SELECT * FROM orders
+WHERE id &gt; :lastId
+ORDER BY id
+LIMIT 20;
+
+EXPLAIN ANALYZE
+SELECT o.id, o.total FROM orders o
+WHERE o.customer_id = ? AND o.status = 'PAID';</code></pre>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>ORM 生成 N+1——开发环境开 <code>spring.jpa.show-sql</code> 或 p6spy；生产用 Micrometer <code>hibernate.query</code> 或 APM SQL 聚合，单请求 SQL 数 &gt; 10 告警。</li>
+              <li>在循环中单条 insert——改 <code>JdbcTemplate.batchUpdate</code> 或 MyBatis BATCH executor。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="index">
+        <h2>索引设计</h2>
+        <article class="knowledge-card">
+          <h3>联合索引与覆盖索引</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>最左前缀：联合索引 (a,b,c) 通常可加速 a、ab、abc 条件；若缺失前导列，优化器可利用的索引能力会明显下降（个别数据库/版本存在特殊优化，不宜绝对化）。设计顺序一般遵循“等值匹配在前、范围条件靠后、排序分组字段随后”，并以实际 <code>EXPLAIN ANALYZE</code> 结果校验。覆盖索引命中后可减少回表（MySQL 常见 <code>Using index</code>）。软删除场景常用 <code>(deleted, biz_key)</code> 复合索引；大表加索引优先在线 DDL（MySQL 8 视语句可能为 INPLACE/INSTANT）。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">graph TB
+    ROOT[B+ 树根节点] --> IN1[内部节点]
+    ROOT --> IN2[内部节点]
+    IN1 --> LEAF1[叶子节点 有序键值+指针]
+    IN2 --> LEAF2[叶子节点 双向链表]
+    LEAF1 --- LEAF2
+    LEAF1 --> ROW1[回表查数据行]
+    COVER[覆盖索引] --> LEAF1</pre>
+              <p class="diagram-caption">图：B+ 树索引结构概念——叶子链表与回表</p>
+            </div>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>-- 查询：WHERE customer_id = ? AND status = ? ORDER BY created_at DESC
+CREATE INDEX idx_orders_cust_status_created
+    ON orders (customer_id, status, created_at DESC);
+
+-- 覆盖索引
+CREATE INDEX idx_orders_cover ON orders (customer_id, status)
+    INCLUDE (total, created_at); -- PostgreSQL</code></pre>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「等值在前，范围在后；高选择性优先；以 <code>EXPLAIN ANALYZE</code> 的实际代价与行数估算为准，不迷信单一指标。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="isolation">
+        <h2>事务隔离</h2>
+        <article class="knowledge-card">
+          <h3>ACID 与 Spring @Transactional</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>隔离级别：RU、RC（Oracle 默认）、RR（MySQL InnoDB 默认）、Serializable（PostgreSQL 默认是 RC）。典型问题：脏读、不可重复读、幻读。InnoDB 在 RR 下结合 MVCC 与 next-key lock，通常可避免常见幻读场景；但在“当前读/锁定读”与“快照读”混用时，仍需按语句语义逐条验证。Spring 默认传播 <code>REQUIRED</code>、隔离随数据库默认；跨库或读写分离时注意<strong>同一业务链路的事务上下文与连接一致性</strong>。<code>readOnly=true</code> 在 Spring 中主要是优化提示（如 Hibernate flush 策略、路由决策），不等同于数据库层面的强制只读。自调用不走代理——事务失效经典坑。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart LR
+    RU[READ UNCOMMITTED] -->|脏读| RC[READ COMMITTED]
+    RC -->|不可重复读| RR[REPEATABLE READ]
+    RR -->|幻读| SER[SERIALIZABLE]
+    RR --> MVCC[InnoDB MVCC + Gap Lock]</pre>
+              <p class="diagram-caption">图：事务隔离级别与典型并发问题</p>
+            </div>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>@Service
+public class TransferService {
+    @Transactional(isolation = Isolation.READ_COMMITTED, rollbackFor = Exception.class)
+    public void transfer(UUID from, UUID to, BigDecimal amount) {
+        Account a = accountRepo.lockById(from); // SELECT FOR UPDATE
+        Account b = accountRepo.lockById(to);
+        if (a.balance().compareTo(amount) &lt; 0) throw new InsufficientFundsException();
+        a.debit(amount);
+        b.credit(amount);
+    }
+}</code></pre>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>同类内部 <code>this.method()</code> 调用带 @Transactional 方法不生效——拆 Bean 或注入 self 接口。</li>
+              <li>捕获异常后吞掉或转为正常返回会导致不回滚——应继续抛出异常，或显式标记 <code>TransactionAspectSupport.currentTransactionStatus().setRollbackOnly()</code>。</li>
+              <li><code>@Transactional</code> 加在 private 方法无效（代理无法拦截）。</li>
+              <li>长事务占连接、锁行——外部 HTTP/MQ 放事务外，事务内只做 DB。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="pool">
+        <h2>连接池</h2>
+        <article class="knowledge-card">
+          <h3>HikariCP 配置与泄漏检测</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>Spring Boot 3 默认 HikariCP。连接数并非越大越好：MySQL <code>max_connections</code> 有限，过多连接会放大数据库线程竞争与上下文切换。实践上以压测反推池大小：可先从每实例 10~30 的 <code>maximum-pool-size</code> 起步，再按吞吐、P99 延迟和数据库负载调优；K8s 多副本时<strong>各 Pod 池大小之和</strong>须控制在 DB <code>max_connections</code> 的安全水位（常见建议不超过 70%~80%）。<code>max-lifetime</code> 应小于 DB/防火墙连接超时（预留 30~60s 余量）。启用 <code>leak-detection-threshold</code>（如 60000）排查未归还连接。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart LR
+    APP[应用线程] -->|getConnection| POOL[HikariCP 连接池]
+    POOL -->|借用| CONN[物理连接]
+    CONN --> DB[(MySQL)]
+    APP -->|close/try-with-resources| POOL
+    LEAK[泄漏检测] -->|超时未归还| ALERT[告警堆栈]</pre>
+              <p class="diagram-caption">图：HikariCP 连接池借还流程</p>
+            </div>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+      # 监控：Actuator metrics jdbc.connections.active / pending</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>连接池等待持续 &gt; 0 → 先查慢 SQL 与事务过长，再考虑加大 pool（最后手段）。</li>
+              <li>读写分离：RoutingDataSource + <code>@Transactional(readOnly=true)</code> 路由从库，写后立即读走主库防延迟。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="jpa-hibernate">
+        <h2>JPA / Hibernate 生产陷阱</h2>
+        <article class="knowledge-card">
+          <h3>N+1 · 懒加载 · 二级缓存</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>N+1</strong>：查 1 条主表 + N 次关联懒加载。诊断：开启 <code>hibernate.statistics</code> 或 p6spy，单请求 SQL 数异常。修复：<code>@EntityGraph</code>、JOIN FETCH、DTO 投影（@Query 直接 new DTO）。<strong>懒加载</strong>须在 Session 内访问——Controller 层触 LazyInitializationException 说明边界泄漏。<strong>二级缓存</strong>慎用，优先 Redis；实体缓存与业务缓存混用易不一致。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>@EntityGraph(attributePaths = {"lines", "customer"})
+Optional&lt;Order&gt; findWithDetails(UUID id);
+
+@Query("select new com.example.OrderSummary(o.id, o.total) from Order o where o.customerId = :cid")
+List&lt;OrderSummary&gt; summarize(@Param("cid") String customerId);</code></pre>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="distributed-id">
+        <h2>分布式 ID</h2>
+        <article class="knowledge-card">
+          <h3>雪花 · ULID · 号段</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>分库分表场景需全局唯一、趋势递增 ID。选型见<a href="03-architecture-design.html#table-schema-design">第 03 章表设计</a>：<strong>雪花</strong>（高性能，须处理时钟回拨）；<strong>ULID</strong>（字典序友好、无中心）；<strong>DB 号段</strong>（Leaf/Hi/Lo，依赖 DB 但简单）。Java 21 可用 <code>UUID.randomUUID()</code> 作非排序主键。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>雪花回拨处理要点</h4>
+            <pre><code>// 检测 clock 回拨：等待或抛异常拒绝发号，禁止重复 ID
+if (timestamp &lt; lastTimestamp) {
+  throw new IllegalStateException("Clock moved backwards");
+}</code></pre>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="migration">
+        <h2>Flyway 迁移</h2>
+        <article class="knowledge-card">
+          <h3>版本化 Schema 变更</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>Flyway 按 <code>V{version}__{description}.sql</code> 顺序执行，记录在 flyway_schema_history。变更原则：向前兼容（expand-contract）——先加列/表，双写，再删旧列。禁止修改已发布 migration 文件。</p>
+            <h4>零停机大表 DDL</h4>
+            <p>MySQL 大表加索引/改列：优先 Online DDL；不支持时用 <strong>gh-ost / pt-osc</strong>。流程：expand（加 nullable 列）→ 双写应用 → backfill → contract（删旧列）。与<a href="04-project-scheduling.html">第 04 章上线窗口</a>协调低峰执行。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>-- V1__create_orders.sql
+CREATE TABLE orders (
+    id          UUID PRIMARY KEY,
+    customer_id VARCHAR(64) NOT NULL,
+    status      VARCHAR(32) NOT NULL,
+    total       NUMERIC(19,4) NOT NULL,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_orders_customer ON orders (customer_id);
+
+-- V2__add_orders_version.sql
+ALTER TABLE orders ADD COLUMN version BIGINT NOT NULL DEFAULT 0;</code></pre>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>大表 DDL（加列/改类型/加索引）要先评估是否可在线执行；MySQL 8 部分语句支持 INSTANT/INPLACE，无法在线时再考虑 gh-ost/pt-osc。</li>
+              <li>多分支 migration 版本号冲突——团队统一版本号段。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+      <section class="section" id="chapter-execution-checklist">
+        <h2>章末实战闭环</h2>
+        <article class="knowledge-card">
+          <h3>数据库事务落地清单</h3>
+          <div class="card-block block-deliverable">
+            <h4>输入</h4>
+            <ul>
+              <li>核心查询写入链路与数据量级</li>
+              <li>事务边界与隔离级别要求</li>
+              <li>慢 SQL 与索引现状报告</li>
+              <li>容灾备份与迁移窗口约束</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>输出</h4>
+            <ul>
+              <li>SQL/索引优化清单与基线</li>
+              <li>事务传播与锁策略说明</li>
+              <li>迁移脚本规范与回滚预案</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>验收标准</h4>
+            <ul>
+              <li>关键 SQL 有执行计划证据</li>
+              <li>事务边界与幂等策略一致</li>
+              <li>迁移变更可灰度并可回退</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>失败信号</h4>
+            <ul>
+              <li>长事务跨远程调用未拆分</li>
+              <li>索引策略无法覆盖核心查询</li>
+              <li>DDL 变更无演练直接上线</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <nav class="chapter-nav">
+        <a href="10-io-nio-network.html">← 上一章：IO·NIO·网络</a>
+        <a href="12-spring-framework.html">下一章：Spring Framework →</a>
+      </nav>
+    </main>
+  </div>  <script src="assets/diagram.js" defer></script>
+  <script src="assets/explain-format.js" defer></script>
+  <script src="assets/chapter-toc.js" defer></script>
+</body>
+</html>

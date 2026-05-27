@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>07 面向对象 — Java项目手册</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/sidebar.js" defer></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">Java项目手册</div>
+      <nav>
+        <div class="nav-group">
+                    <ul class="nav-list">
+                                                                                                                                                <li><a href="index.html">目录首页</a></li>
+            <li><a href="01-requirements-analysis.html">01 需求分析</a></li>
+            <li><a href="02-prototype-design.html">02 原型设计</a></li>
+            <li><a href="03-architecture-design.html">03 架构设计</a></li>
+            <li><a href="04-project-scheduling.html">04 项目排期</a></li>
+            <li class="sidebar-group"><span class="sidebar-group-label"><a href="java-development.html">开发实现</a></span></li>
+            <li class="sidebar-subitem"><a href="05-dev-environment.html">05 开发环境搭建</a></li>
+            <li class="sidebar-subitem"><a href="06-java-basics.html">06 Java基础语法</a></li>
+            <li class="sidebar-subitem"><a href="07-oop.html">07 面向对象</a></li>
+            <li class="sidebar-subitem"><a href="08-jvm.html">08 JVM</a></li>
+            <li class="sidebar-subitem"><a href="09-concurrency.html">09 并发编程</a></li>
+            <li class="sidebar-subitem"><a href="10-io-nio-network.html">10 IO·NIO·网络</a></li>
+            <li class="sidebar-subitem"><a href="11-persistence.html">11 持久化</a></li>
+            <li class="sidebar-subitem"><a href="12-spring-framework.html">12 Spring Framework</a></li>
+            <li class="sidebar-subitem"><a href="13-build-packaging-deploy.html">13 构建·打包·部署</a></li>
+            <li class="sidebar-subitem"><a href="14-ruoyi-framework.html">14 RuoYi 框架</a></li>
+            <li class="sidebar-subitem"><a href="15-common-modules.html">15 常见功能模块</a></li>
+            <li class="sidebar-subitem"><a href="16-security-development.html">16 安全开发</a></li>
+            <li class="sidebar-subitem"><a href="17-test-driven-development.html">17 测试驱动开发</a></li>
+            <li><a href="18-testing-quality.html">18 测试·质量</a></li>
+            <li><a href="19-performance-tuning.html">19 性能调优</a></li>
+            <li><a href="20-devops-cloud-native.html">20 工程化·DevOps·CI/CD</a></li>
+            <li><a href="21-ai-development.html">21 AI 辅助开发</a></li>
+            <li><a href="22-business-intelligence.html">22 业务智能化</a></li>
+            <li><a href="glossary.html">术语字典</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="page-header">
+        <h1>07 面向对象</h1>
+                <p>建模、封装与设计原则——决定代码能否在需求变化中存活。</p>
+      </header>
+
+      <section class="section" id="encapsulation">
+        <h2>封装、继承与多态</h2>
+        <p>面向对象的三大核心是封装、继承和多态。它们一起解决“代码如何组织、如何复用、如何扩展”的问题：封装负责隐藏实现细节，继承提供层次化复用，多态让调用方依赖统一抽象而不是具体实现。</p>
+        <h3>封装：先保护对象状态，再开放必要行为</h3>
+        <p>封装的目标是让对象自己维护合法状态。实践中，优先使用 <code>private</code> 字段，通过方法暴露行为，而不是把内部数据完全暴露给外部随意修改。这样可以把校验逻辑放在对象内部，减少无效状态和隐蔽 Bug。</p>
+        <h3>继承：表达 is-a 关系，避免为复用而继承</h3>
+        <p>继承适合语义明确的父子关系，例如“信用卡支付是支付方式的一种”。如果只是想复用少量代码，通常应优先使用组合。继承层级过深会提升理解和维护成本，初中级开发中建议将继承控制在清晰、必要的场景。</p>
+        <h3>多态：面向接口编程，减少分支判断</h3>
+        <p>多态指同一接口在不同实现上表现出不同的行为。调用方只依赖抽象类型（接口或父类），运行时由具体对象决定执行逻辑。这样新增实现时通常不需要修改调用方代码，扩展性更好。</p>
+        <ul>
+          <li>封装关注“对象内部是否安全可控”。</li>
+          <li>继承关注“类型关系是否真实且稳定”。</li>
+          <li>多态关注“调用方是否依赖抽象而非细节”。</li>
+        </ul>
+      </section>
+
+      <section class="section" id="composition">
+        <h2>继承 vs 组合</h2>
+        <p>继承表达稳定的 is-a 关系（子类可替换父类）；想复用行为或灵活切换实现时，优先用组合（has-a）委托，避免为复用代码而盲目继承。</p>
+        <pre><code>// 继承：仅当类型关系真实且稳定时使用（信用卡支付 is-a 支付方式）
+interface PaymentMethod {
+    void pay(BigDecimal amount);
+}
+
+class CreditCardPayment implements PaymentMethod {
+    @Override
+    public void pay(BigDecimal amount) {
+        // 调用信用卡网关
+    }
+}
+
+// 组合：OrderService has-a PaymentMethod，运行时可切换实现，无需改 OrderService
+class OrderService {
+    private final PaymentMethod payment;
+
+    OrderService(PaymentMethod payment) {
+        this.payment = payment;
+    }
+
+    void checkout(BigDecimal total) {
+        payment.pay(total);  // 委托给组合对象，而非继承父类
+    }
+}
+
+// 反例：为复用 pay() 而让 OrderService extends CreditCardPayment
+// 语义错误（订单服务不是信用卡），且切换支付宝/微信时要再造继承链</code></pre>
+      </section>
+
+      <section class="section" id="interface">
+        <h2>接口与抽象类</h2>
+        <p><strong>接口</strong>定义「能做什么」——只约定行为，不含实例字段；一个类可以 <code>implements</code> 多个接口。<strong>抽象类</strong>定义「一类事物共同的骨架」——可含共享字段和部分已实现的方法；一个类只能 <code>extends</code> 一个抽象类。</p>
+        <ul>
+          <li>只描述能力、需要多实现 → 用<strong>接口</strong>（如 <code>Payable</code>、<code>Serializable</code>）。</li>
+          <li>子类共享状态或固定流程、只填差异 → 用<strong>抽象类</strong>（如模板方法：<code>pay()</code> 里校验 + 调抽象 <code>doPay()</code>）。</li>
+          <li>拿不准时优先接口；Java 8 起接口可有 <code>default</code> 方法，向后兼容扩展更方便。</li>
+        </ul>
+        <pre><code>// 接口：定义能力，可实现多个
+interface Payable {
+    void pay(BigDecimal amount);
+}
+
+interface Refundable {
+    void refund(BigDecimal amount);
+}
+
+// 抽象类：共享字段 + 骨架流程，子类只实现差异部分
+abstract class BasePayment implements Payable {
+    protected final String merchantId;
+
+    BasePayment(String merchantId) {
+        this.merchantId = merchantId;
+    }
+
+    @Override
+    public void pay(BigDecimal amount) {
+        if (amount.signum() &lt;= 0) throw new IllegalArgumentException("金额须为正");
+        doPay(amount);  // 模板方法：公共逻辑在此，具体支付交给子类
+    }
+
+    protected abstract void doPay(BigDecimal amount);
+}
+
+// 具体类：继承抽象类 + 按需实现多个接口
+class AliPay extends BasePayment implements Refundable {
+    AliPay(String merchantId) { super(merchantId); }
+
+    @Override protected void doPay(BigDecimal amount) { /* 调支付宝 */ }
+
+    @Override public void refund(BigDecimal amount) { /* 调退款 */ }
+}</code></pre>
+      </section>
+
+      <section class="section" id="solid">
+        <h2>SOLID 原则</h2>
+        <p>SOLID 是面向对象设计的五条基本原则，帮助代码在需求变化时保持可维护、可扩展。</p>
+        <ul>
+          <li><strong>S — 单一职责（SRP）</strong>：一个类只有一个变更理由。</li>
+          <li><strong>O — 开闭原则（OCP）</strong>：对扩展开放，对修改关闭（策略、插件）。</li>
+          <li><strong>L — 里氏替换（LSP）</strong>：子类可替换父类而不破坏行为。</li>
+          <li><strong>I — 接口隔离（ISP）</strong>：客户端不依赖不需要的方法。</li>
+          <li><strong>D — 依赖倒置（DIP）</strong>：高层依赖抽象，而非具体实现（Spring 构造器注入）。</li>
+        </ul>
+        <p>速记：「单开里接依」。行为变化优先用<a href="#design-patterns">策略/装饰器</a>等设计模式，避免 if-else 膨胀。</p>
+      </section>
+
+      <section class="section" id="design-patterns">
+        <h2>常用设计模式</h2>
+        <p>在 Java 开发中，设计模式（Design Patterns）是解决特定软件设计问题的经典方案。它们能让你的代码更具可复用性、可扩展性和可维护性。</p>
+        <p>GoF（Gang of Four）将设计模式分为三大类：<strong>创建型</strong>、<strong>结构型</strong>和<strong>行为型</strong>。下面为你精选每类中最常用、面试必问的几种设计模式进行深度讲解和代码演练。</p>
+
+        <h3>一、创建型模式（Creational Patterns）</h3>
+        <blockquote>
+          <p><strong>核心关注：</strong>对象的创建机制。它试图将对象的创建与使用分离，从而降低系统的耦合度。</p>
+        </blockquote>
+
+        <h4>1. 单例模式（Singleton Pattern）</h4>
+        <p><strong>核心思想：</strong>保证一个类在整个系统中<strong>有且仅有一个实例</strong>，并提供一个全局访问点。比如线程池、数据库连接池。</p>
+        <p><strong>双重检查锁定（Double-Check Locking）实现：</strong></p>
+        <pre><code>public class Singleton {
+    // volatile 关键字防止指令重排
+    private static volatile Singleton instance;
+
+    // 私有构造方法，防止外部 new
+    private Singleton() {}
+
+    public static Singleton getInstance() {
+        if (instance == null) { // 第一次检查：避免不必要的同步
+            synchronized (Singleton.class) {
+                if (instance == null) { // 第二次检查：确保线程安全
+                    instance = new Singleton();
+                }
+            }
+        }
+        return instance;
+    }
+}</code></pre>
+
+        <h4>2. 工厂方法模式（Factory Method Pattern）</h4>
+        <p><strong>核心思想：</strong>定义一个创建对象的接口，但让子类决定实例化哪一个类。工厂方法让类的实例化推迟到子类。</p>
+        <p><strong>代码示例：</strong>汽车生产</p>
+        <pre><code>// 1. 产品接口
+interface Car { void drive(); }
+
+// 2. 具体产品
+class Tesla implements Car { public void drive() { System.out.println("开特斯拉，安静。"); } }
+class BMW implements Car { public void drive() { System.out.println("开宝马，操控好。"); } }
+
+// 3. 抽象工厂
+interface CarFactory { Car createCar(); }
+
+// 4. 具体工厂
+class TeslaFactory implements CarFactory { public Car createCar() { return new Tesla(); } }
+class BMWFactory implements CarFactory { public Car createCar() { return new BMW(); } }</code></pre>
+
+        <h4>3. 建造者模式（Builder Pattern）</h4>
+        <p><strong>核心思想：</strong>将一个复杂对象的构建与其表示分离，使得同样的构建过程可以创建不同的表示。</p>
+        <p><strong>为什么不可错过：</strong>当一个类的构造方法参数超过 4 个，且有些参数是可选的时候，用传统构造方法会引发「构造方法爆炸」；而用 Setter 方法又会导致对象在构建过程中处于不完整状态（非线程安全）。Builder 模式是解决这个问题的终极方案。</p>
+        <blockquote>
+          <p>💡 <strong>日常应用：</strong>在 Java 中，你最常用的 <code>StringBuilder</code>、Lombok 的 <code>@Builder</code> 注解、以及各种 HttpClient 的配置，全都是它。</p>
+        </blockquote>
+        <p><strong>代码示例：</strong>构建一个复杂的实体类</p>
+        <pre><code>public class User {
+    private final String firstName; // 必填
+    private final String lastName;  // 必填
+    private final int age;          // 可选
+    private final String phone;     // 可选
+
+    // 1. 私有构造方法，只接受 Builder 对象
+    private User(UserBuilder builder) {
+        this.firstName = builder.firstName;
+        this.lastName = builder.lastName;
+        this.age = builder.age;
+        this.phone = builder.phone;
+    }
+
+    // 2. 内部 Builder 类
+    public static class UserBuilder {
+        private final String firstName;
+        private final String lastName;
+        private int age;
+        private String phone;
+
+        public UserBuilder(String firstName, String lastName) {
+            this.firstName = firstName;
+            this.lastName = lastName;
+        }
+
+        public UserBuilder age(int age) { this.age = age; return this; }
+        public UserBuilder phone(String phone) { this.phone = phone; return this; }
+
+        // 核心：build 方法返回最终的 User 对象
+        public User build() { return new User(this); }
+    }
+}
+
+// 优雅的链式调用方式：
+User user = new User.UserBuilder("张", "三")
+                .age(25)
+                .phone("13800000000")
+                .build();</code></pre>
+
+        <h3>二、结构型模式（Structural Patterns）</h3>
+        <blockquote>
+          <p><strong>核心关注：</strong>对象的组合。如何组合类和对象以获得更大的结构。</p>
+        </blockquote>
+
+        <h4>1. 适配器模式（Adapter Pattern）</h4>
+        <p><strong>核心思想：</strong>作为两个不兼容接口之间的桥梁。它结合了两个独立接口的功能，让原本由于接口不兼容而不能一起工作的类可以一起工作。常见于新老系统对接或接入第三方 SDK。</p>
+        <p><strong>代码示例：</strong>手机充电（将 220V 电压转换为 5V）</p>
+        <pre><code>// 目标接口（手机需要的电压）
+interface Target5V { int output5V(); }
+
+// 已有的类（现有的 220V 电压）
+class Adaptee220V {
+    public int output220V() { return 220; }
+}
+
+// 适配器：将 220V 转换为 5V
+class PowerAdapter extends Adaptee220V implements Target5V {
+    @Override
+    public int output5V() {
+        int src = output220V();
+        System.out.println("适配器：收到 " + src + "V 电压，正在转换...");
+        return src / 44; // 转换成 5V
+    }
+}</code></pre>
+
+        <h4>2. 代理模式（Proxy Pattern）</h4>
+        <p><strong>核心思想：</strong>给某一个对象提供一个代理，并由代理对象控制对原对象的访问。Spring AOP（面向切面编程）的核心就是动态代理。</p>
+        <p><strong>静态代理示例：</strong></p>
+        <pre><code>// 接口
+interface Subject { void request(); }
+
+// 真实对象
+class RealSubject implements Subject {
+    public void request() { System.out.println("执行核心业务逻辑..."); }
+}
+
+// 代理对象
+class ProxySubject implements Subject {
+    private RealSubject realSubject = new RealSubject();
+
+    public void request() {
+        System.out.println("预处理：记录日志/安全检查");
+        realSubject.request(); // 调用真实对象的方法
+        System.out.println("后处理：清理资源");
+    }
+}</code></pre>
+
+        <h4>3. 装饰器模式（Decorator Pattern）</h4>
+        <p><strong>核心思想：</strong>动态地给一个对象添加一些额外的职责。就增加功能来说，装饰器模式相比生成子类更为灵活。</p>
+        <p><strong>为什么不可错过：</strong>它是类的继承的完美替代方案。如果你发现为了加功能，类的继承树已经变得无比庞大（比如：<code>Text</code> → <code>BoldText</code> → <code>UnderlineBoldText</code>），赶紧用装饰器。</p>
+        <blockquote>
+          <p>💡 <strong>日常应用：</strong>Java 的 I/O 流是经典的装饰器模式。例如：<code>new BufferedReader(new FileReader("test.txt"))</code>，在没有改变文件读取基础类的情况下，动态为其增加了「缓存」功能。</p>
+        </blockquote>
+        <p><strong>代码示例：</strong>给纯咖啡加奶、加糖</p>
+        <pre><code>// 1. 核心接口
+interface Coffee { double getCost(); String getDescription(); }
+
+// 2. 具体实现（原味咖啡）
+class SimpleCoffee implements Coffee {
+    public double getCost() { return 10.0; }
+    public String getDescription() { return "纯咖啡"; }
+}
+
+// 3. 抽象装饰器（必须持有核心接口的引用）
+abstract class CoffeeDecorator implements Coffee {
+    protected final Coffee decoratedCoffee;
+    public CoffeeDecorator(Coffee coffee) { this.decoratedCoffee = coffee; }
+    public double getCost() { return decoratedCoffee.getCost(); }
+    public String getDescription() { return decoratedCoffee.getDescription(); }
+}
+
+// 4. 具体装饰器（加奶）
+class MilkDecorator extends CoffeeDecorator {
+    public MilkDecorator(Coffee coffee) { super(coffee); }
+    public double getCost() { return super.getCost() + 3.0; }
+    public String getDescription() { return super.getDescription() + " + 加奶"; }
+}</code></pre>
+
+        <h4>装饰器 vs 代理：如何区分？</h4>
+        <p>两者结构相似（都持有同一接口的引用），但意图不同。面试高频考点如下：</p>
+        <table class="compare-table">
+          <tr><th>维度</th><th>装饰器模式（Decorator）</th><th>代理模式（Proxy）</th></tr>
+          <tr><td>核心意图</td><td>增强功能。动态地为对象添加新职责，是继承的替代方案。</td><td>控制访问。为了限制、增强或延迟对真实对象的访问。</td></tr>
+          <tr><td>谁创建真实对象</td><td><strong>客户端（调用者）</strong>创建真实对象，并将其传入装饰器中。</td><td>代理类自身创建或持有真实对象，客户端通常不知道真实对象的存在。</td></tr>
+          <tr><td>透明度</td><td>客户端完全清楚自己正在「一层层叠加功能」。</td><td>客户端甚至不知道自己用的是代理，它以为自己调用的就是真实对象。</td></tr>
+          <tr><td>关系基数</td><td>通常是 1:N（一个对象可以被多层装饰器连续包装）。</td><td>通常是 1:1（一个代理针对一个特定的真实对象进行控制）。</td></tr>
+        </table>
+
+        <h3>三、行为型模式（Behavioral Patterns）</h3>
+        <blockquote>
+          <p><strong>核心关注：</strong>对象之间的通信。描述类或对象怎样交互以及怎样分配职责。</p>
+        </blockquote>
+
+        <h4>1. 策略模式（Strategy Pattern）</h4>
+        <p><strong>核心思想：</strong>定义一系列算法，把它们一个个封装起来，并且使它们可相互替换。本模式使得算法可独立于使用它的客户而变化。<strong>（告别成堆的 <code>if-else</code> 的利器！）</strong></p>
+        <p><strong>代码示例：</strong>电商根据不同会员等级计算价格</p>
+        <pre><code>// 1. 策略接口
+interface PriceStrategy { double calculate(double price); }
+
+// 2. 具体策略
+class NormalUser implements PriceStrategy { public double calculate(double p) { return p; } }
+class VIPUser implements PriceStrategy { public double calculate(double p) { return p * 0.8; } }
+
+// 3. 上下文环境
+class PriceCalculator {
+    private PriceStrategy strategy;
+    public void setStrategy(PriceStrategy strategy) { this.strategy = strategy; }
+
+    public double getFinalPrice(double price) {
+        return strategy.calculate(price);
+    }
+}</code></pre>
+
+        <h4>2. 观察者模式（Observer Pattern）</h4>
+        <p><strong>核心思想：</strong>定义对象间的一种一对多的依赖关系，当一个对象的状态发生改变时，所有依赖于它的对象都得到通知并被自动更新。常用于事件驱动架构、消息队列。</p>
+        <p><strong>代码示例：</strong>微信公众号推送</p>
+        <pre><code>import java.util.ArrayList;
+import java.util.List;
+
+// 观察者（粉丝）
+interface Observer { void update(String message); }
+class User implements Observer {
+    private String name;
+    public User(String name) { this.name = name; }
+    public void update(String msg) { System.out.println(name + " 收到推送: " + msg); }
+}
+
+// 被观察者（公众号）
+class Subject {
+    private List&lt;Observer&gt; observers = new ArrayList&lt;&gt;();
+    public void attach(Observer o) { observers.add(o); }
+
+    public void notifyAllObservers(String msg) {
+        for (Observer o : observers) { o.update(msg); }
+    }
+}</code></pre>
+
+        <h3>总结与避坑指南</h3>
+        <table class="compare-table">
+          <tr><th>模式名称</th><th>一句话核心</th><th>常见应用场景</th></tr>
+          <tr><td><strong>单例模式</strong></td><td>独一无二，全局共享</td><td>线程池、配置读取类、Spring Bean（默认）</td></tr>
+          <tr><td><strong>工厂方法</strong></td><td>别问我怎么装配的，去问工厂</td><td>JDBC 获取连接、<code>LoggerFactory.getLogger()</code></td></tr>
+          <tr><td><strong>建造者模式</strong></td><td>分步组装，链式构建</td><td><code>StringBuilder</code>、Lombok <code>@Builder</code>、HttpClient 配置</td></tr>
+          <tr><td><strong>适配器模式</strong></td><td>业务接口对不上，加个补丁凑一双</td><td>旧系统重构、日志框架兼容（SLF4J）</td></tr>
+          <tr><td><strong>代理模式</strong></td><td>无侵入式的功能增强</td><td>Spring AOP、事务控制、RPC 调用</td></tr>
+          <tr><td><strong>装饰器模式</strong></td><td>层层包装，动态叠加能力</td><td>Java I/O 流（<code>BufferedReader</code>）、日志/缓存包装类</td></tr>
+          <tr><td><strong>策略模式</strong></td><td>各种算法并列，谁合适谁上</td><td>多支付方式选择、多促销活动计算</td></tr>
+          <tr><td><strong>观察者模式</strong></td><td>牵一发而动全身</td><td>事件监听器（Listener）、发布订阅模式</td></tr>
+        </table>
+        <blockquote>
+          <p>💡 <strong>架构师忠告：</strong>不要为了用设计模式而用设计模式。在项目初期，<strong>如果业务很简单，直接写朴素的代码往往是最好的选择</strong>。当系统迭代出现「频繁修改某处代码」、「扩展新功能引发连锁 Bug」时，才是重构引入设计模式的最佳时机。过度设计（Over-engineering）往往比没有设计更让人头疼。</p>
+        </blockquote>
+      </section>
+
+      <section class="section" id="equals">
+        <h2>equals / hashCode</h2>
+        <article class="knowledge-card">
+          <h3>对象相等契约</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>重写 <code>equals</code> 必须重写 <code>hashCode</code>，保证相等对象 hash 相同。契约：自反、对称、传递、一致；与 <code>null</code> 比较返回 false。实体 ID 相等通常按业务主键；值对象按所有字段。若字段存在多种等价表示（如 <code>BigDecimal</code> 的 scale），请在 <code>equals/hashCode</code> 中采用一致的归一化策略。放入 <code>HashMap/HashSet</code> 的 key 字段应保持不可变。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>@Override
+public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof Money money)) return false;
+    return normalizedAmount().equals(money.normalizedAmount())
+        &amp;&amp; currency.equals(money.currency);
+}
+
+@Override
+public int hashCode() {
+    return Objects.hash(normalizedAmount(), currency);
+}
+
+private BigDecimal normalizedAmount() {
+    return amount.stripTrailingZeros();
+}</code></pre>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>只重写 equals 不重写 hashCode → HashMap 行为异常。</li>
+              <li>可变对象作 HashMap key，hash 变化后找不到 entry。</li>
+              <li>继承体系中 equals 违反对称性——考虑 <code>getClass()</code> 而非 <code>instanceof</code>。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="immutable">
+        <h2>不可变对象</h2>
+        <article class="knowledge-card">
+          <h3>线程安全与防御性拷贝</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>不可变对象天然线程安全、可安全共享、适合作为 Map key 和值对象。实现要点：<code>final</code> 字段、无 setter、可变组件防御性拷贝（<code>List.copyOf</code>）、不暴露内部可变引用。Java 17+ 值对象优先 <code>record</code>；需行为方法时用 <code>final class</code> + 私有构造。标准库典范：<code>String</code>、<code>LocalDate</code>、<code>Instant</code>。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart LR
+    A[不可变对象] --> B[final 字段]
+    A --> C[无 setter]
+    A --> D[防御性拷贝]
+    A --> E[线程安全]
+    A --> F[可作 Map Key]
+    G[修改需求] --> H[返回新实例]
+    H --> I[而非 mutate 原对象]</pre>
+              <p class="diagram-caption">图：不可变对象设计要点与修改策略</p>
+            </div>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>public final class OrderLine {
+    private final String sku;
+    private final int quantity;
+    private final List&lt;String&gt; tags;
+
+    public OrderLine(String sku, int quantity, List&lt;String&gt; tags) {
+        this.sku = sku;
+        this.quantity = quantity;
+        this.tags = List.copyOf(tags); // 防御性拷贝
+    }
+    public List&lt;String&gt; tags() { return tags; } // 已是不可变
+}</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>领域值对象（Money、Email）优先 <code>record</code>；需「修改」时 <code>withXxx</code> 返回新实例。</li>
+              <li><code>Collections.unmodifiableList</code> 包装外部传入的 list 仍可变——构造时用 <code>List.copyOf</code>。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+      <section class="section" id="chapter-execution-checklist">
+        <h2>章末实战闭环</h2>
+        <article class="knowledge-card">
+          <h3>面向对象落地清单</h3>
+          <div class="card-block block-deliverable">
+            <h4>输入</h4>
+            <ul>
+              <li>核心领域模型与行为边界</li>
+              <li>扩展点与变更频率评估</li>
+              <li>并发与不可变性约束</li>
+              <li>测试替身与依赖注入策略</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>输出</h4>
+            <ul>
+              <li>实体/值对象/服务建模规范</li>
+              <li>组合优先的扩展设计模板</li>
+              <li>SOLID 对应代码审查清单</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>验收标准</h4>
+            <ul>
+              <li>领域行为封装在对象内部</li>
+              <li>继承层级受控且有替代方案</li>
+              <li>对象协作关系可被单元测试验证</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>失败信号</h4>
+            <ul>
+              <li>贫血模型导致业务逻辑外泄</li>
+              <li>继承滥用造成修改牵一发动全身</li>
+              <li>equals/hashCode 语义混乱</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <nav class="chapter-nav">
+        <a href="06-java-basics.html">← 上一章：Java基础语法</a>
+        <a href="08-jvm.html">下一章：JVM →</a>
+      </nav>
+    </main>
+  </div>  <script src="assets/diagram.js" defer></script>
+  <script src="assets/explain-format.js" defer></script>
+  <script src="assets/chapter-toc.js" defer></script>
+</body>
+</html>
