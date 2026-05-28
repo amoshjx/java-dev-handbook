@@ -165,17 +165,149 @@ curl localhost:8080/actuator/prometheus | grep jvm_threads_states</code></pre>
         </article>
       </section>
 
-      <section class="section" id="slow-sql">
-        <h2>慢 SQL 与缓存</h2>
-        <article class="knowledge-card">
-          <h3>缓存模式与击穿/穿透/雪崩</h3>
-          <div class="card-block block-explain">
-            <h4>讲解</h4>
-            <p>Cache-Aside：读 miss 加载 DB 写缓存；写 DB 删缓存。热点 key 用互斥锁或 singleflight 防击穿。空值缓存防穿透。TTL 加 jitter 防雪崩。本地缓存（Caffeine）+ 分布式（Redis）二级架构常见。</p>
-          </div>
-          <div class="card-block block-example">
-            <h4>示例代码</h4>
-            <pre><code>@Cacheable(value = "orders", key = "#id", unless = "#result == null")
+      <section class="section" id="long-sql-mysql">
+        <h2>Long SQL 之 Mysql</h2>
+        <p>慢 SQL 是 Java 后端 P99 恶化、连接池打满的常见根因。MySQL 调优闭环：<strong>查到 Long SQL → EXPLAIN 分析 → 改写 / 索引 → 压测验证</strong>。索引基础见<a href="11-persistence.html#sql-tuning">第 11 章</a>。</p>
+        <div class="diagram-block">
+          <pre class="mermaid">flowchart LR
+    A[发现 Long SQL] --> B[EXPLAIN 分析]
+    B --> C[改写 / 索引]
+    C --> D[压测验证 SLO]</pre>
+          <p class="diagram-caption">图：Long SQL 调优闭环（MySQL）</p>
+        </div>
+        <p>MySQL 8 通过 <strong>sys</strong> 库聚合 Performance Schema，从<strong>平均延迟</strong>与<strong>扫描行数</strong>两个维度定位 Top 慢语句。前提：<code>performance_schema=ON</code>，且 <code>sys</code> schema 已安装（官方发行版自带）。</p>
+
+        <h3>查找 Long SQL</h3>
+        <p>若视图无数据，先确认语句统计 consumer 已启用：</p>
+        <pre><code>SHOW VARIABLES LIKE 'performance_schema';
+
+UPDATE performance_schema.setup_consumers
+SET ENABLED = 'YES' WHERE NAME LIKE 'events_statements%';</code></pre>
+        <p>业务高峰或压测结束后执行：</p>
+        <pre><code>-- TOP 慢 SQL（按平均延迟降序）
+SELECT
+    query,
+    exec_count,
+    avg_latency
+FROM sys.statement_analysis
+ORDER BY avg_latency DESC
+LIMIT 20;
+
+-- TOP 扫描行数 SQL（索引缺失 / 全表扫描常见信号）
+SELECT
+    query,
+    rows_examined,
+    exec_count
+FROM sysstatement_analysis
+ORDER BY rows_examined DESC
+LIMIT 20;</code></pre>
+        <p><code>avg_latency</code> 高而 <code>exec_count</code> 低，多为偶发重查询；<code>rows_examined</code> 极大且 <code>exec_count</code> 高，多为高频扫表。数据为实例启动后累计；定位单次故障可先 <code>TRUNCATE performance_schema.events_statements_summary_by_digest;</code> 再复现。辅助：<code>slow_query_log</code>、Druid <code>StatFilter</code>（<a href="15-common-modules.html#druid-connection-pool">第 15 章</a>）、APM。</p>
+
+        <h3>针对性优化</h3>
+        <p>拿到 <code>query</code> 后执行 <code>EXPLAIN ANALYZE</code>，关注 <code>type</code>、<code>key</code>、<code>rows</code>、<code>Extra</code>（filesort、临时表、回表）。</p>
+        <pre><code>EXPLAIN ANALYZE
+SELECT id, total FROM orders
+WHERE tenant_id = ? AND status = 'PAID';</code></pre>
+        <ul>
+          <li><strong>索引</strong>：联合索引「等值在前、范围/排序在后」；覆盖索引减少回表（<code>Using index</code>）。</li>
+          <li><strong>分页</strong>：深翻页用 keyset 替代 <code>LIMIT offset, n</code>。</li>
+          <li><strong>反模式</strong>：<code>SELECT *</code>、函数包列、隐式类型转换、N+1（见第 11 章）。</li>
+          <li>连接池等待时<strong>先治慢 SQL 与长事务</strong>，再调池大小（<a href="11-persistence.html#pool">第 11 章</a>）。</li>
+        </ul>
+
+        <h3>案例：订单列表深分页与索引缺失</h3>
+        <p>预发 400 VU 压测，<code>GET /api/v1/orders</code> P99 从 140ms 升至 800ms+，Hikari <code>pending</code> 上升。按 <code>rows_examined</code> 查 <code>sys.x$statement_analysis</code>，该列表查询位居前列。<code>EXPLAIN ANALYZE</code> 显示全表扫描 + <code>Using filesort</code>，根因为 <code>LIMIT 500000, 20</code> 深分页且缺 <code>(tenant_id, status, created_at)</code> 联合索引。改为 keyset 分页并补索引后，P99 回到 SLO。</p>
+        <pre><code>-- 问题 SQL
+SELECT * FROM orders
+WHERE tenant_id = 1001 AND status = 'PAID'
+ORDER BY created_at DESC
+LIMIT 500000, 20;
+
+-- 修复
+SELECT id, total, created_at FROM orders
+WHERE tenant_id = 1001 AND status = 'PAID'
+  AND created_at &lt; :lastCreatedAt
+ORDER BY created_at DESC
+LIMIT 20;
+
+CREATE INDEX idx_orders_tenant_status_created
+  ON orders (tenant_id, status, created_at DESC);</code></pre>
+      </section>
+
+      <section class="section" id="long-sql-gaussdb">
+        <h2>Long SQL 之 GuassDB</h2>
+        <p>GaussDB 调优闭环：<strong>查到 Long SQL → EXPLAIN 分析 → 改写 / 下推 → 压测验证</strong>。以 <strong>long sql 视图</strong> <code>dv_long_sql</code> 查看慢语句明细；视图中无数据时，须在控制台开启语句跟踪相关参数。</p>
+
+        <h3>查找 Long SQL</h3>
+        <pre><code>-- 参数（控制台修改，以实例版本为准）
+ALTER SYSTEM SET log_min_duration_statement = 200;  -- 毫秒，-1 关闭
+ALTER SYSTEM SET enable_stmt_track = on;
+
+-- 查询 long sql 表
+SELECT * FROM dv_long_sql
+ORDER BY elapsed_time DESC
+LIMIT 100;</code></pre>
+        <p>优先关注 <code>elapsed_time</code> 最大、重复出现的 SQL；分布式实例注意记录来自 CN 还是 DN。辅助：控制台「慢 SQL / DAS」、<a href="https://support.huaweicloud.com/intl/zh-cn/usermanual-gaussdb/gaussdb_01_660.html">WDR 快照</a>、Druid / APM。</p>
+
+        <h3>针对性优化</h3>
+        <p>执行 <code>EXPLAIN (ANALYZE, VERBOSE)</code>，分布式额外关注 <strong>Streaming</strong>（shuffle）、<code>Remote query</code>、是否下推到 DN。</p>
+        <pre><code>EXPLAIN (ANALYZE, VERBOSE)
+SELECT ...;</code></pre>
+        <ul>
+          <li><strong>下推</strong>：过滤与聚合尽量在 DN 完成；CN 侧大量 Streaming 时优先改写 SQL。</li>
+          <li><strong>统计信息</strong>：计划异常时低峰 <code>ANALYZE 表名;</code>。</li>
+          <li><strong>分区与汇总</strong>：大表按业务键分区；报表可物化汇总表。</li>
+          <li><strong>自诊断</strong>：关注「未下推」「数据倾斜」告警。</li>
+        </ul>
+
+        <h3>案例：报表 SQL 未下推导致 CN 瓶颈</h3>
+        <p>分布式实例业务高峰，部门汇总接口 P99 超标。<code>dv_long_sql</code> 中某 <code>GROUP BY</code> 语句多次出现且 <code>elapsed_time</code> 最高。计划显示大量 CN 侧 Streaming、未下推。改写为先在 orders 过滤聚合再关联 dept，并 <code>ANALYZE</code> 两表，复压后 P99 达标。</p>
+        <pre><code>-- 问题写法
+SELECT d.dept_name, SUM(o.amount)
+FROM orders o JOIN dept d ON o.dept_id = d.id
+WHERE o.biz_date BETWEEN '2026-01-01' AND '2026-03-31'
+GROUP BY d.dept_name;
+
+-- 改写
+SELECT d.dept_name, t.amt FROM dept d
+JOIN (
+  SELECT dept_id, SUM(amount) AS amt FROM orders
+  WHERE biz_date &gt;= DATE '2026-01-01' AND biz_date &lt; DATE '2026-04-01'
+  GROUP BY dept_id
+) t ON d.id = t.dept_id;
+
+ANALYZE orders;
+ANALYZE dept;</code></pre>
+      </section>
+
+      <section class="section" id="cache">
+        <h2>缓存</h2>
+        <p>缓存用<strong>可控的不一致</strong>换取更低延迟与更高吞吐，不能替代数据库的事务一致性。Java 后端最常用 <strong>Cache-Aside</strong>：读路径先查缓存，miss 再加载 DB 并回填；写路径先写 DB，再<strong>删除</strong>缓存（而不是同步更新缓存，避免并发写导致乱序）。架构层面的缓存分层见<a href="03-architecture-design.html">第 03 章数据架构</a>。</p>
+
+        <h3>三种典型故障模式</h3>
+        <ul>
+          <li><strong>击穿</strong>：热点 key 过期瞬间，大量请求同时打到 DB。应对：互斥锁、<code>singleflight</code>，或逻辑过期（旧值仍可返回，后台异步刷新）。</li>
+          <li><strong>穿透</strong>：查询不存在的数据，缓存反复 miss。应对：空值短 TTL，或布隆过滤器前置拦截。</li>
+          <li><strong>雪崩</strong>：大量 key 在同一时刻过期。应对：TTL 加随机 jitter、多级缓存错峰过期，必要时熔断降级。</li>
+        </ul>
+
+        <h3>二级缓存架构</h3>
+        <p>读多写少场景可采用 <strong>Caffeine（进程内）</strong> + <strong>Redis（跨实例）</strong>：本地命中亚毫秒级，Redis 负责 Pod 间共享。写后删缓存时，需通过 MQ 或 Redis PubSub 广播失效事件，避免各实例本地缓存不一致。多租户系统 key 应带租户/版本前缀，防止串数据（见<a href="15-common-modules.html">第 15 章</a>）。</p>
+        <div class="diagram-block">
+          <pre class="mermaid">flowchart LR
+    REQ[读请求] --> L1{Caffeine 命中?}
+    L1 -->|是| RET[返回]
+    L1 -->|否| L2{Redis 命中?}
+    L2 -->|是| FILL[回填本地缓存]
+    L2 -->|否| DB[(DB 加载)]
+    DB --> W[写 Redis + 本地]
+    W --> RET
+    FILL --> RET</pre>
+          <p class="diagram-caption">图：Cache-Aside 二级读路径</p>
+        </div>
+
+        <h3>代码示例</h3>
+        <pre><code>@Cacheable(value = "orders", key = "#id", unless = "#result == null")
 public Order getOrder(UUID id) {
     return repo.findById(id).orElse(null);
 }
@@ -185,13 +317,21 @@ public void updateOrder(Order order) {
     repo.save(order);
 }
 
-// Caffeine 本地缓存
-LoadingCache&lt;String, User&gt; cache = Caffeine.newBuilder()
+LoadingCache&lt;String, User&gt; localCache = Caffeine.newBuilder()
     .maximumSize(10_000)
     .expireAfterWrite(Duration.ofMinutes(5))
-    .build(this::loadUser);</code></pre>
-          </div>
-        </article>
+    .build(this::loadUserFromRedisOrDb);
+
+// 雪崩：TTL 基础值 + 随机偏移
+int ttl = 300 + ThreadLocalRandom.current().nextInt(60);</code></pre>
+
+        <h3>落地要点</h3>
+        <ul>
+          <li>写后删缓存通常优于写后更新；强一致场景可用延时双删，或订阅 binlog（如 Canal）驱动失效。</li>
+          <li>Redis 是 DB 的投影，不是唯一数据源；列表类数据避免整表大对象入缓存，可用 ID 集合 + 分批 <code>mget</code>。</li>
+          <li>本地缓存必须设置 <code>maximumSize</code> 或权重驱逐，防止堆内存失控。</li>
+          <li>压测前预热热点 key，并在报告中记录命中率与 P99 的对照关系（见本章<a href="#load-stress-testing">压测</a>）。</li>
+        </ul>
       </section>
 
       <section class="section" id="load-stress-testing">
@@ -335,7 +475,7 @@ class OrderSimulation extends Simulation {
 | P99 延迟 | &lt; 200ms | 142ms | 218ms | 400 VU 超标 |
 | 错误率 | &lt; 1% | 0% | 0.4% | 边缘 |
 
-瓶颈：400 VU 时 Hikari 等待 + Full GC 增多 → 调连接池 / SQL（见慢 SQL 卡片）
+瓶颈：400 VU 时 Hikari 等待 + Full GC 增多 → 调连接池 / SQL（见 <a href="#long-sql-mysql">Long SQL 之 Mysql</a>）
 决策：生产按 800 VU 峰值 × 1.5 部署 3 实例</code></pre>
           </div>
           <div class="card-block block-tips">

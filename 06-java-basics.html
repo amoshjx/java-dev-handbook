@@ -305,43 +305,6 @@ Map&lt;Long, BigDecimal&gt; amountByCustomer = orders.stream()
         </article>
       </section>
 
-      <section class="section" id="java20-features">
-        <h2>Java 21 现代特性速查</h2>
-        <article class="knowledge-card">
-          <h3>Sealed · Pattern Matching · Text Blocks · var</h3>
-          <div class="card-block block-explain">
-            <h4>讲解</h4>
-            <p>Java 21 LTS 常用语法增强：<strong>sealed class/interface</strong> 限制子类型，配合模式匹配做穷尽 switch；<strong>text blocks</strong> 多行字符串；<strong>var</strong> 局部类型推断（仅局部变量，禁止字段/参数滥用）。与<a href="07-oop.html#design-patterns">第 07 章设计模式</a>、<a href="09-concurrency.html">第 09 章虚拟线程</a>衔接。</p>
-          </div>
-          <div class="card-block block-example">
-            <h4>示例代码</h4>
-            <pre><code>sealed interface Payment permits CardPay, WalletPay {}
-record CardPay(String last4) implements Payment {}
-record WalletPay(String provider) implements Payment {}
-
-String describe(Payment p) {
-  return switch (p) {
-    case CardPay c -&gt; "card ****" + c.last4();
-    case WalletPay w -&gt; "wallet " + w.provider();
-  };
-}
-
-var orders = repository.findPending();
-String sql = """
-    SELECT id, total FROM orders
-    WHERE status = 'PENDING'
-    """;</code></pre>
-          </div>
-          <div class="card-block block-tips">
-            <h4>var 使用边界</h4>
-            <ul>
-              <li>✅ 右侧类型一眼可见：<code>var list = new ArrayList&lt;String&gt;();</code></li>
-              <li>❌ 返回值丢失：<code>var x = getSomething();</code> 看不出类型时写显式类型。</li>
-            </ul>
-          </div>
-        </article>
-      </section>
-
       <section class="section" id="chapter-execution-checklist">
         <h2>结尾引导</h2>
         <article class="knowledge-card">
@@ -359,7 +322,6 @@ String sql = """
 
       <div id="primitives" hidden></div>
       <div id="strings" hidden></div>
-      <div id="modern-java" hidden></div>
       <div id="exceptions" hidden></div>
       <div id="optional" hidden></div>
       <div id="comparator" hidden></div>

@@ -47,76 +47,89 @@
     <main class="main">
       <header class="page-header">
         <h1>10 IO·NIO·网络</h1>
-        <p>文件读写、零拷贝与 HTTP 通信——后端日常接触最多的系统边界。</p>
+        <p>文件读写、多路复用、HTTP 出站调用与序列化——Java 后端与操作系统、上下游服务打交道的主战场。与<a href="09-concurrency.html">第 09 章并发</a>、<a href="19-performance-tuning.html">第 19 章性能调优</a>衔接。</p>
       </header>
 
-      <section class="section" id="classic-io">
-        <h2>经典 IO</h2>
-        <article class="knowledge-card">
-          <h3>字节流、字符流与 try-with-resources</h3>
-          <div class="card-block block-explain">
-            <h4>讲解</h4>
-            <p>字节流（InputStream/OutputStream）处理二进制；字符流（Reader/Writer）处理文本并涉及编码。缓冲流（Buffered*）减少系统调用。Java 7+ <code>try-with-resources</code> 自动关闭实现了 <code>AutoCloseable</code> 的资源，避免泄漏。</p>
-            <div class="diagram-block">
-              <pre class="mermaid">flowchart TB
-    subgraph BIO["BIO 阻塞 IO"]
-      T1[线程1] --> C1[连接1 阻塞读写]
-      T2[线程2] --> C2[连接2 阻塞读写]
+      <section class="section" id="io-models">
+        <h2>IO 模型总览</h2>
+        <p>Java IO 演进可概括为三种心智模型，选型取决于<strong>并发连接数</strong>与<strong>线程成本</strong>，而非「NIO 一定比 BIO 快」。</p>
+        <ul>
+          <li><strong>BIO（Blocking IO）</strong>：一连接一线程，读写阻塞直到内核返回。实现简单，适合连接数少、逻辑重的内部批处理或管理端。</li>
+          <li><strong>NIO（Non-blocking IO + 多路复用）</strong>：<code>Channel</code> 非阻塞注册到 <code>Selector</code>，单线程（或少量线程）监听大量连接的就绪事件。Netty、Tomcat NIO、Redis 客户端底层均基于此。</li>
+          <li><strong>AIO（异步 IO）</strong>：JDK 自带 AIO 在 Linux 上长期不成熟，生产几乎不用；业务侧「异步」多指<strong>线程池 + 回调/Future</strong> 或 <strong>Reactor 响应式</strong>（WebFlux），而非严格意义的内核 AIO。</li>
+        </ul>
+        <div class="diagram-block">
+          <pre class="mermaid">flowchart TB
+    subgraph BIO["BIO：一连接一线程"]
+      T1[线程1] --> C1[阻塞读写]
+      T2[线程2] --> C2[阻塞读写]
     end
-    subgraph NIO["NIO 多路复用"]
-      SEL[Selector 单线程] --> CH1[Channel 1]
+    subgraph NIO["NIO：Selector 多路复用"]
+      SEL[Selector] --> CH1[Channel 1]
       SEL --> CH2[Channel 2]
-      SEL --> CH3[Channel N]
-    end</pre>
-              <p class="diagram-caption">图：BIO 一连接一线程 vs NIO Selector 多路复用</p>
-            </div>
-          </div>
-          <div class="card-block block-example">
-            <h4>示例代码</h4>
-            <pre><code>// 读文本文件
-Path path = Path.of("config/app.yaml");
+      SEL --> CHN[Channel N]
+    end
+    BIO -->|连接数上千| NIO</pre>
+          <p class="diagram-caption">图：BIO 与 NIO 并发模型对比</p>
+        </div>
+        <p>Spring Boot 默认嵌入式 Tomcat 对 HTTP <strong>入站</strong>已用 NIO；业务代码里你更多面对的是<strong>文件 IO</strong>与<strong>HTTP 出站</strong>（调下游）。原则：<strong>阻塞 IO 不要占满 Tomcat 工作线程</strong>；出站调用必须设超时；高 fan-out 下游用连接池 + 熔断（见下文）。</p>
+      </section>
+
+      <section class="section" id="classic-io">
+        <h2>经典 IO 与文件操作</h2>
+        <p>Java 传统 IO 分<strong>字节流</strong>与<strong>字符流</strong>两条线，现代项目更推荐 <code>java.nio.file</code> 高层 API，仅在操作网络二进制协议或老库集成时直接接触 Stream。</p>
+
+        <h3>字节流与字符流</h3>
+        <p><code>InputStream</code> / <code>OutputStream</code> 按字节处理，适合图片、压缩包、加密流。<code>Reader</code> / <code>Writer</code> 在字节之上做字符解码，必须显式指定 <code>Charset</code>（统一 <code>StandardCharsets.UTF_8</code>），否则 Windows 与 Linux 默认编码不一致会导致配置文件、日志乱码。</p>
+        <p>包装 <code>BufferedInputStream</code> / <code>BufferedReader</code> 可减少系统调用次数；但不要无限增大缓冲区，几 KB 到几十 KB 通常足够。</p>
+
+        <h3>NIO.2 文件 API（日常首选）</h3>
+        <p>Java 7 引入的 <code>Path</code>、<code>Files</code> 支持读写字符串、行流、目录遍历、原子移动，语义比旧 <code>File</code> 更清晰，且与 <code>WatchService</code> 等配合可做配置热加载。</p>
+        <pre><code>Path path = Path.of("config", "application.yml");
+
+// 读全文
 String content = Files.readString(path, StandardCharsets.UTF_8);
 
-// 写 JSON
-try (var out = Files.newOutputStream(path)) {
+// 按行处理大文本（避免一次性 readString 撑爆堆）
+try (Stream&lt;String&gt; lines = Files.lines(path, StandardCharsets.UTF_8)) {
+    lines.filter(l -&gt; !l.isBlank()).forEach(this::parseLine);
+}
+
+// 写 JSON / 二进制
+try (OutputStream out = Files.newOutputStream(path,
+        StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
     mapper.writeValue(out, config);
 }
 
-// 大文件复制
-Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);</code></pre>
-          </div>
-          <div class="card-block block-pitfalls">
-            <h4>易错点</h4>
-            <ul>
-              <li>未指定 Charset 用平台默认编码，跨环境乱码。</li>
-              <li>手动 close 在异常路径跳过——用 try-with-resources。</li>
-            </ul>
-          </div>
-        </article>
+// 复制 / 移动
+Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
+Files.move(oldPath, newPath, StandardCopyOption.ATOMIC_MOVE);</code></pre>
+
+        <h3>资源关闭与异常路径</h3>
+        <p>Java 7+ 的 <code>try-with-resources</code> 会在块结束或异常时自动调用 <code>close()</code>，优于手写 <code>finally</code>。任何实现 <code>AutoCloseable</code> 的对象（流、Channel、部分 HTTP 包装）都应使用。</p>
+        <pre><code>try (InputStream in = Files.newInputStream(path);
+     OutputStream out = Files.newOutputStream(outPath)) {
+    in.transferTo(out);
+}</code></pre>
+        <p>易错点：未指定编码；在循环中反复 <code>new FileInputStream</code> 却不关闭导致句柄泄漏；把数百 MB 文件一次性 <code>readAllBytes</code> 进堆——大文件应分块读或走 <code>FileChannel.transferTo</code>。</p>
       </section>
 
       <section class="section" id="nio">
-        <h2>NIO Buffer/Channel</h2>
-        <article class="knowledge-card">
-          <h3>Buffer 状态机与 FileChannel 零拷贝</h3>
-          <div class="card-block block-explain">
-            <h4>讲解</h4>
-            <p>Buffer 三属性：capacity、position、limit；<code>flip()</code> 将写模式切到读模式，<code>clear()/compact()</code> 用于重置或保留未读数据。FileChannel <code>transferTo/transferFrom</code> 在满足平台与通道条件时可利用内核态数据传输路径（常见为 sendfile）减少用户态拷贝与上下文切换。Selector 实现单线程多路复用，Netty 底层基于此。</p>
-            <div class="diagram-block">
-              <pre class="mermaid">flowchart LR
-    REG[Channel 注册] --> SEL[Selector.select]
-    SEL --> READY{就绪事件?}
-    READY -->|OP_READ| READ[读 Buffer]
-    READY -->|OP_WRITE| WRITE[写 Buffer]
-    READ --> FLIP[buffer.flip]
-    FLIP --> PROC[业务处理]
-    PROC --> CLEAR[buffer.clear]</pre>
-              <p class="diagram-caption">图：NIO Selector 事件循环流程</p>
-            </div>
-          </div>
-          <div class="card-block block-example">
-            <h4>示例代码</h4>
-            <pre><code>try (FileChannel in = FileChannel.open(src, StandardOpenOption.READ);
+        <h2>NIO：Buffer、Channel 与 Selector</h2>
+        <p>NIO 核心抽象是<strong>面向缓冲区的 Channel</strong>，数据先进入 <code>ByteBuffer</code>，再与 Channel 交互。理解 Buffer 状态机是读懂 Netty 与各种网络框架的基础。</p>
+
+        <h3>ByteBuffer 状态机</h3>
+        <p>三个关键属性：<code>capacity</code>（容量）、<code>position</code>（当前读写位置）、<code>limit</code>（可读/写边界）。</p>
+        <ul>
+          <li>写入阶段：<code>put</code> 推进 <code>position</code>，<code>limit</code> 通常等于 <code>capacity</code>。</li>
+          <li><code>flip()</code>：写完后切换为读模式——<code>limit = position</code>，<code>position = 0</code>。</li>
+          <li><code>clear()</code>：清空准备下一轮写；<code>compact()</code>：保留未读字节并移到头部，适合「读了一部分还要继续读」的协议解析。</li>
+        </ul>
+        <p><strong>堆内存 Buffer</strong>（<code>ByteBuffer.allocate</code>）分配快，但数据拷到内核 socket 缓冲区时多一次拷贝。<strong>直接内存 Buffer</strong>（<code>allocateDirect</code>）分配在堆外，适合高吞吐网络 IO，需关注 <code>-XX:MaxDirectMemorySize</code> 与泄漏（见<a href="08-jvm.html">第 08 章 JVM</a>直接内存）。</p>
+
+        <h3>FileChannel 与零拷贝</h3>
+        <p><code>FileChannel.transferTo</code> / <code>transferFrom</code> 在 Linux 等平台上可走 <code>sendfile</code> 类路径，减少用户态与内核态之间的拷贝，适合大文件分发、网关静态资源、日志归档。</p>
+        <pre><code>try (FileChannel in = FileChannel.open(src, StandardOpenOption.READ);
      FileChannel out = FileChannel.open(dst,
          StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
     long transferred = 0;
@@ -125,188 +138,199 @@ Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);</code></pre>
         transferred += in.transferTo(transferred, size - transferred, out);
     }
 }</code></pre>
-          </div>
-          <div class="card-block block-tips">
-            <h4>关键/技巧</h4>
-            <ul>
-              <li>DirectByteBuffer 可减少堆内到堆外拷贝，适合高吞吐网络 IO；注意直接内存占用与 <code>-XX:MaxDirectMemorySize</code>。</li>
-              <li>日常文件操作用 <code>java.nio.file.Files</code> API 即可，不必手写 Buffer。</li>
-            </ul>
-          </div>
-        </article>
+
+        <h3>Selector 事件循环</h3>
+        <p>非阻塞 <code>SocketChannel</code> 注册到 <code>Selector</code>，线程调用 <code>select()</code> 阻塞直到有 <code>OP_READ</code> / <code>OP_WRITE</code> / <code>OP_CONNECT</code> 就绪，再批量处理。这是「单线程管万连接」的根基；Netty 的 EventLoop 在此基础上封装了 Pipeline 与内存池。</p>
+        <div class="diagram-block">
+          <pre class="mermaid">flowchart LR
+    REG[Channel 注册 Selector] --> SEL[select 等待就绪]
+    SEL --> R[OP_READ 读 Buffer]
+    SEL --> W[OP_WRITE 写 Buffer]
+    R --> FLIP[flip 切换读模式]
+    FLIP --> BIZ[业务处理]
+    BIZ --> CLEAR[clear 下一轮]</pre>
+          <p class="diagram-caption">图：NIO Selector 典型处理循环</p>
+        </div>
+        <p>手写 Selector 服务端在业务项目里极少见；知道原理即可，实际用 Netty 或 Spring WebFlux。日常文件场景用 <code>Files</code>，不必手写 Buffer 循环。</p>
       </section>
 
       <section class="section" id="http-client">
-        <h2>HTTP Client</h2>
-        <article class="knowledge-card">
-          <h3>java.net.http.HttpClient（JDK 11+）</h3>
-          <div class="card-block block-explain">
-            <h4>讲解</h4>
-            <p>标准库 HttpClient 支持 HTTP/2、异步与连接复用。Spring <code>RestClient/WebClient</code> 是更高层封装。生产环境需明确配置连接超时（connect timeout）与请求超时（request timeout），并设计重试策略（仅对幂等请求）、并发/连接上限，以及配合熔断器（Resilience4j）。</p>
-          </div>
-          <div class="card-block block-example">
-            <h4>示例代码</h4>
-            <pre><code>HttpClient client = HttpClient.newBuilder()
-    .connectTimeout(Duration.ofSeconds(3))
-    .version(HttpClient.Version.HTTP_2)
-    .build();
+        <h2>HTTP 客户端与出站调用</h2>
+        <p>微服务架构下，每个服务除处理入站请求外，大量时间花在<strong>调用下游 REST/gRPC</strong>。JDK 11 起标准库提供 <code>java.net.http.HttpClient</code>，Spring 6 推荐 <code>RestClient</code>（同步）与 <code>WebClient</code>（响应式异步）。</p>
 
+        <h3>HttpClient 基本用法</h3>
+        <p><code>HttpClient</code> 应作为<strong>单例 Bean</strong> 复用连接池；每次 <code>newBuilder().build()</code> 会丢失连接复用。支持 HTTP/2、同步 <code>send</code> 与异步 <code>sendAsync</code>。</p>
+        <pre><code>@Configuration
+public class HttpClientConfig {
+    @Bean
+    public HttpClient httpClient() {
+        return HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(3))
+            .version(HttpClient.Version.HTTP_2)
+            .followRedirects(HttpClient.Redirect.NORMAL)
+            .build();
+    }
+}
+
+// 同步调用
 HttpRequest req = HttpRequest.newBuilder()
     .uri(URI.create("https://api.example.com/orders/" + id))
-    .timeout(Duration.ofSeconds(5))
+    .timeout(Duration.ofSeconds(5))   // 请求级超时，含读写
     .header("Accept", "application/json")
+    .header("X-Request-Id", requestId)
     .GET()
     .build();
 
-HttpResponse&lt;String&gt; resp = client.send(req, BodyHandlers.ofString());
-if (resp.statusCode() != 200) throw new DownstreamException(resp.statusCode());</code></pre>
-          </div>
-          <div class="card-block block-pitfalls">
-            <h4>易错点</h4>
-            <ul>
-              <li>同步调用未设超时时，网络异常可能导致调用线程长时间阻塞。</li>
-              <li>每次请求 new HttpClient 丢失连接池复用。</li>
-            </ul>
-          </div>
-        </article>
+HttpResponse&lt;String&gt; resp = client.send(req, HttpResponse.BodyHandlers.ofString());
+if (resp.statusCode() &gt;= 400) {
+    throw new DownstreamException(resp.statusCode(), resp.body());
+}</code></pre>
+
+        <h3>超时、连接与线程</h3>
+        <ul>
+          <li><strong>connectTimeout</strong>：TCP 建连上限，防止下游宕机时长时间卡在 SYN。</li>
+          <li><strong>request timeout</strong>：单次请求总时限，应小于 Tomcat/网关的上游超时，留出级联余量。</li>
+          <li>同步 <code>send</code> 占用<strong>调用方线程</strong>（如 Tomcat worker）；高并发 fan-out 可考虑 <code>sendAsync</code> + CompletableFuture，或 WebClient 非阻塞。</li>
+          <li>出站 QPS 高时配合<strong>连接池上限</strong>与<strong>舱壁隔离</strong>（Bulkhead），避免拖垮本服务线程（<a href="#resilience4j">Resilience4j</a>）。</li>
+        </ul>
+
+        <h3>Spring RestClient / WebClient</h3>
+        <p>Spring Boot 3 中 <code>RestClient</code> 基于 HttpClient 或 Apache HttpClient 5，声明式风格接近旧 RestTemplate 但 API 更清晰。<code>WebClient</code> 基于 Reactor Netty，适合流式与大量并发出站，需团队熟悉响应式调试。选型：普通 CRUD 集成用 RestClient；全链路异步或 SSE 用 WebClient。</p>
       </section>
 
       <section class="section" id="serialization">
-        <h2>序列化</h2>
-        <article class="knowledge-card">
-          <h3>JSON / Protobuf 选型</h3>
-          <div class="card-block block-explain">
-            <h4>讲解</h4>
-            <p>服务间 REST 普遍使用 JSON（Jackson）；高性能内部 RPC（如 gRPC）常用 Protobuf。避免 Java 原生序列化（安全与兼容风险）。DTO 与领域模型分离；日期时间用 ISO-8601 或 epoch，并显式约定时区语义。</p>
-          </div>
-          <div class="card-block block-example">
-            <h4>示例代码</h4>
-            <pre><code>// Jackson 全局配置（Spring Boot 自动注册）
-@JsonInclude(JsonInclude.Include.NON_NULL)
-public record OrderDto(String id, Instant createdAt, BigDecimal total) {}
+        <h2>序列化与协议</h2>
+        <p>数据跨越进程边界必须约定<strong>格式、编码、版本兼容</strong>。Java 后端主流组合如下。</p>
+
+        <h3>JSON（REST 默认）</h3>
+        <p>Spring Boot 默认 Jackson。领域对象与 API 契约分离：对外用 <code>record</code> / DTO，勿直接暴露 JPA 实体。日期时间用 <code>Instant</code> / <code>OffsetDateTime</code>，关闭时间戳数字序列化，统一 ISO-8601。</p>
+        <pre><code>@JsonInclude(JsonInclude.Include.NON_NULL)
+public record OrderDto(
+    @JsonSerialize(using = ToStringSerializer.class)  // 防前端 Long 精度丢失
+    Long id,
+    Instant createdAt,
+    BigDecimal total
+) {}
 
 ObjectMapper mapper = JsonMapper.builder()
     .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
     .addModule(new JavaTimeModule())
     .build();</code></pre>
-          </div>
-          <div class="card-block block-tips">
-            <h4>关键/技巧</h4>
-            <ul>
-              <li>大数字 ID 前端精度丢失——JSON 序列化为 String。</li>
-              <li>版本演进：新增字段 optional，禁止改字段语义。</li>
-            </ul>
-          </div>
-        </article>
+        <p>版本演进：只增字段、不改语义；废弃字段保留并标 <code>@Deprecated</code>；Breaking 变更走新 API 版本（<a href="03-architecture-design.html">第 03 章 API 设计</a>）。</p>
+
+        <h3>Protobuf 与 gRPC</h3>
+        <p>内部高性能 RPC、流式场景常用 Protobuf 二进制 + gRPC。优点：体积小、IDL 强类型、多语言；缺点：调试不如 JSON 直观，需生成代码与兼容策略。REST 对外、gRPC 对内是常见分层。</p>
+
+        <h3>避免 Java 原生序列化</h3>
+        <p><code>ObjectOutputStream</code> 存在安全漏洞历史与版本脆弱性，Redis Session、MQ 等应换 JSON/Kryo 等并评估白名单。切勿把不可信字节流直接 <code>readObject</code>。</p>
       </section>
 
       <section class="section" id="resilience4j">
-        <h2>Resilience4j 容错</h2>
-        <article class="knowledge-card">
-          <h3>HttpClient 与下游调用的生产级防护</h3>
-          <div class="card-block block-explain">
-            <h4>讲解</h4>
-            <p>裸 HttpClient 调用须配<strong>超时、有限重试、熔断</strong>。<strong>Resilience4j</strong> 提供 CircuitBreaker、Retry、TimeLimiter、Bulkhead、RateLimiter。Spring Boot 3 用 <code>resilience4j-spring-boot3</code> 声明式注解；详细配置与 Spring 集成见<a href="12-spring-framework.html#resilience4j">第 12 章 Resilience4j</a>。</p>
-          </div>
-          <div class="card-block block-example">
-            <h4>HttpClient 组合示例</h4>
-            <pre><code>CircuitBreaker cb = CircuitBreaker.of("downstream", CircuitBreakerConfig.custom()
-    .slidingWindowSize(20).failureRateThreshold(50f).build());
-Retry retry = Retry.of("downstream", RetryConfig.custom().maxAttempts(3).build());
+        <h2>下游容错：超时、重试与熔断</h2>
+        <p>网络调用失败是常态：超时、连接拒绝、5xx、慢响应。裸 HttpClient 只解决「能发请求」，生产必须叠加<strong>超时 + 有限重试 + 熔断 + 可选限流</strong>。<a href="12-spring-framework.html#resilience4j">第 12 章 Resilience4j</a> 提供 Spring Boot 3 集成。</p>
+
+        <h3>设计原则</h3>
+        <ul>
+          <li><strong>超时</strong>：每层都设——客户端、网关、服务线程，且下游 &lt; 上游。</li>
+          <li><strong>重试</strong>：仅对<strong>幂等</strong>读请求或带幂等键的写（<a href="03-architecture-design.html#api-design">第 03 章</a>）；指数退避 + 抖动，限制最大次数。</li>
+          <li><strong>熔断</strong>：失败率/慢调用率超阈值则快速失败，给下游恢复时间，半开探测恢复。</li>
+          <li><strong>舱壁</strong>：不同下游用独立线程池或信号量，防止一个慢服务占满所有 Tomcat 线程。</li>
+        </ul>
+
+        <h3>编程式组合示例</h3>
+        <pre><code>CircuitBreaker cb = CircuitBreaker.of("payment-api",
+    CircuitBreakerConfig.custom()
+        .slidingWindowSize(20)
+        .failureRateThreshold(50f)
+        .waitDurationInOpenState(Duration.ofSeconds(30))
+        .build());
+
+Retry retry = Retry.of("payment-api",
+    RetryConfig.custom()
+        .maxAttempts(3)
+        .waitDuration(Duration.ofMillis(200))
+        .retryExceptions(IOException.class, TimeoutException.class)
+        .build());
 
 Supplier&lt;HttpResponse&lt;String&gt;&gt; call = () -&gt; client.send(req, BodyHandlers.ofString());
+
 HttpResponse&lt;String&gt; resp = Decorators.ofSupplier(call)
     .withCircuitBreaker(cb)
     .withRetry(retry)
     .withTimeout(Duration.ofSeconds(5))
     .get();</code></pre>
-          </div>
-          <div class="card-block block-pitfalls">
-            <h4>易错点</h4>
-            <ul>
-              <li>对非幂等 POST 自动重试导致重复副作用——见<a href="03-architecture-design.html#api-design">第 03 章幂等性</a>。</li>
-              <li>熔断阈值未压测校准，误杀正常流量。</li>
-            </ul>
-          </div>
-        </article>
+        <p>易错点：对创建订单等 POST 无脑重试导致重复扣款；熔断参数未按压测校准，短暂抖动就长时间拒流。应对：幂等键 + 业务去重表；熔断指标接入 Prometheus 告警。</p>
       </section>
 
       <section class="section" id="netty">
-        <h2>Netty 概览</h2>
-        <article class="knowledge-card">
-          <h3>EventLoop 与 Pipeline</h3>
-          <div class="card-block block-explain">
-            <h4>讲解</h4>
-            <p>Netty 基于 Reactor：Boss EventLoop 接受连接，Worker EventLoop 处理 IO。ChannelPipeline 链式 Handler 解码/编码/业务。Spring WebFlux、Redis/MQ 客户端、Dubbo 等底层常用 Netty。业务代码一般不需手写，但需理解「不要在 EventLoop 做阻塞调用」。</p>
-            <div class="diagram-block">
-              <pre class="mermaid">flowchart LR
-    BOSS[Boss EventLoop] -->|accept| WORK[Worker EventLoop]
+        <h2>Netty 与 Reactor 模型</h2>
+        <p>Netty 是 Java 领域事实上的高性能 NIO 框架：Tomcat 可选、Spring WebFlux、Dubbo、gRPC-Java、Lettuce（Redis）、RocketMQ 客户端等均基于或可选 Netty。业务开发很少手写 Bootstrap，但必须遵守其线程模型。</p>
+
+        <h3>线程模型</h3>
+        <p>典型服务端：<strong>Boss EventLoop</strong> 线程只负责 <code>accept</code> 新连接；<strong>Worker EventLoop</strong> 负责已连接 Channel 的 IO 读写。每个 EventLoop 绑定一个单线程队列，保证同一 Channel 上的事件顺序处理，无锁化设计。</p>
+        <div class="diagram-block">
+          <pre class="mermaid">flowchart LR
+    BOSS[Boss EventLoop accept] --> WORK[Worker EventLoop]
     WORK --> PIPE[ChannelPipeline]
-    PIPE --> DEC[解码 Handler]
+    PIPE --> DEC[入站：解码]
     DEC --> BIZ[业务 Handler]
-    BIZ --> ENC[编码 Handler]</pre>
-              <p class="diagram-caption">图：Netty Reactor 模型与 Pipeline 链</p>
-            </div>
-          </div>
-          <div class="card-block block-example">
-            <h4>示例代码</h4>
-            <pre><code>// 反模式：在 Netty worker 线程阻塞 JDBC
-channel.pipeline().addLast(new SimpleChannelInboundHandler&lt;HttpObject&gt;() {
-    @Override
-    protected void channelRead0(ChannelHandlerContext ctx, HttpObject msg) {
-        // 错误：db.query() 阻塞 EventLoop
-        // 正确：提交到业务线程池，完成后 ctx.writeAndFlush(response)
-        businessExecutor.submit(() -&gt; {
-            var result = service.handle(msg);
-            ctx.executor().execute(() -&gt; ctx.writeAndFlush(result));
-        });
-    }
-});</code></pre>
-          </div>
-          <div class="card-block block-memory">
-            <h4>速记</h4>
-            <p>「EventLoop 非阻塞；阻塞任务丢线程池；Pipeline 进解码出编码。」</p>
-          </div>
-        </article>
+    BIZ --> ENC[出站：编码]</pre>
+          <p class="diagram-caption">图：Netty Boss/Worker 与 Pipeline</p>
+        </div>
+
+        <h3>ChannelPipeline</h3>
+        <p>入站（Inbound）事件从 head 向 tail 传播：字节 → HTTP 帧 → 完整请求 → 业务。出站（Outbound）从 tail 向 head：业务响应 → 编码 → 字节。Handler 分为解码器、编码器、业务逻辑；添加顺序影响协议解析正确性。</p>
+
+        <h3>铁律：勿在 EventLoop 上阻塞</h3>
+        <p>JDBC、阻塞 HTTP、<code>Thread.sleep</code>、重 CPU 计算放在 EventLoop 上会阻塞该 Loop 上所有连接，造成级联超时。正确做法：提交到业务线程池，完成后再 <code>ctx.executor().execute(() -&gt; ctx.writeAndFlush(msg))</code> 写回。</p>
+        <pre><code>// 反模式
+protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest req) {
+    Order o = jdbcTemplate.query(...);  // 阻塞 EventLoop
+    writeJson(ctx, o);
+}
+
+// 正模式
+protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest req) {
+    businessExecutor.execute(() -&gt; {
+        Order o = orderService.find(...);
+        ctx.executor().execute(() -&gt; writeJson(ctx, o));
+    });
+}</code></pre>
+        <p>若全栈 Spring MVC + JDBC，由 Tomcat 线程池承担阻塞，与 Netty 无感；一旦引入 WebFlux 或自研 Netty 网关，必须审计阻塞点。</p>
       </section>
+
       <section class="section" id="chapter-execution-checklist">
         <h2>章末实战闭环</h2>
-        <article class="knowledge-card">
-          <h3>IO网络落地清单</h3>
-          <div class="card-block block-deliverable">
-            <h4>输入</h4>
-            <ul>
-              <li>文件/网络交互模式与吞吐目标</li>
-              <li>协议规范与序列化约束</li>
-              <li>连接池与超时策略要求</li>
-              <li>高峰期流量与背压预估</li>
-            </ul>
-          </div>
-          <div class="card-block block-tips">
-            <h4>输出</h4>
-            <ul>
-              <li>IO/NIO/异步模型选型说明</li>
-              <li>连接管理与超时重试基线</li>
-              <li>网络异常与限流降级策略</li>
-            </ul>
-          </div>
-          <div class="card-block block-example">
-            <h4>验收标准</h4>
-            <ul>
-              <li>关键接口具备可验证的时延指标</li>
-              <li>序列化协议兼容策略已定义</li>
-              <li>网络故障可触发自动降级</li>
-            </ul>
-          </div>
-          <div class="card-block block-pitfalls">
-            <h4>失败信号</h4>
-            <ul>
-              <li>阻塞 IO 用在高并发主路径</li>
-              <li>连接泄漏缺乏监控与兜底</li>
-              <li>异常重试放大雪崩效应</li>
-            </ul>
-          </div>
-        </article>
+        <p>上线前用下列清单自检 IO 与网络边界，避免「功能正确但高峰超时雪崩」。</p>
+
+        <h3>输入</h3>
+        <ul>
+          <li>文件读写量级（单次大小、QPS）与是否走磁盘/对象存储</li>
+          <li>出站依赖列表：协议、SLA、是否幂等</li>
+          <li>峰值并发连接数与线程池规格</li>
+        </ul>
+
+        <h3>输出</h3>
+        <ul>
+          <li>IO 模型说明（BIO 文件 + NIO 入站 + HttpClient 出站）</li>
+          <li>HttpClient 单例、connect/request 超时、重试与熔断参数表</li>
+          <li>JSON/Protobuf 版本兼容与 Long-as-String 等约定</li>
+        </ul>
+
+        <h3>验收标准</h3>
+        <ul>
+          <li>核心下游调用在压测下 P99 可解释，无连接泄漏（句柄/ESTABLISHED 平稳）</li>
+          <li>下游故障时本服务快速失败或降级，不无限阻塞 Tomcat 线程</li>
+          <li>大文件上传下载有大小限制与流式处理，无 OOM</li>
+        </ul>
+
+        <h3>失败信号</h3>
+        <ul>
+          <li>高并发路径使用阻塞 IO 且无舱壁隔离</li>
+          <li>每次请求 new HttpClient、未设超时</li>
+          <li>非幂等写自动重试、熔断阈值未校准</li>
+          <li>Netty/WebFlux 链路上执行阻塞 JDBC</li>
+        </ul>
       </section>
 
       <nav class="chapter-nav">
