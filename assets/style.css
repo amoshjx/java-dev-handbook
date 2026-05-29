@@ -644,6 +644,57 @@ body.has-chapter-toc .layout {
   margin-bottom: 1rem;
 }
 
+.section-prose {
+  font-size: 0.94rem;
+  line-height: 1.75;
+  max-width: var(--explain-line-width);
+}
+
+.section-prose > h3 {
+  margin: 0 0 0.85rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.section-prose > p {
+  margin: 0 0 0.85em;
+}
+
+.section-prose > ul,
+.section-prose > ol {
+  margin: 0 0 0.85em;
+  padding-left: 1.2rem;
+}
+
+.section-prose > h4 {
+  margin: 1.35rem 0 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.section-prose strong {
+  color: var(--explain-concept);
+}
+
+.section-prose .diagram-block {
+  max-width: none;
+}
+
+.section-prose > pre {
+  margin: 0.5rem 0 0.85em;
+}
+
+.section-reading {
+  margin-top: 1.25rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
 .knowledge-card {
   background: var(--surface);
   border: 1px solid var(--border);

@@ -61,7 +61,7 @@
           <div class="card-block block-deliverable">
             <h4>模块划分</h4>
             <ul>
-              <li><strong>模块 A（愿景与边界）</strong>：<a href="#architecture-overview">架构愿景与交付边界</a>、<a href="#domain-modeling">领域建模与 DDD</a>、<a href="#functional-module-design">功能模块设计</a></li>
+              <li><strong>模块 A（愿景与边界）</strong>：<a href="#architecture-overview">架构愿景与交付边界</a>、<a href="#domain-modeling">DDD领域驱动设计</a>、<a href="#functional-module-design">功能模块设计</a></li>
               <li><strong>模块 B（模式与风格）</strong>：<a href="#architecture-patterns">架构模式选型</a>、<a href="#event-driven-architecture">事件驱动架构</a>、<a href="#microservice-architecture">微服务架构</a></li>
               <li><strong>模块 C（关键决策方法）</strong>：<a href="#decision-methods">决策框架与评估方法</a>、<a href="#api-design">API 与集成设计</a></li>
               <li><strong>模块 D（质量属性权衡）</strong>：<a href="#quality-attribute-tradeoffs">性能·一致性·安全·成本权衡</a>、<a href="#finops-cloud-cost">FinOps 与云成本估算</a></li>
@@ -203,12 +203,48 @@ Transactional Outbox + 事件驱动，Saga 补偿
       </section>
 
       <section class="section" id="domain-modeling">
-        <h2>领域建模与 DDD 边界</h2>
-        <article class="knowledge-card">
-          <h3>限界上下文、聚合与通用语言</h3>
-          <div class="card-block block-explain">
-            <h4>讲解</h4>
-            <p><strong>DDD</strong> 战术：实体（有 ID）、值对象（不可变）、<strong>聚合</strong>（一致性边界，根实体唯一入口）、<strong>领域事件</strong>解耦协作。<strong>限界上下文</strong>（Bounded Context）划分业务边界——按<strong>变更频率、团队归属、数据所有权</strong>切，而非按数据库表；上下文间用 ACL（防腐层）翻译模型，集成模式选<strong>共享内核 / 客户-供应商 / 开放主机 / 防腐层 / 各行其道</strong>。<strong>Ubiquitous Language</strong> 词汇表统一产品/开发用语。演进：MVP 可先<strong>模块化单体</strong>内分上下文包，验证边界后再拆微服务。</p>
+        <h2>DDD领域驱动设计</h2>
+        <div class="section-prose">
+          <h3>从战略到战术的 DDD 方法论</h3>
+            <p><strong>DDD（Domain-Driven Design，领域驱动设计）</strong> 是一种应对复杂软件系统的设计思想和方法论，核心思想是：让软件的设计紧密围绕业务领域（Domain）的现实模型展开。</p>
+            <p><strong>核心概念：两大支柱</strong> —— DDD 的方法论主要分为<strong>战略设计</strong>（宏观上划分解耦）和<strong>战术设计</strong>（微观上落地实现）。</p>
+
+            <p><strong>1. 战略设计 (Strategic Design) —— 划分边界</strong></p>
+            <p>战略设计是高层建筑，负责把复杂的业务大系统拆分成小系统。</p>
+            <ul>
+              <li><strong>领域 (Domain) 与子域 (Subdomain)</strong>：业务的范围。比如一个电商系统（领域），可以拆分为商品子域、订单子域、支付子域、物流子域等。</li>
+              <li><strong>通用语言 (Ubiquitous Language)</strong>：团队（开发、产品、测试、业务专家）必须使用统一的业务术语。代码里的类名、方法名要和业务术语完全一致，消除沟通鸿沟。</li>
+              <li><strong>限界上下文 (Bounded Context)</strong>：业务概念的边界。在同一个边界内，词汇的含义是唯一的。例如，「商品」在「仓储上下文」中代表的是「库存货物」，而在「销售上下文」中代表的是「上架商品」。</li>
+            </ul>
+
+            <p><strong>2. 战术设计 (Tactical Design) —— 代码落地</strong></p>
+            <p>战术设计是一套模式，指导我们在限界上下文内部如何组织代码和业务逻辑。</p>
+            <ul>
+              <li><strong>实体 (Entity)</strong>：具有唯一标识（ID）的对象。它的状态会发生变化，但只要 ID 不变，它就是同一个东西（例如：用户 User、订单 Order）。</li>
+              <li><strong>值对象 (Value Object)</strong>：没有唯一标识、只由其属性定义的对象。它是不可变的（Immutable），通常用来描述实体的属性（例如：地址 Address、金额 Money）。</li>
+              <li><strong>聚合与聚合根 (Aggregate &amp; Aggregate Root)</strong>：聚合是一组相关对象的集合（比如「订单」和「订单明细」），它们作为一个整体进行数据修改，保证业务内聚。聚合根是这个集合的外部唯一入口，外部只能通过聚合根来修改内部的数据。</li>
+              <li><strong>领域服务 (Domain Service)</strong>：当某个业务逻辑不属于任何一个具体的实体或值对象时，就把它提炼成一个领域服务（例如：转账操作，涉及两个账户实体）。</li>
+              <li><strong>仓储 (Repository)</strong>：负责聚合根的持久化（保存和读取），它将底层的数据库操作（MySQL、MongoDB 等）屏蔽掉，让领域层只关注业务。</li>
+            </ul>
+
+            <p><strong>DDD 的经典分层架构</strong></p>
+            <p>传统的 MVC 架构通常是三层（Controller → Service → DAO），而 DDD 推荐使用四层架构（或六边形架构 / 整洁架构），其核心是将业务逻辑（Domain）保护在最内层，不依赖任何外部框架和数据库。</p>
+            <ul>
+              <li><strong>用户接口层 (User Interface)</strong>：处理外部请求，进行参数校验和转换（DTO 转换）。</li>
+              <li><strong>应用层 (Application Layer)</strong>：很薄的一层，负责编排业务流程、事务控制、安全检查。它不包含核心业务逻辑，而是协调领域层工作。</li>
+              <li><strong>领域层 (Domain Layer)</strong>：系统的核心！包含所有的实体、值对象、聚合、领域服务和业务规则。它不依赖其他任何层。</li>
+              <li><strong>基础设施层 (Infrastructure Layer)</strong>：提供通用的技术能力，比如数据库持久化（Repository 的具体实现）、缓存、消息队列、第三方 API 调用等。</li>
+            </ul>
+
+            <p><strong>为什么需要 DDD？（解决什么痛点）</strong></p>
+            <ul>
+              <li><strong>防止系统变成「大泥潭」</strong>：随着业务发展，传统架构的代码会变得臃肿，修改一处引发无数 Bug。DDD 通过边界划分，让系统高内聚、低耦合。</li>
+              <li><strong>告别贫血模型</strong>：传统 Service 包含所有逻辑，Entity 只有 getter/setter（被称为贫血模型）。DDD 提倡充血模型，让实体自己拥有行为和业务规则，代码更符合面向对象思想。</li>
+              <li><strong>精准应对微服务划分</strong>：限界上下文（Bounded Context）是微服务拆分的天然边界。没有经过 DDD 战略设计的微服务，很容易拆成一摊互相强耦合的分布式垃圾。</li>
+            </ul>
+
+            <p><strong>小结</strong>：DDD 不是一种具体的框架，而是一套思维方式。对于简单的 CRUD 系统，用 DDD 反而会增加复杂度；但对于业务逻辑错综复杂的大型企业级应用，DDD 是理清头绪、保证软件长治久安的利器。</p>
+
             <div class="diagram-block">
               <pre class="mermaid">graph TB
     subgraph ORDER_CTX["订单上下文"]
@@ -221,18 +257,16 @@ Transactional Outbox + 事件驱动，Saga 补偿
     end
     OA -->|仅 ID 引用| CA
     OA --> EVT[Domain Event]</pre>
-              <p class="diagram-caption">图：DDD 聚合边界与领域事件</p>
+              <p class="diagram-caption">图：限界上下文内的聚合边界与跨上下文协作</p>
             </div>
-          </div>
-          <div class="card-block block-deliverable">
+
             <h4>阶段成果</h4>
             <ul>
-              <li><strong>领域模型图</strong>：实体、值对象、聚合关系</li>
-              <li><strong>限界上下文图</strong>：上下文边界与集成关系</li>
-              <li><strong>Ubiquitous Language 词汇表</strong>：术语、定义、所属上下文</li>
+              <li><strong>领域模型图</strong>：实体、值对象、聚合与领域服务</li>
+              <li><strong>限界上下文图</strong>：子域边界、通用语言与集成关系</li>
+              <li><strong>分层架构说明</strong>：各层职责与依赖方向（Domain 零框架依赖）</li>
             </ul>
-          </div>
-          <div class="card-block block-example">
+
             <h4>示例代码</h4>
             <pre><code>public class Order { // 聚合根
     private final OrderId id;
@@ -246,27 +280,24 @@ Transactional Outbox + 事件驱动，Saga 补偿
         events.add(new OrderSubmitted(id, lines));
     }
 }</code></pre>
-          </div>
-          <div class="card-block block-example">
+
             <h4>限界上下文划分检查单</h4>
             <pre><code>□ 同一上下文内术语是否一致？（订单 vs 单据）
 □ 是否同一团队负责演进？（Conway 定律）
 □ 跨上下文是否只需 ID 引用，而非对象导航？
 □ 集成是否需 ACL 防外部模型污染？
 □ 上下文边界是否与事务边界对齐？（单聚合强一致）</code></pre>
-          </div>
-          <div class="card-block block-pitfalls">
+
             <h4>易错点</h4>
             <ul>
               <li>聚合过大（订单 + 用户 + 库存同一聚合）导致锁竞争。</li>
-              <li>Anemic Domain Model：逻辑全在 Service，实体只有 getter/setter。</li>
-              <li><strong>按技术层拆上下文</strong>（「用户服务」「订单服务」实为同一团队同一语言）——过度拆分带来 Chatty API。</li>
+              <li>贫血模型：逻辑全在 Service，实体只有 getter/setter。</li>
+              <li>简单 CRUD 系统过度套用 DDD，引入不必要的抽象与复杂度。</li>
+              <li>未经战略设计就拆微服务，限界上下文边界不清，形成强耦合的分布式系统。</li>
             </ul>
-          </div>
-          <div class="card-block block-reading">
-            <p>延伸阅读：<em>Domain-Driven Design</em>（Eric Evans）、<em>Implementing Domain-Driven Design</em></p>
-          </div>
-        </article>
+
+            <p class="section-reading">延伸阅读：<em>Domain-Driven Design</em>（Eric Evans）、<em>Implementing Domain-Driven Design</em>（Vaughn Vernon）</p>
+        </div>
       </section>
 
       <section class="section" id="functional-module-design">

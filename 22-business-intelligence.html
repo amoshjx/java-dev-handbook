@@ -436,7 +436,9 @@ public OrderSummary getOrderStatus(
           <h3>离线 Eval、Golden Set、幻觉检测、A/B</h3>
           <div class="card-block block-explain">
             <h4>讲解</h4>
-            <p><strong>Eval 体系</strong>是 AI 能力的<strong>质量门禁</strong>，架构上与 CI/CD 同级：Golden Set（50–200 条）+ 离线指标（Faithfulness、Citation 命中率）+ 业务 KPI（转人工率）构成三层评估。<strong>架构产出</strong>：Eval 平台/流水线（Prompt 版本 tag → 自动跑分 → 门禁阈值 → 阻断发布）；与<a href="21-ai-development.html#harness-engineering">第 21 章 Harness Engineering</a>衔接。无 Golden Set 不上生产；模型/Prompt/检索策略变更必跑回归。A/B 分桶看业务 KPI，非仅 ROUGE/BLEU。</p>
+            <p><strong>Eval 体系</strong>是 AI 能力的<strong>质量门禁</strong>，架构上与 CI/CD 同级：
+              Golden Set（50–200 条）+ 离线指标（Faithfulness、Citation 命中率）+ 业务 KPI（转人工率）构成三层评估。
+              <strong>架构产出</strong>：Eval 平台/流水线（Prompt 版本 tag → 自动跑分 → 门禁阈值 → 阻断发布）；与<a href="21-ai-development.html#harness-engineering">第 21 章 Harness Engineering</a>衔接。无 Golden Set 不上生产；模型/Prompt/检索策略变更必跑回归。A/B 分桶看业务 KPI，非仅 ROUGE/BLEU。</p>
           </div>
           <div class="card-block block-deliverable">
             <h4>阶段成果</h4>

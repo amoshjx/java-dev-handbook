@@ -47,102 +47,123 @@
     <main class="main">
       <header class="page-header">
         <h1>20 工程化·DevOps·CI/CD</h1>
-        <p>把「提交 → 构建测试 → 打镜像 → 部署上线」自动化——流水线是工程化的落地引擎，不是运维文档里的装饰。</p>
-        <p>示例项目 <code>fdc-webservice</code>（Java 21 · Spring Boot 3.x · Maven 3.9+）。构建与 K8s 清单见<a href="13-build-packaging-deploy.html">第 13 章</a>；测试门禁见<a href="17-test-driven-development.html">第 17 章</a>、<a href="18-testing-quality.html">第 18 章</a>。</p>
+        <p>本章回答两件事：<strong>为什么要搞</strong>（避免协作与上线的常见陷阱），以及<strong>怎么落地</strong>（从规范、CI、CD 到监控闭环）。示例项目 <code>fdc-webservice</code>（Java 21 · Spring Boot 3.x · Maven 3.9+）；构建与 K8s 细节见<a href="13-build-packaging-deploy.html">第 13 章</a>，测试与质量见<a href="17-test-driven-development.html">第 17 章</a>、<a href="18-testing-quality.html">第 18 章</a>。</p>
       </header>
 
-      <section class="section" id="concepts">
-        <h2>概念与链路</h2>
-        <article class="knowledge-card">
-          <h3>工程化 · DevOps · CI/CD</h3>
-          <div class="card-block block-explain">
-            <h4>讲解</h4>
-            <p><strong>工程化</strong>：标准化、可度量的开发流程（分支规范、Commit 格式、覆盖率阈值）。<strong>DevOps</strong>：开发与运维协作，目标是高质量、高频率交付——开发者维护流水线配置，运维提供 Runner 与集群。<strong>CI/CD</strong>：DevOps 的核心引擎，代码提交后自动构建、测试、部署。DevOps 生命周期中，CI/CD 覆盖 Build → Deploy 段；Operate/Monitor 由可观测性体系统筹（见<a href="19-performance-tuning.html">第 19 章</a>）。</p>
-            <div class="diagram-block">
-              <pre class="mermaid">flowchart LR
-    ENG[工程化<br/>规范与度量] --> DEVOPS[DevOps<br/>协作文化]
-    DEVOPS --> CICD[CI/CD<br/>自动化流水线]
-    CICD --> VALUE[持续交付业务价值]</pre>
-              <p class="diagram-caption">图：三者关系——CI/CD 是最终落地的自动化手段</p>
-            </div>
-          </div>
-          <div class="card-block block-memory">
-            <h4>速记</h4>
-            <p>「工程化定规矩，DevOps 破部门墙，CI/CD 把规矩跑起来。」</p>
-          </div>
-        </article>
+      <section class="section" id="overview">
+        <h2>本章概览</h2>
+        <p>建议阅读顺序：<a href="#why">为什么要搞</a> → <a href="#how">怎么落地</a>（<a href="#engineering">工程化</a> → <a href="#ci">持续集成</a> → <a href="#cd">持续交付/部署</a> → <a href="#devops-culture">DevOps 与监控</a>）→ <a href="#pipeline-summary">极简流水线总结</a>。</p>
       </section>
 
-      <section class="section" id="pipeline-design">
-        <h2>流水线设计</h2>
-        <article class="knowledge-card">
-          <h3>CI 与两种 CD</h3>
-          <div class="card-block block-explain">
-            <h4>讲解</h4>
-            <p><strong>CI（持续集成）</strong>：每次 Push/MR 触发，产出编译通过 + 测试通过。<strong>Continuous Delivery（持续交付）</strong>：合并主干后产出可部署制品，类生产环境自动部署，生产需人工审批——大多数 Java 后端采用此模式。<strong>Continuous Deployment（持续部署）</strong>：测试全过后自动上生产，适合测试覆盖极厚、发布频率极高的团队。Java 后端推荐阶段：静态检查 → compile → unit test → package → 安全扫描 → docker build → push registry → deploy SIT → 人工审批 → deploy PROD。</p>
-            <div class="diagram-block">
-              <pre class="mermaid">flowchart TD
-    PUSH[Push / MR] --> LINT[静态检查]
-    LINT --> BUILD[compile]
-    BUILD --> TEST[unit test + 覆盖率]
-    TEST --> PKG[mvn package]
-    PKG --> SCAN[安全/依赖扫描]
-    SCAN --> IMG[docker build]
-    IMG --> REG[push registry]
-    REG --> DEPLOY_SIT[deploy sit]
-    DEPLOY_SIT --> APPROVE[人工审批]
-    APPROVE --> DEPLOY_PROD[deploy prod]</pre>
-              <p class="diagram-caption">图：Java 后端 CI/CD 推荐阶段</p>
-            </div>
-          </div>
-        </article>
+      <section class="section" id="why">
+        <h2>一、为什么要搞这些？（Why）</h2>
+        <p>工程化、DevOps、CI/CD 不是给团队「加流程负担」，而是用工具和约定，把重复、易错、难协作的事交给机器和统一标准。如果不搞，Java 项目很容易掉进下面四类典型困境。</p>
 
-        <article class="knowledge-card">
-          <h3>质量门禁</h3>
-          <div class="card-block block-explain">
-            <h4>讲解</h4>
-            <p>关键阶段设<strong>硬门槛</strong>，不合格则 Pipeline 失败、禁止合并 MR：静态检查无 Blocker（Checkstyle、SonarQube）；单元测试全通过且覆盖率 ≥ 阈值（JUnit 5 + JaCoCo）；依赖扫描无 Critical CVE（OWASP Dependency-Check）；镜像扫描无高危漏洞（Trivy）；MR 需 Pipeline 绿 + 至少 1 人 Review（Protected Branch）。</p>
-          </div>
-          <div class="card-block block-memory">
-            <h4>速记</h4>
-            <p>「门禁不是拖慢发布，是用机器挡掉不该合并的代码。」</p>
-          </div>
-        </article>
+        <h3>四大地狱</h3>
+
+        <h4>1.「在我电脑上好好的」地狱</h4>
+        <p>协作时，因为 JDK 版本、Maven 依赖、操作系统环境不一致，代码在你这里能跑，到别人那里就报错。根因是<strong>环境不可复现</strong>：有人用 JDK 17、有人用 21；有人本地 <code>lib</code> 里塞了 JAR，有人没同步；<code>pom.xml</code> 各写各的，依赖版本漂移。</p>
+        <p><strong>对策方向：</strong>统一构建工具与 JDK（见<a href="05-dev-environment.html">第 05 章</a>）、禁止手工拷 JAR、用 <code>mvnw</code> 或锁定 Maven 版本，让「能构建」这件事只依赖 Git 仓库，不依赖某台笔记本。</p>
+
+        <h4>2. 手工部署地狱</h4>
+        <p>每次上线都要手动打包、传 FTP、连服务器、改配置、重启。手一抖删错目录，或漏配一个环境变量，直接导致线上事故。发布窗口越长，人为失误概率越高。</p>
+        <p><strong>对策方向：</strong>同一套制品（JAR / 镜像）由 CI 产出，CD 用脚本或 K8s 滚动更新部署，配置与代码分离（见下文配置中心化）。</p>
+
+        <h4>3. 测试滞后地狱</h4>
+        <p>代码写完了一直不测，直到上线前夕才交给 QA。测出一堆 Bug，开发只能熬夜修，越修越乱，主干长期处于「不可发布」状态。</p>
+        <p><strong>对策方向：</strong>每次提交触发 <code>mvn test</code>，覆盖率不达标就熔断；测试左移见<a href="17-test-driven-development.html">第 17 章</a>。</p>
+
+        <h4>4.「孤岛」地狱</h4>
+        <p>开发（Dev）只管写代码，运维（Ops）只管看服务器。上线出了问题互相甩锅：「代码写得烂」「环境配得不对」。缺少共同语言和可观测数据，责任边界模糊。</p>
+        <p><strong>对策方向：</strong>DevOps 要求共用流水线、共用监控与日志，用指标说话而不是用猜测吵架。</p>
+
+        <h3>核心收益</h3>
+        <table class="compare-table">
+          <thead>
+            <tr><th>维度</th><th>说明</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>快</strong></td><td>自动化代替人工，代码从提交到可部署，从「几天」缩短到「几分钟」。</td></tr>
+            <tr><td><strong>稳</strong></td><td>减少人为干预，机器执行流程不会「手抖」；门禁在合并前拦住坏代码。</td></tr>
+            <tr><td><strong>爽</strong></td><td>开发专注业务逻辑，打包、部署、重复检查交给流水线。</td></tr>
+          </tbody>
+        </table>
+
+        <div class="diagram-block">
+          <pre class="mermaid">flowchart LR
+    PAIN[四大地狱<br/>环境·手工·测试·孤岛] --> FIX[工程化 + CI/CD + DevOps]
+    FIX --> FAST[快]
+    FIX --> STABLE[稳]
+    FIX --> FOCUS[爽]</pre>
+          <p class="diagram-caption">图：从痛点到收益的逻辑链</p>
+        </div>
       </section>
 
-      <section class="section" id="platform">
-        <h2>平台选型</h2>
-        <article class="knowledge-card">
-          <h3>GitLab / GitHub Actions / Jenkins</h3>
-          <div class="card-block block-explain">
-            <h4>讲解</h4>
-            <p><strong>自建 GitLab CE</strong>：内网交付、代码不出域，CI + Registry + MR 一体化，本章主示例。<strong>GitHub Actions</strong>：开源项目首选，Marketplace 生态丰富，国内访问与私有仓库分钟数需评估。<strong>Jenkins</strong>：插件最全、DSL 灵活，但需单独维护 Master/Agent，配置分散。<strong>Gitee Go / 云效</strong>：国内中小企业、Gitee 托管场景。选型原则：代码托管与 CI 尽量同源，减少 Token 与权限对接成本。</p>
-          </div>
-        </article>
-      </section>
+      <section class="section" id="how">
+        <h2>二、怎么落地？（How）</h2>
+        <p>在 Java 生态中，落地「工程化 · DevOps · CI/CD」通常分四个阶段递进：<strong>先规范，再集成，再交付，最后闭环监控</strong>。不必一步登天，小团队可从「Maven 规范 + Jenkins 自动打包」起步，再逐步引入 Docker、K8s 与完整观测链路。</p>
 
-      <section class="section" id="gitlab-cicd">
-        <h2 id="cicd">GitLab CI/CD 实战</h2>
-        <article class="knowledge-card" id="gitlab-java-cicd">
-          <h3>Runner 与 .gitlab-ci.yml</h3>
-          <div class="card-block block-explain">
-            <h4>讲解</h4>
-            <p><strong>GitLab</strong> 可用 Docker Compose 部署（推荐 8 GB+ 内存），启用 Container Registry 供 CI 推镜像。<strong>Runner</strong> 是执行 Job 的代理，生产建议与 GitLab 分机；注册时选 docker executor，默认镜像 <code>maven:3.9-eclipse-temurin-21</code>，需 <code>docker build</code> 时挂载 <code>docker.sock</code> 或改用 Kaniko。<code>.gitlab-ci.yml</code> 放仓库根目录，用 <code>stages</code> 定义阶段，<code>rules</code> 控制触发（MR 只跑 build+test，<code>main</code> 才打镜像部署），<code>cache.paths</code> 缓存 <code>.m2/repository/</code>，<code>when: manual</code> 控制生产审批。</p>
-            <div class="diagram-block">
-              <pre class="mermaid">flowchart LR
-    MR[MR / Push] --> BUILD[build]
-    BUILD --> TEST[test]
-    TEST --> PACKAGE[package]
-    PACKAGE --> IMAGE[build-image]
-    IMAGE --> SIT[deploy-sit]
-    SIT --> PROD[deploy-prod<br/>manual]</pre>
-              <p class="diagram-caption">图：fdc-webservice GitLab 流水线</p>
-            </div>
+        <section class="section" id="engineering">
+          <h3>1. 工程化（规范先行）</h3>
+          <p>工程化解决的是<strong>代码如何组织、如何被一致地构建与审查</strong>的问题，是后续 CI/CD 的前提。</p>
+
+          <h4>依赖与构建工具统一</h4>
+          <ul>
+            <li>全面抛弃手动引入 JAR 包；新项目一律使用 <strong>Maven</strong> 或 <strong>Gradle</strong>（本手册示例以 Maven 为主，见<a href="13-build-packaging-deploy.html">第 13 章</a>）。</li>
+            <li>规范 <code>pom.xml</code>：父 POM 或 <code>&lt;dependencyManagement&gt;</code> 统一版本，避免传递依赖冲突。</li>
+            <li>团队约定同一 JDK LTS（如 Java 21）、同一 Maven 版本，CI 与本地一致。</li>
+          </ul>
+
+          <h4>代码规范与静态检查</h4>
+          <ul>
+            <li>IDE 集成 <strong>Alibaba Java Coding Guidelines</strong> 或 <strong>SonarLint</strong>，提交前就能发现问题。</li>
+            <li>构建阶段接入 <strong>SonarQube</strong>，强制处理 Blocker / Critical（空指针风险、未关闭的流等）。</li>
+          </ul>
+
+          <h4>分支管理策略（Git Flow 简化版）</h4>
+          <ul>
+            <li><code>main</code> / <code>master</code>：永远是线上稳定版，禁止直接 Push。</li>
+            <li><code>develop</code>：日常集成分支。</li>
+            <li><code>feature/*</code>：新功能开发，通过 Pull Request（MR）合并，必须经过 Code Review 且 Pipeline 通过。</li>
+          </ul>
+
+          <div class="diagram-block">
+            <pre class="mermaid">gitGraph
+    commit id: "init"
+    branch develop
+    checkout develop
+    commit id: "feat-a"
+    branch feature/login
+    checkout feature/login
+    commit id: "login-api"
+    checkout develop
+    merge feature/login
+    checkout main
+    merge develop tag: "v1.0.0"</pre>
+            <p class="diagram-caption">图：main / develop / feature 协作模型</p>
           </div>
-          <div class="card-block block-example">
-            <h4>示例配置</h4>
-            <pre><code># .gitlab-ci.yml（核心片段）
-stages: [build, test, package, deploy]
+        </section>
+
+        <section class="section" id="ci">
+          <h3>2. 持续集成（CI — Continuous Integration）</h3>
+          <p>持续集成解决<strong>频繁合并代码并确保它不崩溃</strong>的问题：每次开发人员提交代码，自动触发构建和测试。</p>
+
+          <h4>常用工具</h4>
+          <p><strong>Jenkins</strong>、<strong>GitLab CI</strong>、<strong>GitHub Actions</strong> 均可；选型时尽量让代码托管与 CI 同源，减少 Token 与权限对接。内网项目常见自建 GitLab CE；开源或 GitHub 托管可用 Actions。</p>
+
+          <h4>典型流程（Java 视角）</h4>
+          <ol>
+            <li><strong>触发</strong>：开发者 Push 或发起 MR。</li>
+            <li><strong>拉取</strong>：CI 服务器（Runner / Agent）拉取最新代码。</li>
+            <li><strong>编译与单元测试</strong>：执行 <code>mvn clean test</code>。Java 项目必须编写 JUnit / Mockito 单测；覆盖率未达团队标准（例如 70%）则 Pipeline 失败，禁止合并。</li>
+            <li><strong>打包</strong>：测试通过后执行 <code>mvn clean package -DskipTests</code>，产出 JAR（或 WAR）。</li>
+          </ol>
+
+          <p>可选阶段：SonarQube 静态扫描、依赖漏洞扫描（OWASP Dependency-Check），均应在合并前完成。测试写法与覆盖率门禁见<a href="17-test-driven-development.html">第 17 章</a>、<a href="18-testing-quality.html">第 18 章</a>。</p>
+
+          <h4 id="gitlab-java-cicd">GitLab CI 示例（fdc-webservice）</h4>
+          <pre><code># .gitlab-ci.yml（CI 阶段核心）
+stages: [build, test, package]
 
 variables:
   MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
@@ -155,16 +176,12 @@ build:
   stage: build
   image: maven:3.9-eclipse-temurin-21
   script: [mvn -B compile -DskipTests]
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"
 
 test:
   stage: test
   image: maven:3.9-eclipse-temurin-21
   script: [mvn -B test]
   artifacts:
-    when: always
     reports:
       junit: [target/surefire-reports/TEST-*.xml]
 
@@ -175,20 +192,46 @@ package:
   artifacts:
     paths: [target/*.jar]
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "main"</code></pre>
+        </section>
 
-build-image:
+        <section class="section" id="cd">
+          <h3 id="cicd">3. 持续交付 / 部署（CD — Continuous Delivery / Deployment）</h3>
+          <p>持续交付解决<strong>把打好的包安全、快速地部署到各环境</strong>的问题。现代 Java 架构中，CD 通常与<strong>容器化（Docker）</strong>绑定。</p>
+
+          <h4>典型流程</h4>
+          <ol>
+            <li><strong>容器化</strong>：CI 产出的 JAR 通过 Dockerfile 构建镜像。</li>
+            <li><strong>推送到私服</strong>：镜像推送到 Harbor、阿里云 ACR、GitLab Registry 等。</li>
+            <li><strong>部署到测试 / 生产</strong>：
+              <ul>
+                <li><strong>传统方式</strong>：Ansible 或 Jenkins 脚本分发 JAR，<code>nohup java -jar ... &amp;</code> 启动（适合遗留系统过渡）。</li>
+                <li><strong>现代方式（云原生）</strong>：通知 Kubernetes 更新镜像，滚动更新（Rolling Update）、蓝绿或金丝雀 / 灰度发布，用户无感上线。K8s 清单见<a href="13-build-packaging-deploy.html#kubernetes">第 13 章</a>。</li>
+              </ul>
+            </li>
+          </ol>
+
+          <p><strong>Continuous Delivery</strong>：类生产自动部署，生产需人工审批。<strong>Continuous Deployment</strong>：测试全过后自动上生产，仅适合测试极厚、监管允许的场景。</p>
+
+          <h4>Dockerfile 示例</h4>
+          <pre><code># 多阶段构建更优；此处为最小示例
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+COPY target/fdc-webservice-*.jar app.jar
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]</code></pre>
+          <p>生产环境建议多阶段构建 + Spring Boot 分层镜像，缩短推送与拉取时间，详见<a href="13-build-packaging-deploy.html#docker">第 13 章 Docker 小节</a>。</p>
+
+          <h4>CD 阶段配置片段（GitLab）</h4>
+          <pre><code>build-image:
   stage: deploy
   image: docker:24
   services: [docker:24-dind]
-  before_script:
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
   script:
     - docker build -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA" .
     - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
+  needs: [package]
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
-  needs: [package]
 
 deploy-prod:
   stage: deploy
@@ -198,137 +241,97 @@ deploy-prod:
         fdc-webservice="$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA" -n fdc-prod
     - kubectl rollout status deployment/fdc-webservice -n fdc-prod --timeout=180s
   when: manual
-  needs: [build-image]
-  environment:
-    name: production</code></pre>
-          </div>
-          <div class="card-block block-memory">
-            <h4>速记</h4>
-            <p>「MR 跑验证，main 出制品；镜像打 SHA tag，生产必 manual。」</p>
-          </div>
-        </article>
+  needs: [build-image]</code></pre>
+          <p>镜像 tag 使用 commit SHA，不用 <code>latest</code>；生产 Job 设 <code>when: manual</code>，同一镜像通过 ConfigMap / Secret 或 Spring Profile 区分环境，<strong>不要把环境差异写进镜像</strong>。</p>
+        </section>
+
+        <section class="section" id="devops-culture">
+          <h3>4. DevOps 文化与度量监控（闭环）</h3>
+          <p>DevOps 不仅是工具链，更要求<strong>打破 Dev 与 Ops 的组织壁垒</strong>：共用流水线定义、共用监控与日志，用数据对齐责任。</p>
+
+          <h4>配置中心化</h4>
+          <p>数据库连接、密钥等不要写死在 <code>application.yml</code> 并打进 JAR。使用 <strong>Spring Cloud Config</strong>、<strong>Nacos</strong> 或 <strong>Apollo</strong>；环境变更时在配置中心修改，应用刷新即可，无需重新打包。</p>
+          <p>K8s 场景下也可用 ConfigMap / Secret 注入，与 Spring Profile 配合（见<a href="13-build-packaging-deploy.html">第 13 章</a>多环境配置）。</p>
+
+          <h4 id="observability">全链路监控</h4>
+          <p>线上 JVM 状态与业务指标必须可见，否则「快、稳」无法验证。</p>
+          <table class="compare-table">
+            <thead>
+              <tr><th>能力</th><th>常见方案</th><th>Java 侧接入</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>指标监控</td><td>Prometheus + Grafana</td><td>Spring Boot Actuator（内存、CPU、GC、自定义业务指标）</td></tr>
+              <tr><td>日志收集</td><td>ELK 或 Loki</td><td>统一 JSON 日志格式，traceId 贯穿分布式调用</td></tr>
+              <tr><td>链路追踪</td><td>Jaeger、Zipkin、SkyWalking</td><td>微服务间调用耗时与异常定位</td></tr>
+            </tbody>
+          </table>
+          <p>调优与 SLO 设计见<a href="19-performance-tuning.html">第 19 章</a>；安全扫描与密钥管理见<a href="16-security-development.html">第 16 章</a>。</p>
+
+          <h4 id="messaging">消息与异步集成（延伸阅读）</h4>
+          <p>业务解耦、Outbox、MQ 选型与通知链路见<a href="03-architecture-design.html#event-driven-architecture">第 03 章事件驱动</a>、<a href="15-common-modules.html">第 15 章消息通知</a>；CI/CD 侧保证镜像与配置版本一致即可。</p>
+
+          <h4 id="nginx">网关与流量（延伸阅读）</h4>
+          <p>Ingress / API 网关、蓝绿与金丝雀流量切换见<a href="13-build-packaging-deploy.html#kubernetes">第 13 章 K8s 部署</a>；与 CD 滚动更新配合验证无 502 尖刺（见<a href="12-spring-framework.html">第 12 章</a>优雅停机）。</p>
+
+          <h4>协作习惯</h4>
+          <ul>
+            <li>开发者维护 <code>.gitlab-ci.yml</code> / Jenkinsfile，运维提供 Runner、集群与网络。</li>
+            <li>Pipeline 失败通知到企微 / 钉钉，@ 提交者；部署记录保留「谁、何时、哪版 SHA」。</li>
+            <li>线上事故复盘同时看代码变更、配置变更与监控曲线，而不是单点甩锅。</li>
+          </ul>
+        </section>
       </section>
 
-      <section class="section" id="branch-env">
-        <h2>分支与环境</h2>
-        <article class="knowledge-card">
-          <h3>分支保护 · 多环境发布</h3>
-          <div class="card-block block-explain">
-            <h4>讲解</h4>
-            <p>推荐简化 Git Flow：<code>feature/*</code> → MR 到 <code>develop</code>（跑 build+test）；<code>develop</code> 集成测试；<code>main</code> 生产就绪（完整流水线）。<code>main</code> 设 Protected Branch：禁止直接 Push、Pipeline 必须绿、至少 1 人 Review。环境分层：DEV 本地自测 → SIT 系统集成（CI 自动） → UAT 业务验收（手动/定时） → PROD（<code>when: manual</code> + 变更审批）。同一镜像、不同配置——通过 K8s ConfigMap/Secret 或 Spring Profile 注入，<strong>不要把环境差异写进镜像</strong>。回滚用 <code>kubectl rollout undo</code> 或指定 SHA tag。</p>
-            <div class="diagram-block">
-              <pre class="mermaid">gitGraph
-    commit id: "init"
-    branch develop
-    checkout develop
-    commit id: "feat-a"
-    branch feature/login
-    checkout feature/login
-    commit id: "login-api"
-    checkout develop
-    merge feature/login
-    checkout main
-    merge develop tag: "v1.0.0"</pre>
-              <p class="diagram-caption">图：main / develop / feature 三分支模型</p>
-            </div>
-          </div>
-          <div class="card-block block-example">
-            <h4>环境变量注入</h4>
-            <pre><code># K8s Deployment 片段——同一镜像，不同 Profile
-env:
-  - name: SPRING_PROFILES_ACTIVE
-    value: "sit"
-  - name: SPRING_DATASOURCE_URL
-    valueFrom:
-      secretKeyRef:
-        name: fdc-db-sit
-        key: url</code></pre>
-          </div>
-        </article>
-      </section>
+      <section class="section" id="pipeline-summary">
+        <h2>三、总结：Java 极简 CI/CD 流水线</h2>
+        <p>一条可落地的端到端链路如下：</p>
 
-      <section class="section" id="optimize-security">
-        <h2>优化与安全左移</h2>
-        <article class="knowledge-card">
-          <h3>加速 · 扫描 · 通知</h3>
-          <div class="card-block block-explain">
-            <h4>讲解</h4>
-            <p><strong>加速</strong>：Maven cache + 私服 mirror；静态检查与单测同 stage 并行；Spring Boot layers + 多阶段 Dockerfile；<code>rules:changes</code> 按需触发。<strong>安全左移</strong>：Pipeline 中接入 OWASP Dependency-Check（依赖 CVE）与 Trivy（镜像漏洞），初期可 <code>allow_failure: true</code>，稳定后改为阻断。细节见<a href="16-security-development.html">第 16 章</a>。<strong>通知</strong>：Pipeline 失败 Webhook 到企微/钉钉；部署记录 GitLab Environments；上线后 Actuator + Prometheus 监控。</p>
-          </div>
-          <div class="card-block block-example">
-            <h4>安全扫描 Job 示例</h4>
-            <pre><code>trivy-scan:
-  stage: deploy
-  image: aquasec/trivy:latest
-  script:
-    - trivy image --severity HIGH,CRITICAL --exit-code 1 "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
-  needs: [build-image]
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"</code></pre>
-          </div>
-        </article>
+        <div class="diagram-block">
+          <pre class="mermaid">flowchart LR
+    GIT[代码提交 Git] --> MVN[编译/单测 Maven]
+    MVN --> SONAR[质量扫描 SonarQube]
+    SONAR --> DOCKER[构建镜像 Docker]
+    DOCKER --> HARBOR[推送仓库 Harbor]
+    HARBOR --> K8S[部署/滚动更新 K8s]
+    K8S --> OBS[运行期监控 Grafana/ELK]</pre>
+          <p class="diagram-caption">图：Java 极简 CI/CD 全链路</p>
+        </div>
 
-        <article class="knowledge-card">
-          <h3>GitHub Actions 备选</h3>
-          <div class="card-block block-explain">
-            <h4>讲解</h4>
-            <p>项目托管 GitHub 时，阶段设计与 GitLab 一致，仅语法不同：<code>.github/workflows/ci.yml</code> 用 <code>jobs</code> + <code>steps</code>，<code>actions/setup-java</code> 自带 Maven cache，<code>docker/build-push-action</code> 推 GHCR。</p>
-          </div>
-          <div class="card-block block-example">
-            <h4>示例</h4>
-            <pre><code># .github/workflows/ci.yml（核心片段）
-on:
-  push: { branches: [main, develop] }
-  pull_request: { branches: [main, develop] }
+        <pre><code>代码提交 (Git)
+  → 自动化编译 / 单测 (Maven)
+  → 代码质量扫描 (SonarQube)
+  → 构建镜像 (Docker)
+  → 推送仓库 (Harbor / GitLab Registry)
+  → 自动化部署 / 滚动更新 (Kubernetes)
+  → 运行期监控 (Grafana / ELK)</code></pre>
 
-jobs:
-  build-and-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with: { java-version: '21', distribution: 'temurin', cache: maven }
-      - run: mvn -B test
+        <h3>渐进式落地建议</h3>
+        <p>刚开始不必一步登天。可按成熟度分阶段推进：</p>
+        <table class="compare-table">
+          <thead>
+            <tr><th>阶段</th><th>目标</th><th>典型动作</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>第 1 步</td><td>能一致构建</td><td>统一 Maven + JDK；<code>main</code> 保护；PR 必 Review</td></tr>
+            <tr><td>第 2 步</td><td>能自动验证</td><td>Jenkins / GitLab CI：<code>mvn test</code> + 覆盖率门禁</td></tr>
+            <tr><td>第 3 步</td><td>能自动部署测试环境</td><td>打 JAR 或 Docker 镜像，脚本部署 SIT</td></tr>
+            <tr><td>第 4 步</td><td>生产可回滚、可观测</td><td>K8s 滚动更新 + Prometheus + 集中日志</td></tr>
+          </tbody>
+        </table>
+        <p>小团队建议从<strong>「统一 Maven 规范 + 一条 Jenkins / GitLab 脚本自动打包部署」</strong>开始，尝到「快、稳」的甜头后，再引入 Docker、K8s 与完整监控链路。</p>
 
-  docker-push:
-    needs: build-and-test
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: mvn -B package -DskipTests
-      - uses: docker/build-push-action@v5
-        with:
-          push: true
-          tags: ghcr.io/${{ github.repository }}:${{ github.sha }}</code></pre>
-          </div>
-        </article>
-      </section>
-
-      <section class="section" id="troubleshooting">
-        <h2>排障与上线清单</h2>
-        <article class="knowledge-card">
-          <h3>常见问题</h3>
-          <div class="card-block block-explain">
-            <h4>讲解</h4>
-            <table class="compare-table">
-              <thead>
-                <tr><th>现象</th><th>常见原因</th><th>处理</th></tr>
-              </thead>
-              <tbody>
-                <tr><td>Pipeline pending</td><td>Runner 离线或 tag 不匹配</td><td>检查 Runner 状态与 Job <code>tags</code></td></tr>
-                <tr><td><code>mvn</code> 极慢</td><td>未命中 cache / 未配 mirror</td><td>确认 <code>cache.paths</code>；加 <code>settings-ci.xml</code></td></tr>
-                <tr><td>docker build 失败</td><td>Runner 未挂载 docker.sock</td><td>调整 <code>config.toml</code> 或改用 Kaniko</td></tr>
-                <tr><td>MR 无法合并</td><td>Pipeline 红 / 缺 Review</td><td>修测试；请同事 Approve</td></tr>
-                <tr><td>Pod CrashLoop</td><td>镜像 tag 错 / 配置缺失</td><td><code>kubectl logs</code>；见<a href="13-build-packaging-deploy.html#troubleshooting">第 13 章排障</a></td></tr>
-              </tbody>
-            </table>
-          </div>
-          <div class="card-block block-memory">
-            <h4>上线前自检</h4>
-            <p><code>main</code> 已保护 · MR 必 Pipeline 绿 + Review · 生产 <code>when: manual</code> · 镜像打 SHA tag · Maven cache 已配 · GitLab 备份 cron 已设 · 内网 GitLab 走 VPN 不裸露公网。</p>
-          </div>
-        </article>
+        <h3>常见问题速查</h3>
+        <table class="compare-table">
+          <thead>
+            <tr><th>现象</th><th>常见原因</th><th>处理</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Pipeline 一直 pending</td><td>Runner 离线或 tag 不匹配</td><td>检查 Runner 与 Job <code>tags</code></td></tr>
+            <tr><td><code>mvn</code> 极慢</td><td>未缓存依赖 / 未配私服 mirror</td><td>配置 <code>cache.paths</code> 与 <code>settings-ci.xml</code></td></tr>
+            <tr><td>docker build 失败</td><td>Runner 无 Docker 权限</td><td>挂载 <code>docker.sock</code> 或改用 Kaniko</td></tr>
+            <tr><td>Pod CrashLoop</td><td>镜像 tag 错 / 配置缺失</td><td><code>kubectl logs</code>；见<a href="13-build-packaging-deploy.html#troubleshooting">第 13 章排障</a></td></tr>
+          </tbody>
+        </table>
       </section>
 
       <nav class="chapter-nav">

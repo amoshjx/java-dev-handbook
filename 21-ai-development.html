@@ -221,117 +221,64 @@ class PayOrderUseCaseTest {
       </section>
 
       <section class="section" id="hermes-agent">
-        <h2>Hermes Agent</h2>
+        <h2>Hermes：会自我进化的 AI Agent</h2>
         <article class="knowledge-card">
-          <h3>面向工程交付的多步骤执行代理</h3>
           <div class="card-block block-explain">
-            <h4>定位与适用场景</h4>
-            <p><strong>Hermes Agent</strong> 可理解为「可编排的工程执行代理（Engineering Execution Agent）」，定位不是替代开发者，而是把需求拆解、检索上下文、调用工具、生成变更、执行验证串成一个可控闭环。它适合<strong>跨文件、跨步骤、需要验证门禁</strong>的任务，例如 Java 模块重构、测试补齐、故障复盘与文档同步。</p>
-            <p>当任务只是单文件小改时，普通 Prompt 足够；当任务涉及「分析 → 实施 → 校验 → 汇报」链路时，Hermes Agent 的价值更高。团队视角下，它更像一位受约束的「初级交付机器人」，由高级工程师定义边界和验收标准。</p>
+            <h4>概述</h4>
+            <p>在 AI 领域，<strong>Hermes</strong>（现通常指 Nous Research 在 2026 年推出的 <strong>Hermes-Agent</strong>）是一个标志性的开源 AI 智能体系统。它之所以引发轰动，是因为它打破了传统 Agent「只能执行、无法成长」的局限。</p>
           </div>
           <div class="card-block block-explain">
-            <h4>与现有 Agent / Workflow 的关系</h4>
+            <h4>1. 核心特点：闭环学习（Learning Loop）</h4>
+            <p>传统的 AI Agent（如早期的 AutoGPT）每次启动都是「失忆」的，做完任务就结束了。而 Hermes 拥有一个内置的自我改进闭环：</p>
             <ul>
-              <li><strong>Prompt（提示词）</strong>：定义单轮意图（Intent）；Hermes Agent 在多轮执行中持续消费并细化 Prompt。</li>
-              <li><strong>Tool Calling（工具调用）</strong>：Hermes Agent 通过 Shell、代码编辑器、检索工具执行动作，工具是手脚，Agent 是调度中枢。</li>
-              <li><strong>RAG（检索增强生成）</strong>：RAG 负责拿到对的上下文，Hermes Agent 负责把上下文转成可交付改动与验证动作。</li>
-              <li><strong>Workflow Orchestration（工作流编排）</strong>：Hermes Agent 可作为编排节点，接收上游任务并将结果提交给 CI、审批流、知识库。</li>
+              <li><strong>经验转化为技能（Skills）</strong>：当 Hermes 独立完成一项复杂的任务后，它会自动把这次的成功经验沉淀、重构为一段「技能代码」（Skill）。</li>
+              <li><strong>越用越聪明</strong>：在后续的任务中，它会直接调用自己之前创造的技能，并在使用过程中不断优化这些技能。</li>
+              <li><strong>长期记忆与用户建模</strong>：它能跨会话检索自己过去的对话和行为，随着时间推移，它会越来越理解宿主（用户）的工作习惯。</li>
             </ul>
             <div class="diagram-block">
               <pre class="mermaid">flowchart LR
-    P[Prompt/需求] --> R[RAG 检索]
-    R --> H[Hermes Agent]
-    H --> T[Tool Calling]
-    T --> V[验证与评估]
-    V --> O[工作流编排/交付]</pre>
-              <p class="diagram-caption">图：Hermes Agent 与 Prompt / RAG / 工具 / 编排关系</p>
+    T[复杂任务完成] --> S[沉淀为 Skill]
+    S --> R[后续任务复用]
+    R --> O[持续优化 Skill]
+    M[跨会话记忆] --> U[用户习惯建模]</pre>
+              <p class="diagram-caption">图：Hermes 闭环学习（Learning Loop）</p>
             </div>
           </div>
           <div class="card-block block-explain">
-            <h4>核心能力</h4>
+            <h4>2. 极低的运行门槛与泛用性</h4>
+            <p>Hermes 可以在价格极低的云服务器（VPS）上全天候自主运行。它不依赖单一的大模型，你可以随意把底座切换为 OpenAI、Anthropic、或开源的各家模型，而它通过 Telegram、Discord 或命令行就能与人类保持连接。</p>
+          </div>
+          <div class="card-block block-tips">
+            <h4>快速上手实战：下命令、攒技能、挂后台、防拆家</h4>
+            <p>快速上手并用好 Hermes Agent，可以将其核心实战流程简要概括为<strong>「下命令、攒技能、挂后台、防拆家」</strong>四个要点：</p>
+            <h4>1. 极简安装与配置</h4>
             <ul>
-              <li><strong>任务分解（Task Decomposition）</strong>：将模糊需求拆成可执行子任务，显式列依赖与验收条件。</li>
-              <li><strong>工具调用（Tool Invocation）</strong>：按白名单调用读写代码、运行测试、查询日志等工具，失败可回退到上一步重试。</li>
-              <li><strong>上下文管理（Context Management）</strong>：按任务相关性动态裁剪上下文，避免整库灌入导致噪音与幻觉。</li>
-              <li><strong>记忆策略（Memory Strategy）</strong>：短期记忆保存本次任务状态，长期记忆沉淀规则、ADR、故障案例。</li>
-              <li><strong>安全边界（Security Boundary）</strong>：强制权限最小化、敏感数据脱敏、危险操作人工确认。</li>
+              <li><strong>安装</strong>：终端运行官方一键脚本：</li>
             </ul>
-          </div>
-          <div class="card-block block-example">
-            <h4>Java 项目接入路径（参考架构）</h4>
-            <pre><code>Step 1. 任务入口
-- 来自需求系统/Jira 的任务描述 + 验收标准
-
-Step 2. 上下文装配（Context Builder）
-- 读取模块 README、ADR、最近变更 diff、相关单测
-- RAG 检索业务术语与历史决策
-
-Step 3. Hermes Agent 执行
-- 子任务 A：生成实现草案
-- 子任务 B：补齐 JUnit5/Mockito 测试
-- 子任务 C：运行 ./mvnw -pl order-service test
-
-Step 4. 安全与质量门禁（Guardrails）
-- SpotBugs/Checkstyle/Sonar 规则检查
-- 敏感信息扫描（secrets scan）
-- 高风险操作触发人工审批
-
-Step 5. 结果回传
-- 输出变更文件清单、测试结果、风险提示、回滚建议</code></pre>
-          </div>
-          <div class="card-block block-example">
-            <h4>示例：可执行流水线片段（GitHub Actions）</h4>
-            <pre><code>name: hermes-agent-assisted-pr
-on: [pull_request]
-jobs:
-  verify:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "21"
-      - name: Unit tests
-        run: ./mvnw -B test
-      - name: Static analysis
-        run: ./mvnw -B spotbugs:check checkstyle:check
-      - name: Secrets scan
-        run: ./scripts/scan-secrets.sh</code></pre>
-          </div>
-          <div class="card-block block-example">
-            <h4>典型落地场景</h4>
+            <pre><code>curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash</code></pre>
             <ul>
-              <li><strong>需求分析辅助</strong>：把 PRD 自动拆成技术任务、风险点与测试要点。</li>
-              <li><strong>代码生成/重构</strong>：生成模板代码、迁移旧 API、补充空值/事务边界处理。</li>
-              <li><strong>测试生成</strong>：基于 Given-When-Then 批量产出单测和参数化用例。</li>
-              <li><strong>排障（Troubleshooting）</strong>：聚合日志/指标/变更历史，给出最可能根因与验证步骤。</li>
-              <li><strong>文档维护</strong>：根据代码 diff 同步 README、接口文档、变更记录（changelog）。</li>
+              <li><strong>大脑配置</strong>：输入 <code>hermes setup</code>，绑定大模型 API Key（推荐支持提示词缓存的 Claude 3.5 Sonnet，或使用本地 Ollama 开源模型）。</li>
             </ul>
-          </div>
-          <div class="card-block block-pitfalls">
-            <h4>风险与治理</h4>
+            <h4>2. 闭环学习：边用边「长脑子」</h4>
             <ul>
-              <li><strong>幻觉（Hallucination）</strong>：要求 Agent 必须引用真实文件/日志证据，禁止无证据结论直接落库。</li>
-              <li><strong>越权（Over-Privilege）</strong>：按环境拆分权限（dev/staging/prod），生产仅允许只读诊断。</li>
-              <li><strong>数据泄露（Data Leakage）</strong>：敏感字段脱敏，外部模型调用前执行数据分类与拦截。</li>
-              <li><strong>成本失控（Cost Overrun）</strong>：设置 token/调用次数预算，优先小模型初筛，大模型复核关键步骤。</li>
+              <li><strong>下达复杂指令</strong>：直接让它处理涉及网页爬取、数据分析或代码编写的复杂长流程任务。</li>
+              <li><strong>技能自动沉淀</strong>：任务成功后，Hermes 会触发 Learning Loop，自动将成功经验抽象、重构并保存在本地，转化为一个可复用的永久技能（Skill）。</li>
+              <li><strong>下次直接调用</strong>：之后处理类似任务时，它会跳过摸索阶段，像熟练工一样直接调用该技能。</li>
             </ul>
-          </div>
-          <div class="card-block block-deliverable">
-            <h4>生产落地 Checklist</h4>
+            <h4>3. 多平台「挂机」当数字雇员</h4>
             <ul>
-              <li>定义 Hermes Agent 任务边界、可改文件范围、禁止操作清单。</li>
-              <li>建立 Prompt + RAG + Tool 调用模板，并版本化管理。</li>
-              <li>接入 CI 质量门禁（编译、测试、静态分析、Secrets Scan）。</li>
-              <li>高风险动作启用 Human-in-the-loop 审批。</li>
-              <li>记录可观测数据：成功率、返工率、缺陷逃逸率、调用成本。</li>
-              <li>建立周/月度评估机制，持续调优规则、记忆与模型路由策略。</li>
+              <li><strong>配置网关</strong>：运行 <code>hermes gateway setup</code>，绑定你的 Telegram、Discord 或 Slack。</li>
+              <li><strong>后台全天候运行</strong>：启动后，你无需盯着电脑终端。随时随地在手机 Telegram 上给它发任务，它在后台做完后会自动向你汇报。它还支持定时任务（Cron），可以变成你的每日早报或自动化备份管家。</li>
+            </ul>
+            <h4>4. 筑好沙盒防火墙（防拆家）</h4>
+            <ul>
+              <li><strong>沙盒隔离</strong>：由于 Hermes 具备直接在终端执行代码和 Bash 命令的强力权限，部署时务必将其运行环境挂载在 Docker 或 Modal 等隔离沙盒中。</li>
+              <li><strong>权限管控</strong>：开启命令审批（ACP），高危操作（如修改系统文件）必须在手机上得到你的点击确认，确保 Agent 永远在「马具（Harness）」的约束下安全行驶。详见本章 <a href="#harness-engineering">Harness Engineering</a>。</li>
             </ul>
           </div>
           <div class="card-block block-memory">
             <h4>速记</h4>
-            <p>「Hermes Agent = 多步执行 + 工具编排 + 记忆沉淀 + 安全门禁；目标是稳定交付，不是炫技自动化。」</p>
+            <p>「下命令、攒技能、挂后台、防拆家 —— Hermes = 任务经验沉淀为 Skill + 跨会话记忆；低门槛 VPS 常驻，模型与通道可换，沙盒 + ACP 必开。」</p>
           </div>
         </article>
       </section>
