@@ -30,14 +30,15 @@
             <li class="sidebar-subitem"><a href="12-spring-framework.html">12 Spring Framework</a></li>
             <li class="sidebar-subitem"><a href="13-build-packaging-deploy.html">13 构建·打包·部署</a></li>
             <li class="sidebar-subitem"><a href="14-ruoyi-framework.html">14 RuoYi 框架</a></li>
-            <li class="sidebar-subitem"><a href="15-common-modules.html">15 常见功能模块</a></li>
-            <li class="sidebar-subitem"><a href="16-security-development.html">16 安全开发</a></li>
-            <li class="sidebar-subitem"><a href="17-test-driven-development.html">17 测试驱动开发</a></li>
-            <li><a href="18-testing-quality.html">18 测试·质量</a></li>
-            <li><a href="19-performance-tuning.html">19 性能调优</a></li>
-            <li><a href="20-devops-cloud-native.html">20 工程化·DevOps·CI/CD</a></li>
-            <li><a href="21-ai-development.html">21 AI 辅助开发</a></li>
-            <li><a href="22-business-intelligence.html">22 业务智能化</a></li>
+            <li class="sidebar-subitem"><a href="15-project-code-generator.html">15 项目代码生成器</a></li>
+            <li class="sidebar-subitem"><a href="16-common-modules.html">16 常见功能模块</a></li>
+            <li class="sidebar-subitem"><a href="17-security-development.html">17 安全开发</a></li>
+            <li class="sidebar-subitem"><a href="18-test-driven-development.html">18 测试驱动开发</a></li>
+            <li><a href="19-testing-quality.html">19 测试·质量</a></li>
+            <li><a href="20-performance-tuning.html">20 性能调优</a></li>
+            <li><a href="21-devops-cloud-native.html">21 工程化·DevOps·CI/CD</a></li>
+            <li><a href="22-ai-development.html">22 AI 辅助开发</a></li>
+            <li><a href="23-business-intelligence.html">23 业务智能化</a></li>
             <li><a href="glossary.html">术语字典</a></li>
           </ul>
         </div>
@@ -47,17 +48,18 @@
     <main class="main">
       <header class="page-header">
         <h1>开发实现</h1>
-        <p>项目排期（第 04 章，独立一级）之后、测试与质量（第 18 章）之前的主线：<strong>环境 → 语言与运行时 → Spring → 构建部署 → RuoYi → 业务模块 → 安全 → TDD</strong>。本模块涵盖 <strong>05–17</strong> 章，便于跨章引用与 prev/next 线性阅读（03 → 04 → 05 → … → 17 → 18）。<strong>采用 Java 语言进行开发实现</strong>，默认基线与全书一致：<strong>Java 21 LTS</strong>、<strong>Spring Framework 6.x</strong> / <strong>Spring Boot 3.x</strong>（Jakarta EE 9+）。</p>
+        <p>项目排期（第 04 章，独立一级）之后、测试与质量（第 19 章）之前的主线：<strong>环境 → 语言与运行时 → Spring → 构建部署 → RuoYi → 代码生成器 → 业务模块 → 安全 → TDD</strong>。本模块涵盖 <strong>05–18</strong> 章，便于跨章引用与 prev/next 线性阅读（03 → 04 → 05 → … → 18 → 19）。<strong>采用 Java 语言进行开发实现</strong>，默认基线与全书一致：<strong>Java 21 LTS</strong>、<strong>Spring Framework 6.x</strong> / <strong>Spring Boot 3.x</strong>（Jakarta EE 9+）。</p>
         <div class="diagram-block">
           <pre class="mermaid">flowchart LR
     C05["05 开发环境"] --> LANG["06-11 语言与运行时"]
     LANG --> C12["12 Spring Framework"]
     C12 --> C13["13 构建·打包·部署"]
     C13 --> C14["14 RuoYi"]
-    C14 --> BACK["15-16 业务与安全"]
-    BACK --> C17["17 TDD"]
-    C17 --> C18["18 测试·质量"]</pre>
-          <p class="diagram-caption">图：开发实现章组阅读顺序（05 → 17 → 18）</p>
+    C14 --> C15["15 代码生成器"]
+    C15 --> BACK["16-17 业务与安全"]
+    BACK --> C18["18 TDD"]
+    C18 --> C19["19 测试·质量"]</pre>
+          <p class="diagram-caption">图：开发实现章组阅读顺序（05 → 18 → 19）</p>
         </div>
       </header>
 
@@ -103,15 +105,19 @@
           <p>企业后台脚手架简明介绍：管理后台、权限系统、代码生成、官方文档与生产注意点。</p>
         </article>
         <article class="toc-card">
-          <h2><a href="15-common-modules.html">15 常见功能模块</a></h2>
+          <h2><a href="15-project-code-generator.html">15 项目代码生成器</a></h2>
+          <p>自建表驱动生成器：Maven 子模块、元数据、Velocity 模板与写入业务模块的完整实现路径。</p>
+        </article>
+        <article class="toc-card">
+          <h2><a href="16-common-modules.html">16 常见功能模块</a></h2>
           <p>RBAC、支付、校验、定时任务、消息、工作流等企业标配。</p>
         </article>
         <article class="toc-card">
-          <h2><a href="16-security-development.html">16 安全开发</a></h2>
+          <h2><a href="17-security-development.html">17 安全开发</a></h2>
           <p>Spring Security、OWASP 防护、密钥/TLS 与审计合规。</p>
         </article>
         <article class="toc-card">
-          <h2><a href="17-test-driven-development.html">17 测试驱动开发</a></h2>
+          <h2><a href="18-test-driven-development.html">18 测试驱动开发</a></h2>
           <p>TDD 红绿重构、测试金字塔、Fake/Mock 选型与团队 CI 实践。</p>
         </article>
       </div>

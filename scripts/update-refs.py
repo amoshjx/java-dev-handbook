@@ -21,14 +21,14 @@ SIDEBAR = """            <li><a href="index.html">目录首页</a></li>
             <li class="sidebar-subitem"><a href="12-spring-framework.html">12 Spring Framework</a></li>
             <li class="sidebar-subitem"><a href="13-build-packaging-deploy.html">13 构建·打包·部署</a></li>
             <li class="sidebar-subitem"><a href="14-ruoyi-framework.html">14 RuoYi 框架</a></li>
-            <li class="sidebar-subitem"><a href="15-common-modules.html">15 常见功能模块</a></li>
-            <li class="sidebar-subitem"><a href="16-security-development.html">16 安全开发</a></li>
-            <li class="sidebar-subitem"><a href="17-test-driven-development.html">17 测试驱动开发</a></li>
-            <li><a href="18-testing-quality.html">18 测试·质量</a></li>
-            <li><a href="19-performance-tuning.html">19 性能调优</a></li>
-            <li><a href="20-devops-cloud-native.html">20 工程化·DevOps</a></li>
-            <li><a href="21-ai-development.html">21 AI 辅助开发</a></li>
-            <li><a href="22-business-intelligence.html">22 业务智能化</a></li>
+            <li class="sidebar-subitem"><a href="16-common-modules.html">15 常见功能模块</a></li>
+            <li class="sidebar-subitem"><a href="17-security-development.html">16 安全开发</a></li>
+            <li class="sidebar-subitem"><a href="18-test-driven-development.html">17 测试驱动开发</a></li>
+            <li><a href="19-testing-quality.html">18 测试·质量</a></li>
+            <li><a href="20-performance-tuning.html">19 性能调优</a></li>
+            <li><a href="21-devops-cloud-native.html">20 工程化·DevOps</a></li>
+            <li><a href="22-ai-development.html">21 AI 辅助开发</a></li>
+            <li><a href="23-business-intelligence.html">22 业务智能化</a></li>
             <li><a href="glossary.html">术语字典</a></li>"""
 
 GLOSSARY_SIDEBAR = SIDEBAR
@@ -47,14 +47,14 @@ CHAPTER_META = {
     "12-spring-framework.html": ("12 Spring Framework", "12 Spring Framework"),
     "13-build-packaging-deploy.html": ("13 项目构建、打包与部署", "13 项目构建、打包与部署"),
     "14-ruoyi-framework.html": ("14 RuoYi 框架", "14 RuoYi 框架"),
-    "15-common-modules.html": ("15 常见功能模块", "15 常见功能模块"),
-    "16-security-development.html": ("16 安全开发", "16 安全开发"),
-    "17-test-driven-development.html": ("17 测试驱动开发", "17 测试驱动开发"),
-    "18-testing-quality.html": ("18 测试·质量", "18 测试·质量"),
-    "19-performance-tuning.html": ("19 性能调优", "19 性能调优"),
-    "20-devops-cloud-native.html": ("20 工程化·DevOps", "20 工程化·DevOps"),
-    "21-ai-development.html": ("21 AI 辅助开发", "21 AI 辅助开发"),
-    "22-business-intelligence.html": ("22 业务智能化", "22 业务智能化与 LLM 能力需求"),
+    "16-common-modules.html": ("15 常见功能模块", "15 常见功能模块"),
+    "17-security-development.html": ("16 安全开发", "16 安全开发"),
+    "18-test-driven-development.html": ("17 测试驱动开发", "17 测试驱动开发"),
+    "19-testing-quality.html": ("18 测试·质量", "18 测试·质量"),
+    "20-performance-tuning.html": ("19 性能调优", "19 性能调优"),
+    "21-devops-cloud-native.html": ("20 工程化·DevOps", "20 工程化·DevOps"),
+    "22-ai-development.html": ("21 AI 辅助开发", "21 AI 辅助开发"),
+    "23-business-intelligence.html": ("22 业务智能化", "22 业务智能化与 LLM 能力需求"),
 }
 
 NAV_BLOCK = {
@@ -101,31 +101,31 @@ NAV_BLOCK = {
         '<a href="12-spring-framework.html">← 上一章：Spring Framework</a>\n        <a href="14-ruoyi-framework.html">下一章：RuoYi 框架 →</a>',
     ),
     "14-ruoyi-framework.html": (
-        '<a href="13-build-packaging-deploy.html">← 上一章：项目构建、打包与部署</a>\n        <a href="15-common-modules.html">下一章：常见功能模块 →</a>',
+        '<a href="13-build-packaging-deploy.html">← 上一章：项目构建、打包与部署</a>\n        <a href="16-common-modules.html">下一章：常见功能模块 →</a>',
     ),
-    "15-common-modules.html": (
-        '<a href="14-ruoyi-framework.html">← 上一章：RuoYi 框架</a>\n        <a href="16-security-development.html">下一章：安全开发 →</a>',
+    "16-common-modules.html": (
+        '<a href="14-ruoyi-framework.html">← 上一章：RuoYi 框架</a>\n        <a href="17-security-development.html">下一章：安全开发 →</a>',
     ),
-    "16-security-development.html": (
-        '<a href="15-common-modules.html">← 上一章：常见功能模块</a>\n        <a href="17-test-driven-development.html">下一章：测试驱动开发 →</a>',
+    "17-security-development.html": (
+        '<a href="16-common-modules.html">← 上一章：常见功能模块</a>\n        <a href="18-test-driven-development.html">下一章：测试驱动开发 →</a>',
     ),
-    "17-test-driven-development.html": (
-        '<a href="16-security-development.html">← 上一章：安全开发</a>\n        <a href="18-testing-quality.html">下一章：测试·质量 →</a>',
+    "18-test-driven-development.html": (
+        '<a href="17-security-development.html">← 上一章：安全开发</a>\n        <a href="19-testing-quality.html">下一章：测试·质量 →</a>',
     ),
-    "18-testing-quality.html": (
-        '<a href="17-test-driven-development.html">← 上一章：测试驱动开发</a>\n        <a href="19-performance-tuning.html">下一章：性能调优 →</a>',
+    "19-testing-quality.html": (
+        '<a href="18-test-driven-development.html">← 上一章：测试驱动开发</a>\n        <a href="20-performance-tuning.html">下一章：性能调优 →</a>',
     ),
-    "19-performance-tuning.html": (
-        '<a href="18-testing-quality.html">← 上一章：测试·质量</a>\n        <a href="20-devops-cloud-native.html">下一章：工程化·DevOps →</a>',
+    "20-performance-tuning.html": (
+        '<a href="19-testing-quality.html">← 上一章：测试·质量</a>\n        <a href="21-devops-cloud-native.html">下一章：工程化·DevOps →</a>',
     ),
-    "20-devops-cloud-native.html": (
-        '<a href="19-performance-tuning.html">← 上一章：性能调优</a>\n        <a href="21-ai-development.html">下一章：AI 辅助开发 →</a>',
+    "21-devops-cloud-native.html": (
+        '<a href="20-performance-tuning.html">← 上一章：性能调优</a>\n        <a href="22-ai-development.html">下一章：AI 辅助开发 →</a>',
     ),
-    "21-ai-development.html": (
-        '<a href="20-devops-cloud-native.html">← 上一章：工程化·DevOps</a>\n        <a href="22-business-intelligence.html">下一章：业务智能化 →</a>',
+    "22-ai-development.html": (
+        '<a href="21-devops-cloud-native.html">← 上一章：工程化·DevOps</a>\n        <a href="23-business-intelligence.html">下一章：业务智能化 →</a>',
     ),
-    "22-business-intelligence.html": (
-        '<a href="21-ai-development.html">← 上一章：AI 辅助开发</a>\n        <a href="glossary.html">下一章：术语字典 →</a>',
+    "23-business-intelligence.html": (
+        '<a href="22-ai-development.html">← 上一章：AI 辅助开发</a>\n        <a href="glossary.html">下一章：术语字典 →</a>',
     ),
 }
 

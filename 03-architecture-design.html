@@ -30,14 +30,15 @@
             <li class="sidebar-subitem"><a href="12-spring-framework.html">12 Spring Framework</a></li>
             <li class="sidebar-subitem"><a href="13-build-packaging-deploy.html">13 构建·打包·部署</a></li>
             <li class="sidebar-subitem"><a href="14-ruoyi-framework.html">14 RuoYi 框架</a></li>
-            <li class="sidebar-subitem"><a href="15-common-modules.html">15 常见功能模块</a></li>
-            <li class="sidebar-subitem"><a href="16-security-development.html">16 安全开发</a></li>
-            <li class="sidebar-subitem"><a href="17-test-driven-development.html">17 测试驱动开发</a></li>
-            <li><a href="18-testing-quality.html">18 测试·质量</a></li>
-            <li><a href="19-performance-tuning.html">19 性能调优</a></li>
-            <li><a href="20-devops-cloud-native.html">20 工程化·DevOps·CI/CD</a></li>
-            <li><a href="21-ai-development.html">21 AI 辅助开发</a></li>
-            <li><a href="22-business-intelligence.html">22 业务智能化</a></li>
+            <li class="sidebar-subitem"><a href="15-project-code-generator.html">15 项目代码生成器</a></li>
+            <li class="sidebar-subitem"><a href="16-common-modules.html">16 常见功能模块</a></li>
+            <li class="sidebar-subitem"><a href="17-security-development.html">17 安全开发</a></li>
+            <li class="sidebar-subitem"><a href="18-test-driven-development.html">18 测试驱动开发</a></li>
+            <li><a href="19-testing-quality.html">19 测试·质量</a></li>
+            <li><a href="20-performance-tuning.html">20 性能调优</a></li>
+            <li><a href="21-devops-cloud-native.html">21 工程化·DevOps·CI/CD</a></li>
+            <li><a href="22-ai-development.html">22 AI 辅助开发</a></li>
+            <li><a href="23-business-intelligence.html">23 业务智能化</a></li>
             <li><a href="glossary.html">术语字典</a></li>
           </ul>
         </div>
@@ -130,7 +131,7 @@
           <h3>架构阶段的 TCO 模型：计算 · 存储 · 流量 · MQ · AI</h3>
           <div class="card-block block-explain">
             <h4>讲解</h4>
-            <p>成本是质量属性之一，须在 <strong>ADR / 架构评审</strong> 中与性能、可用性并列量化。<strong>TCO = 固定成本 + 可变成本 × 流量系数</strong>。MVP 用数量级估算 + 上限预算；规模化后接云厂商 Cost Explorer / Cost Tag 分账。AI 成本（Token + 向量库）是 TCO 子项，详细治理见<a href="22-business-intelligence.html#ai-cost-latency-slo">第 21 章 AI 成本 SLO</a>。</p>
+            <p>成本是质量属性之一，须在 <strong>ADR / 架构评审</strong> 中与性能、可用性并列量化。<strong>TCO = 固定成本 + 可变成本 × 流量系数</strong>。MVP 用数量级估算 + 上限预算；规模化后接云厂商 Cost Explorer / Cost Tag 分账。AI 成本（Token + 向量库）是 TCO 子项，详细治理见<a href="23-business-intelligence.html#ai-cost-latency-slo">第 22 章 AI 成本 SLO</a>。</p>
           </div>
           <div class="card-block block-example">
             <h4>云成本估算维度表</h4>
@@ -149,7 +150,7 @@
 | RDS + Redis       | ¥1,800         |                      |
 | 出站 500GB        | ¥400           | 未上 CDN 保守值      |
 | Kafka + 向量库    | ¥1,100         |                      |
-| LLM Token         | ¥4,000         | 见第 21 章 Token 预算|
+| LLM Token         | ¥4,000         | 见第 22 章 Token 预算|
 | **合计**          | **~¥9,700**    | AI 约占 41%          |</code></pre>
           </div>
           <div class="card-block block-deliverable">
@@ -361,7 +362,7 @@ Transactional Outbox + 事件驱动，Saga 补偿
               <li>□ 同步接口是否具备超时、重试预算、幂等策略？</li>
               <li>□ 异步事件是否有版本策略、消费幂等、死信治理？</li>
               <li>□ 分层是否落地为目录与包约束，Domain 是否零框架依赖？</li>
-              <li>□ 是否已对照<a href="15-common-modules.html">第 15 章常见功能模块</a>完成模块职责对齐？</li>
+              <li>□ 是否已对照<a href="16-common-modules.html">第 16 章常见功能模块</a>完成模块职责对齐？</li>
             </ul>
           </div>
         </article>
@@ -475,7 +476,7 @@ public void createOrder(Order order) {
   "eventId": "01J2...",
   "eventType": "OrderCreated",
   "eventVersion": 2,
-  "aggregateId": "ORD-20260520-001",
+  "aggregateId": "ORD-20260521-001",
   "occurredAt": "2026-05-22T11:20:30Z",
   "traceId": "9f0d...",
   "payload": {
@@ -764,7 +765,7 @@ GET /api/v1/orders?fields=id,status,totalAmount
           <div class="card-block block-tips">
             <h4>关键/技巧</h4>
             <ul>
-              <li>列表接口分页详细规范同步参考<a href="15-common-modules.html#pagination">第 15 章分页模块</a>，统一 cursor 编码规则。</li>
+              <li>列表接口分页详细规范同步参考<a href="16-common-modules.html#pagination">第 16 章分页模块</a>，统一 cursor 编码规则。</li>
               <li>枚举值用<strong>大写常量</strong>（<code>PAID</code>）而非<strong>魔法数字</strong>（<code>1</code>），避免跨语言反序列化歧义。</li>
               <li>时间字段统一 <code>ISO 8601</code> + <code>UTC</code>，金额用<strong>分</strong>而非小数，避免浮点误差。</li>
             </ul>
@@ -896,7 +897,7 @@ Content-Type: application/problem+json
             <ul>
               <li><strong>反模式：HTTP 200 + body.code=ERR</strong>——破坏 HTTP 语义、网关与缓存无法识别错误率。</li>
               <li>用 <code>500</code> 当兜底状态码，掩盖 <code>400/404/409</code> 等业务可识别错误，影响告警与重试策略。</li>
-              <li>错误 <code>detail</code> 直接回显敏感信息（SQL、堆栈、内网 IP），违反<a href="16-security-development.html#sensitive-data-deserialization">第 16 章敏感数据</a>规范。</li>
+              <li>错误 <code>detail</code> 直接回显敏感信息（SQL、堆栈、内网 IP），违反<a href="17-security-development.html#sensitive-data-deserialization">第 17 章敏感数据</a>规范。</li>
             </ul>
           </div>
         </article>
@@ -905,7 +906,7 @@ Content-Type: application/problem+json
           <h3>鉴权 · 安全 · 限流 · 防重放</h3>
           <div class="card-block block-explain">
             <h4>讲解</h4>
-            <p>API 安全是<strong>多层防御</strong>组合，不存在“单一令牌包打天下”。常见层次：传输安全（TLS/mTLS）→ 身份认证（OAuth 2.1 / OIDC / mTLS / API Key）→ 授权（RBAC/ABAC、Scope）→ 防滥用（限流 / 配额 / 防重放 / 签名）→ 审计。详细实现见<a href="16-security-development.html#authentication">第 16 章认证</a>、<a href="16-security-development.html#authorization">授权</a>与<a href="16-security-development.html#jwt-best-practices">JWT 最佳实践</a>。</p>
+            <p>API 安全是<strong>多层防御</strong>组合，不存在“单一令牌包打天下”。常见层次：传输安全（TLS/mTLS）→ 身份认证（OAuth 2.1 / OIDC / mTLS / API Key）→ 授权（RBAC/ABAC、Scope）→ 防滥用（限流 / 配额 / 防重放 / 签名）→ 审计。详细实现见<a href="17-security-development.html#authentication">第 17 章认证</a>、<a href="17-security-development.html#authorization">授权</a>与<a href="17-security-development.html#jwt-best-practices">JWT 最佳实践</a>。</p>
           </div>
           <div class="card-block block-deliverable">
             <h4>鉴权方案矩阵</h4>
@@ -956,7 +957,7 @@ X-Nonce: 8f1c-...                 # 服务端 5min 内去重</code></pre>
               <li>JWT 当 Session 用，登出无法实时失效——需引入吊销列表或缩短 TTL。</li>
               <li>限流只在网关做，绕过网关的内网调用未限流，故障时无保护。</li>
               <li>Webhook 出站不签名/不重放保护，调用方被伪造请求攻击。</li>
-              <li>API Key 长期不轮换、写在代码或日志中，违反<a href="16-security-development.html#secrets-config-tls">密钥治理</a>。</li>
+              <li>API Key 长期不轮换、写在代码或日志中，违反<a href="17-security-development.html#secrets-config-tls">密钥治理</a>。</li>
             </ul>
           </div>
         </article>
@@ -1056,7 +1057,7 @@ PUT /api/v1/products/SKU-1
             <ul>
               <li>缓存策略要写进 OpenAPI 的 <code>responses.headers</code>，让 CDN/网关也能识别。</li>
               <li>批量接口的<strong>错误响应</strong>用“多状态”模式：HTTP 200 + items[].status/error 标识逐项结果。</li>
-              <li>性能问题先用<a href="19-performance-tuning.html">第 19 章性能调优</a>方法论压测定位，再在 API 层裁剪。</li>
+              <li>性能问题先用<a href="20-performance-tuning.html">第 20 章性能调优</a>方法论压测定位，再在 API 层裁剪。</li>
             </ul>
           </div>
         </article>
@@ -1065,7 +1066,7 @@ PUT /api/v1/products/SKU-1
           <h3>集成模式：同步 vs 异步 · API Gateway · BFF · Service Mesh · Webhook</h3>
           <div class="card-block block-explain">
             <h4>讲解</h4>
-            <p>集成模式回答“服务/系统之间<strong>怎么连</strong>”。架构师需要在<strong>同步链路</strong>（请求-响应、强时效）与<strong>异步链路</strong>（事件、消息、Webhook、最终一致）之间作出有意识的取舍，并配合 API Gateway/BFF/Service Mesh 等基础设施落地。详细网关与可观测部署见<a href="20-devops-cloud-native.html#nginx">第 20 章网关</a>与<a href="20-devops-cloud-native.html#observability">可观测</a>。</p>
+            <p>集成模式回答“服务/系统之间<strong>怎么连</strong>”。架构师需要在<strong>同步链路</strong>（请求-响应、强时效）与<strong>异步链路</strong>（事件、消息、Webhook、最终一致）之间作出有意识的取舍，并配合 API Gateway/BFF/Service Mesh 等基础设施落地。详细网关与可观测部署见<a href="21-devops-cloud-native.html#nginx">第 21 章网关</a>与<a href="21-devops-cloud-native.html#observability">可观测</a>。</p>
             <div class="diagram-block">
               <pre class="mermaid">flowchart LR
     WEB["Web/SPA"] --> GW["API Gateway"]
@@ -1128,7 +1129,7 @@ X-Delivery-Attempt: 3                   # 第 N 次投递
           <h3>契约测试：Pact · Spring Cloud Contract · CI 门禁</h3>
           <div class="card-block block-explain">
             <h4>讲解</h4>
-            <p>契约测试（Contract Test）填补单元测试与端到端测试之间的鸿沟：不启动整个系统，但能<strong>独立验证</strong>服务双方对契约的理解一致。<strong>Consumer-Driven Contracts（CDC）</strong>由消费方发布期望，提供方按期望验证，避免上游单方面变更打破下游。主流工具 <strong>Pact</strong>（多语言、Broker 中介）、<strong>Spring Cloud Contract</strong>（JVM 友好、契约即 Groovy/YAML）。详细测试体系见<a href="18-testing-quality.html">第 18 章测试质量</a>。</p>
+            <p>契约测试（Contract Test）填补单元测试与端到端测试之间的鸿沟：不启动整个系统，但能<strong>独立验证</strong>服务双方对契约的理解一致。<strong>Consumer-Driven Contracts（CDC）</strong>由消费方发布期望，提供方按期望验证，避免上游单方面变更打破下游。主流工具 <strong>Pact</strong>（多语言、Broker 中介）、<strong>Spring Cloud Contract</strong>（JVM 友好、契约即 Groovy/YAML）。详细测试体系见<a href="19-testing-quality.html">第 19 章测试质量</a>。</p>
             <div class="diagram-block">
               <pre class="mermaid">flowchart LR
     C["Consumer 测试"] -->|"生成 pact.json"| BROKER["Pact Broker"]
@@ -1159,7 +1160,7 @@ response:
   headers:
     Content-Type: application/json
   body:
-    id: "ORD-20260520-001"
+    id: "ORD-20260521-001"
     status: "PENDING_PAYMENT"
   matchers:
     body:
@@ -1288,7 +1289,7 @@ curl -X POST 'https://api.example.com/v1/orders' \
           <h3>API 可观测性：指标 · 日志 · 追踪</h3>
           <div class="card-block block-explain">
             <h4>讲解</h4>
-            <p>API 的可观测性遵循<strong>RED + USE</strong>方法：<strong>Rate</strong>（QPS）、<strong>Errors</strong>（错误率）、<strong>Duration</strong>（延迟分位）+ 资源饱和度。所有 API 指标必须按<code>(service, route, method, status, tenant)</code>多维切片，保证排障可下钻。链路追踪贯穿网关→服务→数据库→消息，<code>traceId</code> 同时回灌错误响应与日志。详见<a href="20-devops-cloud-native.html#observability">第 20 章可观测体系</a>。</p>
+            <p>API 的可观测性遵循<strong>RED + USE</strong>方法：<strong>Rate</strong>（QPS）、<strong>Errors</strong>（错误率）、<strong>Duration</strong>（延迟分位）+ 资源饱和度。所有 API 指标必须按<code>(service, route, method, status, tenant)</code>多维切片，保证排障可下钻。链路追踪贯穿网关→服务→数据库→消息，<code>traceId</code> 同时回灌错误响应与日志。详见<a href="21-devops-cloud-native.html#observability">第 21 章可观测体系</a>。</p>
           </div>
           <div class="card-block block-example">
             <h4>核心指标与 SLO 模板</h4>
@@ -1615,8 +1616,8 @@ LIMIT 100;</code></pre>
             <pre><code>□ NFR 指标可度量，每条有验证计划与负责人
 □ 单点故障、降级、熔断策略已定义
 □ 跨服务一致性：Outbox/Saga/2PC 选型有 ADR
-□ 密钥/配置管理（见第 16 章）
-□ 日志、指标、链路追踪接入点（见第 20 章）
+□ 密钥/配置管理（见第 17 章）
+□ 日志、指标、链路追踪接入点（见第 21 章）
 □ 数据库迁移与回滚方案
 □ 反模式检查：分布式单体 / Chatty API / 缓存作 SoT</code></pre>
           </div>

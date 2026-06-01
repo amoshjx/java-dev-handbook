@@ -42,14 +42,14 @@ SIDEBAR = """            <li><a href="index.html">目录首页</a></li>
             <li class="sidebar-subitem"><a href="12-spring-framework.html">12 Spring Framework</a></li>
             <li class="sidebar-subitem"><a href="13-build-packaging-deploy.html">13 构建·打包·部署</a></li>
             <li class="sidebar-subitem"><a href="14-ruoyi-framework.html">14 RuoYi 框架</a></li>
-            <li class="sidebar-subitem"><a href="15-common-modules.html">15 常见功能模块</a></li>
-            <li class="sidebar-subitem"><a href="16-security-development.html">16 安全开发</a></li>
-            <li class="sidebar-subitem"><a href="17-test-driven-development.html">17 测试驱动开发</a></li>
-            <li><a href="18-testing-quality.html">18 测试·质量</a></li>
-            <li><a href="19-performance-tuning.html">19 性能调优</a></li>
-            <li><a href="20-devops-cloud-native.html">20 工程化·DevOps</a></li>
-            <li><a href="21-ai-development.html">21 AI 辅助开发</a></li>
-            <li><a href="22-business-intelligence.html">22 业务智能化</a></li>
+            <li class="sidebar-subitem"><a href="16-common-modules.html">15 常见功能模块</a></li>
+            <li class="sidebar-subitem"><a href="17-security-development.html">16 安全开发</a></li>
+            <li class="sidebar-subitem"><a href="18-test-driven-development.html">17 测试驱动开发</a></li>
+            <li><a href="19-testing-quality.html">18 测试·质量</a></li>
+            <li><a href="20-performance-tuning.html">19 性能调优</a></li>
+            <li><a href="21-devops-cloud-native.html">20 工程化·DevOps</a></li>
+            <li><a href="22-ai-development.html">21 AI 辅助开发</a></li>
+            <li><a href="23-business-intelligence.html">22 业务智能化</a></li>
             <li><a href="glossary.html">术语字典</a></li>"""
 
 CHAPTER_META = {
@@ -63,14 +63,14 @@ CHAPTER_META = {
         "13 项目构建、打包与部署",
     ),
     "14-ruoyi-framework.html": ("14 RuoYi 框架", "14 RuoYi 框架"),
-    "15-common-modules.html": ("15 常见功能模块", "15 常见功能模块"),
-    "16-security-development.html": ("16 安全开发", "16 安全开发"),
-    "17-test-driven-development.html": ("17 测试驱动开发", "17 测试驱动开发"),
-    "18-testing-quality.html": ("18 测试·质量", "18 测试·质量"),
-    "19-performance-tuning.html": ("19 性能调优", "19 性能调优"),
-    "20-devops-cloud-native.html": ("20 工程化·DevOps", "20 工程化·DevOps"),
-    "21-ai-development.html": ("21 AI 辅助开发", "21 AI 辅助开发"),
-    "22-business-intelligence.html": (
+    "16-common-modules.html": ("15 常见功能模块", "15 常见功能模块"),
+    "17-security-development.html": ("16 安全开发", "16 安全开发"),
+    "18-test-driven-development.html": ("17 测试驱动开发", "17 测试驱动开发"),
+    "19-testing-quality.html": ("18 测试·质量", "18 测试·质量"),
+    "20-performance-tuning.html": ("19 性能调优", "19 性能调优"),
+    "21-devops-cloud-native.html": ("20 工程化·DevOps", "20 工程化·DevOps"),
+    "22-ai-development.html": ("21 AI 辅助开发", "21 AI 辅助开发"),
+    "23-business-intelligence.html": (
         "22 业务智能化",
         "22 业务智能化与 LLM 能力需求",
     ),
@@ -107,72 +107,72 @@ NAV_BLOCK = {
     ),
     "14-ruoyi-framework.html": (
         '<a href="13-build-packaging-deploy.html">← 上一章：项目构建、打包与部署</a>\n'
-        '        <a href="15-common-modules.html">下一章：常见功能模块 →</a>'
+        '        <a href="16-common-modules.html">下一章：常见功能模块 →</a>'
     ),
-    "15-common-modules.html": (
+    "16-common-modules.html": (
         '<a href="14-ruoyi-framework.html">← 上一章：RuoYi 框架</a>\n'
-        '        <a href="16-security-development.html">下一章：安全开发 →</a>'
+        '        <a href="17-security-development.html">下一章：安全开发 →</a>'
     ),
-    "16-security-development.html": (
-        '<a href="15-common-modules.html">← 上一章：常见功能模块</a>\n'
-        '        <a href="17-test-driven-development.html">下一章：测试驱动开发 →</a>'
+    "17-security-development.html": (
+        '<a href="16-common-modules.html">← 上一章：常见功能模块</a>\n'
+        '        <a href="18-test-driven-development.html">下一章：测试驱动开发 →</a>'
     ),
-    "17-test-driven-development.html": (
-        '<a href="16-security-development.html">← 上一章：安全开发</a>\n'
-        '        <a href="18-testing-quality.html">下一章：测试·质量 →</a>'
+    "18-test-driven-development.html": (
+        '<a href="17-security-development.html">← 上一章：安全开发</a>\n'
+        '        <a href="19-testing-quality.html">下一章：测试·质量 →</a>'
     ),
-    "18-testing-quality.html": (
-        '<a href="17-test-driven-development.html">← 上一章：测试驱动开发</a>\n'
-        '        <a href="19-performance-tuning.html">下一章：性能调优 →</a>'
+    "19-testing-quality.html": (
+        '<a href="18-test-driven-development.html">← 上一章：测试驱动开发</a>\n'
+        '        <a href="20-performance-tuning.html">下一章：性能调优 →</a>'
     ),
-    "19-performance-tuning.html": (
-        '<a href="18-testing-quality.html">← 上一章：测试·质量</a>\n'
-        '        <a href="20-devops-cloud-native.html">下一章：工程化·DevOps →</a>'
+    "20-performance-tuning.html": (
+        '<a href="19-testing-quality.html">← 上一章：测试·质量</a>\n'
+        '        <a href="21-devops-cloud-native.html">下一章：工程化·DevOps →</a>'
     ),
-    "20-devops-cloud-native.html": (
-        '<a href="19-performance-tuning.html">← 上一章：性能调优</a>\n'
-        '        <a href="21-ai-development.html">下一章：AI 辅助开发 →</a>'
+    "21-devops-cloud-native.html": (
+        '<a href="20-performance-tuning.html">← 上一章：性能调优</a>\n'
+        '        <a href="22-ai-development.html">下一章：AI 辅助开发 →</a>'
     ),
-    "21-ai-development.html": (
-        '<a href="20-devops-cloud-native.html">← 上一章：工程化·DevOps</a>\n'
-        '        <a href="22-business-intelligence.html">下一章：业务智能化 →</a>'
+    "22-ai-development.html": (
+        '<a href="21-devops-cloud-native.html">← 上一章：工程化·DevOps</a>\n'
+        '        <a href="23-business-intelligence.html">下一章：业务智能化 →</a>'
     ),
-    "22-business-intelligence.html": (
-        '<a href="21-ai-development.html">← 上一章：AI 辅助开发</a>\n'
+    "23-business-intelligence.html": (
+        '<a href="22-ai-development.html">← 上一章：AI 辅助开发</a>\n'
         '        <a href="glossary.html">下一章：术语字典 →</a>'
     ),
 }
 
 TEXT_FIXES = [
     ("22–23", "21–22"),
-    ("22-23", "21-22"),
+    ("23-23", "22-22"),
     ("18–21", "17–20"),
-    ("18-21", "17-20"),
+    ("19-21", "18-20"),
     ("13–17", "12–16"),
     ("13-17", "12-16"),
-    ("05–18", "05–17"),
-    ("05-18", "05-17"),
+    ("05–18", "05–18"),
+    ("05-18", "05-18"),
     ("05–12", "05–11"),
     ("05-12", "05-11"),
     ("06-12", "06-11"),
     ("06–12", "06–11"),
-    ("16-17", "15-16"),
+    ("17-17", "16-16"),
     ("16–17", "15–16"),
-    ("05 → 18 → 19", "05 → 17 → 18"),
-    ("18 → 19", "17 → 18"),
+    ("05 → 18 → 19", "05 → 18 → 19"),
+    ("18 → 19", "18 → 19"),
     ("23 章", "22 章"),
     ("22 章面向", "21 章面向"),
     ("23 章面向", "22 章面向"),
-    ('C18 --> C19["19 测试·质量"]', 'C17 --> C18["18 测试·质量"]'),
-    ('C18["18 TDD"]', 'C17["17 TDD"]'),
-    ('C15 --> BACK["16-17 业务与安全"]', 'C14 --> BACK["15-16 业务与安全"]'),
-    ('C15["15 RuoYi"]', 'C14["14 RuoYi"]'),
+    ('C19 --> C20["19 测试·质量"]', 'C18 --> C19["18 测试·质量"]'),
+    ('C19["18 TDD"]', 'C18["17 TDD"]'),
+    ('C16 --> BACK["17-17 业务与安全"]', 'C14 --> BACK["16-16 业务与安全"]'),
+    ('C16["15 RuoYi"]', 'C14["14 RuoYi"]'),
     ('C14["14 构建·打包·部署"]', 'C13["13 构建·打包·部署"]'),
     ('C13 --> C14', 'C12 --> C13'),
     ('C13["13 Spring Framework"]', 'C12["12 Spring Framework"]'),
     ('LANG --> C13', 'LANG --> C12'),
-    ('05 → 18 → 19', "05 → 17 → 18"),
-    ("图：开发实现章组阅读顺序（05 → 18 → 19）", "图：开发实现章组阅读顺序（05 → 17 → 18）"),
+    ('05 → 18 → 19', "05 → 18 → 19"),
+    ("图：开发实现章组阅读顺序（05 → 18 → 19）", "图：开发实现章组阅读顺序（05 → 18 → 19）"),
     ("P3 --> P4", "P3 --> P4"),  # noop anchor
 ]
 
@@ -295,16 +295,16 @@ def update_readme() -> None:
     text = transform_text(text)
     text = text.replace("22 章知识点", "22 章知识点")
     text = text.replace(
-        "`05-dev-environment.html` ~ `17-test-driven-development.html`：开发实现子章（二级，编号 05–17；含 `12-persistence.html`、`14-ruoyi-framework.html`；`06-java-basics.html` 含集合/泛型/Stream 内容，`08` 编号已移除）",
-        "`05-dev-environment.html` ~ `17-test-driven-development.html`：开发实现子章（二级，编号 05–17；含 `11-persistence.html`、`14-ruoyi-framework.html`；`06-java-basics.html` 含集合/泛型/Stream 内容）",
+        "`05-dev-environment.html` ~ `18-test-driven-development.html`：开发实现子章（二级，编号 05–18；含 `12-persistence.html`、`14-ruoyi-framework.html`；`06-java-basics.html` 含集合/泛型/Stream 内容，`08` 编号已移除）",
+        "`05-dev-environment.html` ~ `18-test-driven-development.html`：开发实现子章（二级，编号 05–18；含 `11-persistence.html`、`14-ruoyi-framework.html`；`06-java-basics.html` 含集合/泛型/Stream 内容）",
     )
     text = text.replace(
-        "`18-testing-quality.html` ~ `22-business-intelligence.html`：测试·性能·交付·AI（一级章）",
-        "`18-testing-quality.html` ~ `22-business-intelligence.html`：测试·性能·交付·AI（一级章）",
+        "`19-testing-quality.html` ~ `23-business-intelligence.html`：测试·性能·交付·AI（一级章）",
+        "`19-testing-quality.html` ~ `23-business-intelligence.html`：测试·性能·交付·AI（一级章）",
     )
     text = text.replace(
-        "侧边栏为 **2 级目录**：`01`–`04` 与 `18`–`22` 为一级项；`05`–`17` 归入 **开发实现** 分组（缩进子项）。章节 prev/next 线性导航仍为 03 → 04 → … → 17 → 18。",
-        "侧边栏为 **2 级目录**：`01`–`04` 与 `18`–`22` 为一级项；`05`–`17` 归入 **开发实现** 分组（缩进子项）。章节 prev/next 线性导航仍为 03 → 04 → … → 17 → 18。",
+        "侧边栏为 **2 级目录**：`01`–`04` 与 `18`–`22` 为一级项；`05`–`17` 归入 **开发实现** 分组（缩进子项）。章节 prev/next 线性导航仍为 03 → 04 → … → 18 → 19。",
+        "侧边栏为 **2 级目录**：`01`–`04` 与 `18`–`22` 为一级项；`05`–`17` 归入 **开发实现** 分组（缩进子项）。章节 prev/next 线性导航仍为 03 → 04 → … → 18 → 19。",
     )
     readme.write_text(text, encoding="utf-8")
 

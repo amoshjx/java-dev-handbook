@@ -30,14 +30,15 @@
             <li class="sidebar-subitem"><a href="12-spring-framework.html">12 Spring Framework</a></li>
             <li class="sidebar-subitem"><a href="13-build-packaging-deploy.html">13 构建·打包·部署</a></li>
             <li class="sidebar-subitem"><a href="14-ruoyi-framework.html">14 RuoYi 框架</a></li>
-            <li class="sidebar-subitem"><a href="15-common-modules.html">15 常见功能模块</a></li>
-            <li class="sidebar-subitem"><a href="16-security-development.html">16 安全开发</a></li>
-            <li class="sidebar-subitem"><a href="17-test-driven-development.html">17 测试驱动开发</a></li>
-            <li><a href="18-testing-quality.html">18 测试·质量</a></li>
-            <li><a href="19-performance-tuning.html">19 性能调优</a></li>
-            <li><a href="20-devops-cloud-native.html">20 工程化·DevOps·CI/CD</a></li>
-            <li><a href="21-ai-development.html">21 AI 辅助开发</a></li>
-            <li><a href="22-business-intelligence.html">22 业务智能化</a></li>
+            <li class="sidebar-subitem"><a href="15-project-code-generator.html">15 项目代码生成器</a></li>
+            <li class="sidebar-subitem"><a href="16-common-modules.html">16 常见功能模块</a></li>
+            <li class="sidebar-subitem"><a href="17-security-development.html">17 安全开发</a></li>
+            <li class="sidebar-subitem"><a href="18-test-driven-development.html">18 测试驱动开发</a></li>
+            <li><a href="19-testing-quality.html">19 测试·质量</a></li>
+            <li><a href="20-performance-tuning.html">20 性能调优</a></li>
+            <li><a href="21-devops-cloud-native.html">21 工程化·DevOps·CI/CD</a></li>
+            <li><a href="22-ai-development.html">22 AI 辅助开发</a></li>
+            <li><a href="23-business-intelligence.html">23 业务智能化</a></li>
             <li><a href="glossary.html">术语字典</a></li>
           </ul>
         </div>
@@ -47,7 +48,7 @@
     <main class="main">
       <header class="page-header">
         <h1>04 项目排期 — 开发 · 测试 · 上线</h1>
-        <p>技术选型（01–03）之后、编码之前，回答 <strong>When / Who / How long</strong>：WBS 分解、里程碑、迭代计划、资源容量、风险缓冲、跨团队联调节奏，以及测试窗口与上线 Gate。本章聚焦<strong>排期与交付节奏</strong>；TDD/测试质量见 <a href="17-test-driven-development.html">第 17 章</a>、<a href="18-testing-quality.html">第 18 章</a>；CI/CD 与发布细节见 <a href="20-devops-cloud-native.html#cicd">第 20 章</a>；Spring Boot 模块拆分见 <a href="12-spring-framework.html">第 12 章</a>。</p>
+        <p>技术选型（01–03）之后、编码之前，回答 <strong>When / Who / How long</strong>：WBS 分解、里程碑、迭代计划、资源容量、风险缓冲、跨团队联调节奏，以及测试窗口与上线 Gate。本章聚焦<strong>排期与交付节奏</strong>；TDD/测试质量见 <a href="18-test-driven-development.html">第 18 章</a>、<a href="19-testing-quality.html">第 19 章</a>；CI/CD 与发布细节见 <a href="21-devops-cloud-native.html#cicd">第 21 章</a>；Spring Boot 模块拆分见 <a href="12-spring-framework.html">第 12 章</a>。</p>
       </header>
 
       <section class="section" id="scheduling-overview">
@@ -276,7 +277,7 @@
           <h3>单元 · 集成 · UAT 时间窗</h3>
           <div class="card-block block-explain">
             <h4>讲解</h4>
-            <p>测试排期与<strong>测试金字塔</strong>对应（详见<a href="17-test-driven-development.html">第 17 章 TDD</a>）：单元/组件测试<strong>左移</strong>在开发 Sprint 内完成；<strong>SIT</strong>（系统集成测试）在 test 环境，预留总工期 15–25%（视集成复杂度）；<strong>UAT</strong> 在预发/UAT 环境，业务方执行验收清单（<a href="18-testing-quality.html#uat-environment">第 18 章 UAT 环境</a>）。排期要点：<strong>测试环境就绪</strong>是 M3→M4 的前置条件——数据脱敏、账号权限、第三方沙箱、Flyway 脚本与 prod 一致。预留<strong>回归轮次</strong>（至少 2 轮）与<strong>缺陷修复缓冲</strong>（SIT 后期每天留 30% 开发容量修 Bug）。Windows 企业项目 UAT 常限工作日晚间或指定周末，排期必须写进日历并提前预约业务资源。</p>
+            <p>测试排期与<strong>测试金字塔</strong>对应（详见<a href="18-test-driven-development.html">第 18 章 TDD</a>）：单元/组件测试<strong>左移</strong>在开发 Sprint 内完成；<strong>SIT</strong>（系统集成测试）在 test 环境，预留总工期 15–25%（视集成复杂度）；<strong>UAT</strong> 在预发/UAT 环境，业务方执行验收清单（<a href="19-testing-quality.html#uat-environment">第 19 章 UAT 环境</a>）。排期要点：<strong>测试环境就绪</strong>是 M3→M4 的前置条件——数据脱敏、账号权限、第三方沙箱、Flyway 脚本与 prod 一致。预留<strong>回归轮次</strong>（至少 2 轮）与<strong>缺陷修复缓冲</strong>（SIT 后期每天留 30% 开发容量修 Bug）。Windows 企业项目 UAT 常限工作日晚间或指定周末，排期必须写进日历并提前预约业务资源。</p>
           </div>
           <div class="card-block block-deliverable">
             <h4>阶段成果</h4>
@@ -314,7 +315,7 @@
           <h3>变更委员会 · 回滚 · 蓝绿/金丝雀</h3>
           <div class="card-block block-explain">
             <h4>讲解</h4>
-            <p><strong>上线窗口</strong>：金融/政企常限<strong>非交易时段</strong>（如周六 02:00–06:00）或<strong>变更日</strong>（每月固定一天）；需提前向<strong>变更委员会（CAB）</strong>提交变更单：影响范围、回滚步骤、验证清单、值班人。<strong>回滚预案</strong>：数据库 Flyway 反向脚本或备份恢复、上一版本镜像 tag、配置快照；RTO/RPO 写清。<strong>发布策略</strong>（<a href="20-devops-cloud-native.html#cicd">第 20 章 CI/CD</a>）：蓝绿（两套环境切换）、金丝雀（5%→20%→100% 流量）；Java 服务注意 session 粘性与 MQ 消费位点。上线 checklist：监控大盘、告警静默解除、Smoke Test、业务方确认。</p>
+            <p><strong>上线窗口</strong>：金融/政企常限<strong>非交易时段</strong>（如周六 02:00–06:00）或<strong>变更日</strong>（每月固定一天）；需提前向<strong>变更委员会（CAB）</strong>提交变更单：影响范围、回滚步骤、验证清单、值班人。<strong>回滚预案</strong>：数据库 Flyway 反向脚本或备份恢复、上一版本镜像 tag、配置快照；RTO/RPO 写清。<strong>发布策略</strong>（<a href="21-devops-cloud-native.html#cicd">第 21 章 CI/CD</a>）：蓝绿（两套环境切换）、金丝雀（5%→20%→100% 流量）；Java 服务注意 session 粘性与 MQ 消费位点。上线 checklist：监控大盘、告警静默解除、Smoke Test、业务方确认。</p>
             <div class="diagram-block">
               <pre class="mermaid">flowchart TB
     A[变更单 CAB 审批] --> B[备份 DB/配置]
@@ -519,7 +520,7 @@
           <h3>值守 · 监控 · 复盘</h3>
           <div class="card-block block-explain">
             <h4>讲解</h4>
-            <p><strong>Hypercare</strong>（上线后强化支持期，通常 1–4 周）：研发+运维<strong>联合值班</strong>，快速响应 P0/P1；告警阈值临时调敏感，每日 standup 过 incident。<strong>监控</strong>：对接<a href="20-devops-cloud-native.html#observability">第 20 章可观测性</a>——Error Rate、Latency p99、核心业务 KPI（订单量、成功率）；与压测基线对比。<strong>复盘</strong>（Blameless Postmortem）：时间线、根因（5 Whys）、行动项（Owner+Due）；区分「排期估算偏差」与「执行偏差」。经验沉淀进 ADR、Runbook、下版排期假设——形成组织记忆。</p>
+            <p><strong>Hypercare</strong>（上线后强化支持期，通常 1–4 周）：研发+运维<strong>联合值班</strong>，快速响应 P0/P1；告警阈值临时调敏感，每日 standup 过 incident。<strong>监控</strong>：对接<a href="21-devops-cloud-native.html#observability">第 21 章可观测性</a>——Error Rate、Latency p99、核心业务 KPI（订单量、成功率）；与压测基线对比。<strong>复盘</strong>（Blameless Postmortem）：时间线、根因（5 Whys）、行动项（Owner+Due）；区分「排期估算偏差」与「执行偏差」。经验沉淀进 ADR、Runbook、下版排期假设——形成组织记忆。</p>
           </div>
           <div class="card-block block-deliverable">
             <h4>阶段成果</h4>

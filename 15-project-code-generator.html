@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>15 项目代码生成器 — Java项目手册</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/sidebar.js" defer></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">Java项目手册</div>
+      <nav>
+        <div class="nav-group">
+          <ul class="nav-list">
+            <li><a href="index.html">目录首页</a></li>
+            <li><a href="01-requirements-analysis.html">01 需求分析</a></li>
+            <li><a href="02-prototype-design.html">02 原型设计</a></li>
+            <li><a href="03-architecture-design.html">03 架构设计</a></li>
+            <li><a href="04-project-scheduling.html">04 项目排期</a></li>
+            <li class="sidebar-group"><span class="sidebar-group-label"><a href="java-development.html">开发实现</a></span></li>
+            <li class="sidebar-subitem"><a href="05-dev-environment.html">05 开发环境搭建</a></li>
+            <li class="sidebar-subitem"><a href="06-java-basics.html">06 Java基础语法</a></li>
+            <li class="sidebar-subitem"><a href="07-oop.html">07 面向对象</a></li>
+            <li class="sidebar-subitem"><a href="08-jvm.html">08 JVM</a></li>
+            <li class="sidebar-subitem"><a href="09-concurrency.html">09 并发编程</a></li>
+            <li class="sidebar-subitem"><a href="10-io-nio-network.html">10 IO·NIO·网络</a></li>
+            <li class="sidebar-subitem"><a href="11-persistence.html">11 持久化</a></li>
+            <li class="sidebar-subitem"><a href="12-spring-framework.html">12 Spring Framework</a></li>
+            <li class="sidebar-subitem"><a href="13-build-packaging-deploy.html">13 构建·打包·部署</a></li>
+            <li class="sidebar-subitem"><a href="14-ruoyi-framework.html">14 RuoYi 框架</a></li>
+            <li class="sidebar-subitem"><a href="15-project-code-generator.html">15 项目代码生成器</a></li>
+            <li class="sidebar-subitem"><a href="16-common-modules.html">16 常见功能模块</a></li>
+            <li class="sidebar-subitem"><a href="17-security-development.html">17 安全开发</a></li>
+            <li class="sidebar-subitem"><a href="18-test-driven-development.html">18 测试驱动开发</a></li>
+            <li><a href="19-testing-quality.html">19 测试·质量</a></li>
+            <li><a href="20-performance-tuning.html">20 性能调优</a></li>
+            <li><a href="21-devops-cloud-native.html">21 工程化·DevOps·CI/CD</a></li>
+            <li><a href="22-ai-development.html">22 AI 辅助开发</a></li>
+            <li><a href="23-business-intelligence.html">23 业务智能化</a></li>
+            <li><a href="glossary.html">术语字典</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="page-header">
+        <h1>15 项目代码生成器</h1>
+        <p>面向<strong>自有 Spring Boot 多模块工程</strong>，讲解如何设计与实现一套「表结构 → 分层代码 → 业务子模块」的项目级代码生成器。对照 <a href="https://gitee.com/y_project/RuoYi-Vue" target="_blank" rel="noopener">RuoYi</a>、<a href="https://github.com/jeecgboot/jeecg-boot" target="_blank" rel="noopener">JeecgBoot</a> 等开源实现提炼可复用模式，而非仅使用现成菜单。建议先读<a href="12-spring-framework.html">第 12 章 Spring Framework</a>（多模块结构）、<a href="11-persistence.html">第 11 章持久化</a>、<a href="14-ruoyi-framework.html">第 14 章 RuoYi</a>（内置生成器能力概览）。</p>
+      </header>
+
+      <section class="section" id="overview">
+        <h2>本章导读</h2>
+        <p>企业后台大量模块是「一张表 + 标准 CRUD + 列表页」。手写重复代码成本高、风格易漂移。成熟脚手架（RuoYi、JeecgBoot）都内置<strong>元数据驱动 + 模板渲染</strong>的生成器；当团队需要统一包名、分层、注解、前端框架，或生成结果要<strong>直接落入自有 Maven 子模块</strong>时，应在项目内自建生成器模块。</p>
+        <p><strong>阅读路径：</strong></p>
+        <ol>
+          <li><a href="#why-build">为何自建</a> → <a href="#opensource-compare">开源对照</a> → <a href="#architecture">总体架构</a></li>
+          <li><a href="#maven-module">Maven 多模块落位</a> → <a href="#metadata">元数据采集</a> → <a href="#config-model">配置模型</a></li>
+          <li><a href="#template-engine">模板引擎</a> → <a href="#template-design">模板设计</a> → <a href="#output-layout">输出目录</a></li>
+          <li><a href="#generator-service">生成服务</a> → <a href="#ruoyi-impl">RuoYi 实现要点</a> → <a href="#jeecg-notes">JeecgBoot 差异</a></li>
+          <li><a href="#safety-governance">安全与治理</a> → <a href="#roadmap">落地路线</a> → <a href="#checklist">实战清单</a></li>
+        </ol>
+        <div class="diagram-block">
+          <pre class="mermaid">flowchart LR
+    DB[(业务库表)] --> META[元数据/配置]
+    META --> MODEL[生成上下文模型]
+    MODEL --> TPL[Velocity/FreeMarker 模板]
+    TPL --> OUT[写入业务子模块]
+    OUT --> REV[人工 Review + 测试]
+    REV --> GIT[提交 Git]</pre>
+          <p class="diagram-caption">图：项目代码生成器主链路</p>
+        </div>
+      </section>
+
+      <section class="section" id="why-build">
+        <h2>为什么要自建代码生成器</h2>
+        <p>开箱即用的 RuoYi/Jeecg 生成器能快速出活，但常与<strong>固定目录、固定前端、固定基类</strong>绑定。以下场景更适合自建：</p>
+        <ul>
+          <li>已有<a href="03-architecture-design.html">模块化单体</a>或 DDD 分层（domain / application / adapter），生成物须符合团队包结构与命名规范。</li>
+          <li>多产品线共用父工程，需生成到 <code>order-service</code>、<code>inventory-service</code> 等不同子模块。</li>
+          <li>要生成 MapStruct、Record DTO、Problem Details 异常、OpenAPI 注解等脚手架未覆盖的内容。</li>
+          <li>生成逻辑需纳入 CI（仅允许生成到 <code>generated/</code> 目录或 PR 审查门禁）。</li>
+        </ul>
+        <p>自建目标不是「替代程序员」，而是<strong>固化 80% 重复结构</strong>，让人力集中在 20% 业务规则、事务与集成测试上。生成代码默认视为<strong>草稿</strong>，必须 Review 后合入主干。</p>
+      </section>
+
+      <section class="section" id="opensource-compare">
+        <h2>开源实现对照</h2>
+        <table class="compare-table">
+          <thead>
+            <tr><th>维度</th><th>RuoYi-Vue</th><th>JeecgBoot</th><th>MyBatis Generator</th><th>自建项目生成器</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>元数据来源</td><td><code>gen_table</code> + 库表同步</td><td>在线表单 / 代码生成配置</td><td>JDBC 表结构</td><td>可复用两者思路</td></tr>
+            <tr><td>模板引擎</td><td>Velocity（<code>ruoyi-generator</code>）</td><td>FreeMarker / 自定义</td><td>内置 XML 模板</td><td>Velocity 或 FreeMarker 均可</td></tr>
+            <tr><td>输出范围</td><td>Java 四层 + Vue 页面 + SQL</td><td>前后端 + 报表扩展</td><td>Entity/Mapper/XML</td><td>按团队模板裁剪</td></tr>
+            <tr><td>落盘方式</td><td>ZIP 下载或写入约定路径</td><td>在线生成 + 下载</td><td>覆盖本地文件</td><td>写入指定 Maven 子模块</td></tr>
+            <tr><td>适用</td><td>标准后台 CRUD</td><td>低代码 + 报表</td><td>仅持久层</td><td>强定制、多模块</td></tr>
+          </tbody>
+        </table>
+        <p>RuoYi 将生成器独立为 <strong><code>ruoyi-generator</code></strong> 模块，与 <code>ruoyi-system</code>、<code>ruoyi-admin</code> 解耦——这是 Spring 多模块项目中值得直接借鉴的结构。</p>
+      </section>
+
+      <section class="section" id="architecture">
+        <h2>总体架构：四层流水线</h2>
+        <p>无论界面是 Web 还是 CLI，内核都可拆为四层：</p>
+        <ol>
+          <li><strong>元数据层（Metadata）</strong>：从数据库或已保存配置读取表、列、主键、索引、注释。</li>
+          <li><strong>领域模型层（Gen Model）</strong>：转换为 Java 类型、字段名（驼峰）、是否插入/编辑/列表展示、字典引用等。</li>
+          <li><strong>模板层（Template）</strong>：按「单表 / 树表 / 主子表」选择模板集，填充上下文后渲染文本。</li>
+          <li><strong>输出层（Writer）</strong>：写入磁盘或 ZIP；支持预览、差异对比、跳过已存在文件。</li>
+        </ol>
+        <div class="diagram-block">
+          <pre class="mermaid">flowchart TB
+    subgraph meta [元数据层]
+      JDBC[JDBC DatabaseMetaData]
+      CFG[gen_table / gen_column]
+    end
+    subgraph model [模型层]
+      CTX[GenTableContext]
+    end
+    subgraph tpl [模板层]
+      V[*.vm / *.ftl]
+    end
+    subgraph out [输出层]
+      W[GenFileWriter]
+    end
+    JDBC --> CTX
+    CFG --> CTX
+    CTX --> V --> W</pre>
+          <p class="diagram-caption">图：生成器内部分层</p>
+        </div>
+        <p>核心接口可定义为：<code>TableMetadataLoader</code>、<code>CodegenConfigRepository</code>、<code>TemplateRenderer</code>、<code>GeneratedFilePublisher</code>。便于单测时用内存元数据 + 固定模板验证输出快照。</p>
+      </section>
+
+      <section class="section" id="maven-module">
+        <h2>Maven 多模块：生成器作为独立子模块</h2>
+        <p>参考<a href="12-spring-framework.html">第 12 章</a>父工程聚合方式，推荐在<strong>与业务平级</strong>增加 <code>tools/codegen</code> 或 <code>xxx-generator</code> 子模块，<strong>不要</strong>把生成器打进生产 Fat JAR（或仅在 <code>dev</code> Profile 引入）。</p>
+        <pre><code>corp-platform/                    # 父 pom, packaging=pom
+├── pom.xml
+├── platform-common/              # 工具类、统一响应
+├── platform-system/              # 系统域（用户、角色）
+├── biz-order/                      # 业务域：订单（生成目标之一）
+│   ├── order-api/
+│   ├── order-service/
+│   └── order-web/
+├── platform-admin/               # 启动模块（聚合 web）
+└── platform-generator/           # 代码生成器（仅 dev/test 依赖）
+    ├── pom.xml
+    └── src/main/
+        ├── java/.../generator/
+        └── resources/vm/         # Velocity 模板</code></pre>
+        <p><strong>父 pom 要点：</strong></p>
+        <ul>
+          <li><code>dependencyManagement</code> 锁定 <code>velocity-engine-core</code>、<code>mybatis-plus-generator</code>（若复用）版本。</li>
+          <li>生成器模块依赖 <code>platform-common</code> 以复用常量、基类信息；<strong>业务模块不反向依赖生成器</strong>。</li>
+          <li>可用 <code>maven-invoker-plugin</code> 或独立 <code>main</code> 类在本地执行生成；CI 中通过 profile 触发。</li>
+        </ul>
+        <p><strong>生成到业务子模块</strong>时，在配置里写清<strong>绝对或基于仓库根的路径</strong>，例如：</p>
+        <pre><code># codegen.yml（示例）
+output:
+  moduleRoot: ${repoRoot}/biz-order/order-service
+  javaDir: src/main/java
+  packageBase: com.corp.order
+  overwrite: false          # 默认不覆盖已存在文件
+  paths:
+    entity: domain/model
+    mapper: infrastructure/persistence/mapper
+    service: application/service
+    controller: adapter/web</code></pre>
+        <p>包路径与<a href="03-architecture-design.html">架构分层</a>一致，避免生成器写死 <code>com.ruoyi.system</code> 式目录。</p>
+      </section>
+
+      <section class="section" id="metadata">
+        <h2>元数据采集</h2>
+        <h3>从数据库读取</h3>
+        <p>常用两种方式：</p>
+        <ul>
+          <li><strong>JDBC <code>DatabaseMetaData</code></strong>：<code>getTables</code> / <code>getColumns</code>，与数据库无关性好；注意 MySQL 的 <code>REMARKS</code>、PostgreSQL 的 <code>comment</code> 需额外 SQL。</li>
+          <li><strong>查询 information_schema</strong>：列注释、字符集、是否自增更直观；可过滤 <code>table_schema</code> 与表前缀（如 <code>biz_%</code>）。</li>
+        </ul>
+        <pre><code>// 列元数据示意（Java 21 record）
+public record ColumnMeta(
+    String columnName,
+    String dataType,
+    int columnSize,
+    boolean nullable,
+    boolean primaryKey,
+    String comment,
+    String javaType,
+    String javaField
+) {}
+
+public List&lt;ColumnMeta&gt; loadColumns(DataSource ds, String table) throws SQLException {
+  try (Connection c = ds.getConnection()) {
+    DatabaseMetaData md = c.getMetaData();
+    // 主键
+    Set&lt;String&gt; pks = new HashSet&lt;&gt;();
+    try (ResultSet pk = md.getPrimaryKeys(null, null, table)) {
+      while (pk.next()) pks.add(pk.getString("COLUMN_NAME"));
+    }
+    List&lt;ColumnMeta&gt; list = new ArrayList&lt;&gt;();
+    try (ResultSet rs = md.getColumns(null, null, table, null)) {
+      while (rs.next()) {
+        String col = rs.getString("COLUMN_NAME");
+        list.add(new ColumnMeta(
+            col,
+            rs.getString("TYPE_NAME"),
+            rs.getInt("COLUMN_SIZE"),
+            rs.getInt("NULLABLE") == DatabaseMetaData.columnNullable,
+            pks.contains(col),
+            rs.getString("REMARKS"),
+            mapJdbcToJava(rs.getString("TYPE_NAME")),
+            toCamelCase(col)
+        ));
+      }
+    }
+    return list;
+  }
+}</code></pre>
+        <h3>类型映射</h3>
+        <p>维护一张 <code>jdbcType → javaType</code> 映射表（<code>BIGINT → Long</code>、<code>DECIMAL → BigDecimal</code>、<code>DATETIME → Instant</code> 或 <code>LocalDateTime</code>）。团队统一时间类型，避免生成代码混用 <code>Date</code> 与 <code>LocalDateTime</code>。</p>
+      </section>
+
+      <section class="section" id="config-model">
+        <h2>配置模型与持久化（对标 RuoYi gen_table）</h2>
+        <p>RuoYi 使用 <code>gen_table</code>、<code>gen_table_column</code> 保存「生成策略」：类名、模块名、作者、模板类型、是否树表、前端类型等。列级配置包括：是否在列表/表单/查询、显示类型（input/select）、字典类型。</p>
+        <p>自建时建议同样<strong>将「表级 + 列级」配置持久化</strong>，而不是每次从库表裸生成——否则无法表达「密码列不展示」「状态列用字典」等业务 UI 规则。</p>
+        <pre><code>-- 表级（简化示例）
+CREATE TABLE gen_table (
+  table_id      BIGINT PRIMARY KEY,
+  table_name    VARCHAR(200) NOT NULL,
+  table_comment VARCHAR(500),
+  class_name    VARCHAR(100),   -- Order
+  module_name   VARCHAR(50),    -- order → 对应 biz-order
+  package_name  VARCHAR(200),
+  template_type VARCHAR(20),      -- crud / tree / sub
+  gen_path      VARCHAR(500),   -- 输出根路径
+  options       JSON            -- 扩展：是否生成前端、是否 Lombok
+);
+
+-- 列级
+CREATE TABLE gen_table_column (
+  column_id     BIGINT PRIMARY KEY,
+  table_id      BIGINT NOT NULL,
+  column_name   VARCHAR(200),
+  java_field    VARCHAR(100),
+  java_type     VARCHAR(50),
+  is_pk         CHAR(1),
+  is_insert     CHAR(1),
+  is_edit       CHAR(1),
+  is_list       CHAR(1),
+  is_query      CHAR(1),
+  query_type    VARCHAR(20),    -- EQ / LIKE / BETWEEN
+  html_type     VARCHAR(20)     -- input / select / datetime
+);</code></pre>
+        <p>同步流程：用户选择物理表 → 导入列 → 在管理界面调整 → 保存配置 → 触发生成。与 RuoYi「导入表结构」菜单一致。</p>
+      </section>
+
+      <section class="section" id="template-engine">
+        <h2>模板引擎选型</h2>
+        <ul>
+          <li><strong>Apache Velocity</strong>：RuoYi 默认；语法 <code>#if</code> <code>#foreach</code>，学习成本低；Spring 生态示例多。</li>
+          <li><strong>FreeMarker</strong>：Jeecg 常用；对空值、宏、国际化更友好；严格语法减少静默错误。</li>
+          <li><strong>Mustache / Handlebars</strong>：逻辑更少，适合极简模板；复杂条件会吃力。</li>
+        </ul>
+        <p>团队选定一种后，<strong>所有模板统一引擎</strong>。渲染时构造统一上下文对象 <code>GenTableContext</code>（含 table、columns、author、datetime、packagePrefix），避免在 Java 里拼接字符串。</p>
+        <pre><code>// Velocity 渲染示意
+Properties p = new Properties();
+p.setProperty("resource.loader.file.class",
+    "org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader");
+VelocityEngine engine = new VelocityEngine(p);
+engine.init();
+
+VelocityContext ctx = new VelocityContext();
+ctx.put("table", genTable);
+ctx.put("columns", columns);
+ctx.put("importList", importList);
+
+StringWriter sw = new StringWriter();
+engine.getTemplate("vm/java/entity.java.vm", "UTF-8").merge(ctx, sw);
+return sw.toString();</code></pre>
+      </section>
+
+      <section class="section" id="template-design">
+        <h2>模板设计与变量约定</h2>
+        <p>按<strong>产物类型</strong>拆分模板文件，而不是一个巨大模板：</p>
+        <ul>
+          <li><code>entity.java.vm</code> — 实体（JPA 或 MyBatis 注解）</li>
+          <li><code>mapper.java.vm</code> / <code>mapper.xml.vm</code></li>
+          <li><code>service.java.vm</code> / <code>serviceImpl.java.vm</code></li>
+          <li><code>controller.java.vm</code> — REST + 校验 + 权限占位</li>
+          <li><code>api.ts.vm</code> / <code>index.vue.vm</code> — 若团队使用 Vue</li>
+        </ul>
+        <p><strong>约定示例（表级变量）：</strong></p>
+        <ul>
+          <li><code>${table.className}</code> — <code>Order</code></li>
+          <li><code>${table.businessName}</code> — <code>订单</code>（注释）</li>
+          <li><code>${table.moduleName}</code> — <code>order</code>，用于 URL 前缀 <code>/order</code></li>
+          <li><code>${packageName}</code> — <code>com.corp.order.application</code></li>
+        </ul>
+        <p>列级在 <code>#foreach($column in $columns)</code> 中判断 <code>$column.isPk</code>、<code>$column.isList</code> 生成字段与查询条件。权限注解可预留 <code>@PreAuthorize("hasAuthority('${module}:${business}:list')")</code>，与<a href="16-common-modules.html#rbac">第 16 章 RBAC</a>权限码对齐。</p>
+        <p>模板内避免复杂业务逻辑；超过三层的 <code>#if</code> 应上移到 Java 预计算（如 <code>listColumns</code>、<code>formColumns</code> 两个 List）。</p>
+      </section>
+
+      <section class="section" id="output-layout">
+        <h2>输出到 Spring 业务子模块</h2>
+        <p>典型一次生成会产出如下文件（以单表 CRUD、MyBatis-Plus 为例）：</p>
+        <pre><code>biz-order/order-service/src/main/java/com/corp/order/
+├── domain/model/Order.java
+├── infrastructure/persistence/mapper/OrderMapper.java
+├── infrastructure/persistence/mapper/OrderMapper.xml
+├── application/service/OrderService.java
+├── application/service/impl/OrderServiceImpl.java
+└── adapter/web/OrderController.java
+
+biz-order/order-web/src/main/frontend/src/views/order/
+├── index.vue
+└── api/order.js</code></pre>
+        <p><strong>Writer 策略：</strong></p>
+        <ul>
+          <li><code>overwrite=false</code>：跳过已存在文件，并记录 skipped 列表（RuoYi 默认谨慎覆盖）。</li>
+          <li><code>overwrite=true</code>：仅对标记为 <code>@generated</code> 的文件覆盖，或限定子目录 <code>src/main/java/.../generated</code>，人工代码与生成代码分离。</li>
+          <li>提供 <strong>ZIP 下载</strong> 与 <strong>直接写盘</strong> 两种模式：生产环境禁用写盘，仅允许下载后在开发机合并。</li>
+        </ul>
+        <p>生成后执行 <code>mvn -pl biz-order/order-service compile</code> 验证；Mapper XML 路径须与 <code>mybatis.mapper-locations</code> 一致。</p>
+      </section>
+
+      <section class="section" id="generator-service">
+        <h2>生成服务与管理 API</h2>
+        <p>若需要 Web 界面（对标 RuoYi 系统工具 → 代码生成），在 <code>platform-admin</code> 或独立 <code>platform-generator</code> 中暴露 REST：</p>
+        <ul>
+          <li><code>GET /tool/gen/db/list</code> — 可选物理表</li>
+          <li><code>POST /tool/gen/import</code> — 导入到 gen_table</li>
+          <li><code>PUT /tool/gen/table</code> — 保存列配置</li>
+          <li><code>GET /tool/gen/preview/{tableId}</code> — 预览各模板渲染结果</li>
+          <li><code>POST /tool/gen/code/{tableId}</code> — 写盘或返回 ZIP</li>
+        </ul>
+        <p>权限：仅 <code>ROLE_ADMIN</code> 或 <code>tool:gen:code</code>；<strong>生产环境建议关闭写盘接口</strong>，或通过网络策略限制仅内网可达。操作记入审计日志（见<a href="16-common-modules.html">第 16 章</a>）。</p>
+        <p>CLI 形态适合 CI：<code>java -jar platform-generator.jar --table=order --module=biz-order</code>，参数与 DB 配置一致，便于流水线批量初始化新域模块骨架。</p>
+      </section>
+
+      <section class="section" id="ruoyi-impl">
+        <h2>RuoYi 实现要点（可借鉴）</h2>
+        <p>RuoYi-Vue 后端 <code>ruoyi-generator</code> 模块核心类与职责：</p>
+        <ul>
+          <li><code>GenTableServiceImpl</code> — 同步表结构、保存配置、调用生成。</li>
+          <li><code>GenUtils</code> — 初始化 Velocity、组装 <code>VelocityContext</code>。</li>
+          <li><code>GenController</code> — 管理端 API；生成结果打包 <code>ByteArrayOutputStream</code> 下载。</li>
+          <li>模板目录 <code>resources/vm/java</code>、<code>vm/xml</code>、<code>vm/vue</code>。</li>
+        </ul>
+        <p>生成流程：读取 <code>GenTable</code> + 列 → <code>VelocityUtils.prepareContext</code> → 遍历模板列表 → 每个模板 merge → 按包路径拼接目标文件名 → 写入或 ZIP。树表、主子表通过 <code>tplCategory</code> 切换不同模板子集。</p>
+        <p>若团队已用 RuoYi，可<strong>先 fork <code>ruoyi-generator</code></strong>，只改模板与 <code>GenUtils</code> 中的路径解析，把输出根目录改为自家 <code>biz-*</code> 模块，再逐步剥离对 RuoYi 基类的依赖。深入使用见<a href="14-ruoyi-framework.html#codegen">第 14 章代码生成</a>；本章侧重<strong>脱离脚手架的通用实现</strong>。</p>
+      </section>
+
+      <section class="section" id="jeecg-notes">
+        <h2>JeecgBoot 差异说明</h2>
+        <p>JeecgBoot 在「代码生成」之外强调<strong>在线表单、报表、流程</strong>，生成物常与低代码元数据绑定。其思路值得借鉴之处：</p>
+        <ul>
+          <li>表单配置与代码生成共用一份元数据，减少「页面改了、代码没同步」。</li>
+          <li>支持一对多、ERP 风格主子表代码一次性生成。</li>
+          <li>与 <strong>AutoPoi</strong>、<strong>Jimureport</strong> 等集成时，模板变量更丰富。</li>
+        </ul>
+        <p>若项目不需要低代码平台，不必引入整套 Jeecg；可只参考其<strong>元数据表设计</strong>与<strong>FreeMarker 模板组织</strong>。标准 CRUD 后台以 RuoYi 式轻量生成器往往更易维护。</p>
+      </section>
+
+      <section class="section" id="safety-governance">
+        <h2>安全与工程治理</h2>
+        <ul>
+          <li><strong>SQL 注入</strong>：元数据查询使用绑定参数；禁止把用户输入的表名直接拼进 SQL（白名单校验表名）。</li>
+          <li><strong>路径穿越</strong>：写盘前规范化路径，确保落在 <code>moduleRoot</code> 之下。</li>
+          <li><strong>密钥</strong>：生成器连接库账号只读即可同步结构；写盘服务用最小权限。</li>
+          <li><strong>代码审查</strong>：生成 PR 必须人工 Review；禁止生成代码直接进 release 分支无 diff。</li>
+          <li><strong>许可证</strong>：若基于 RuoYi/Jeecg 模板修改，保留其版权头或遵守对应开源协议。</li>
+          <li><strong>测试</strong>：对模板做快照测试（golden file），改模板时 CI 自动对比差异。</li>
+        </ul>
+        <p>与<a href="18-test-driven-development.html">第 18 章 TDD</a>结合：生成 Service 后补领域规则单测，不依赖生成器自带的空测试壳。</p>
+      </section>
+
+      <section class="section" id="roadmap">
+        <h2>渐进式落地路线</h2>
+        <ol>
+          <li><strong>第 1 周</strong>：确定包结构与 1 张试点表；用 Velocity 生成 Entity + Mapper + XML，手工补 Service/Controller。</li>
+          <li><strong>第 2–3 周</strong>：引入 gen_table 配置表与管理 API；支持预览与 ZIP 下载。</li>
+          <li><strong>第 4 周</strong>：对接团队前端模板（Vue3 + Element Plus 等）；统一权限码与字典占位。</li>
+          <li><strong>持续</strong>：按业务反馈增加模板变体（树表、只读审计表）；模板版本化（<code>vm/v2/</code>）。</li>
+        </ol>
+        <p>与<a href="13-build-packaging-deploy.html">第 13 章构建部署</a>衔接：新子模块 <code>biz-xxx</code> 可先由生成器初始化，再由 Maven 聚合进父 pom。</p>
+      </section>
+
+      <section class="section" id="checklist">
+        <h2>实战清单</h2>
+        <ul>
+          <li>□ 父工程已新增 <code>platform-generator</code> 模块，且生产包不依赖该模块。</li>
+          <li>□ 输出路径映射到目标 <code>biz-*</code> 子模块，包名符合架构规范。</li>
+          <li>□ JDBC 类型映射表与团队时间/金额类型一致。</li>
+          <li>□ gen_table / gen_column 可保存列级 UI 与查询策略。</li>
+          <li>□ 默认不覆盖已存在文件；生成操作有权限与审计。</li>
+          <li>□ 模板变更具备快照或回归测试。</li>
+          <li>□ 生成后 <code>mvn compile</code> 与基础接口冒烟通过，再提交 PR。</li>
+        </ul>
+      </section>
+
+      <nav class="chapter-nav">
+        <a href="14-ruoyi-framework.html">← 上一章：RuoYi 框架</a>
+        <a href="16-common-modules.html">下一章：常见功能模块 →</a>
+      </nav>
+    </main>
+  </div>
+  <script src="assets/diagram.js" defer></script>
+  <script src="assets/chapter-toc.js" defer></script>
+</body>
+</html>

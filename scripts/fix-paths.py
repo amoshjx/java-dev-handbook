@@ -46,28 +46,28 @@ NAV_BLOCK = {
         '<a href="13-ruoyi-framework.html">← 上一章：RuoYi 框架</a>\n        <a href="14-common-modules.html">下一章：常见功能模块 →</a>',
     ),
     "14-common-modules.html": (
-        '<a href="11-persistence.html">← 上一章：持久化</a>\n        <a href="15-security-development.html">下一章：安全开发 →</a>',
+        '<a href="11-persistence.html">← 上一章：持久化</a>\n        <a href="16-security-development.html">下一章：安全开发 →</a>',
     ),
-    "15-security-development.html": (
-        '<a href="14-common-modules.html">← 上一章：常见功能模块</a>\n        <a href="16-test-driven-development.html">下一章：测试驱动开发 →</a>',
+    "16-security-development.html": (
+        '<a href="14-common-modules.html">← 上一章：常见功能模块</a>\n        <a href="17-test-driven-development.html">下一章：测试驱动开发 →</a>',
     ),
-    "16-test-driven-development.html": (
-        '<a href="15-security-development.html">← 上一章：安全开发</a>\n        <a href="17-testing-quality.html">下一章：测试·质量 →</a>',
+    "17-test-driven-development.html": (
+        '<a href="16-security-development.html">← 上一章：安全开发</a>\n        <a href="18-testing-quality.html">下一章：测试·质量 →</a>',
     ),
-    "17-testing-quality.html": (
-        '<a href="16-test-driven-development.html">← 上一章：测试驱动开发</a>\n        <a href="18-performance-tuning.html">下一章：性能调优 →</a>',
+    "18-testing-quality.html": (
+        '<a href="17-test-driven-development.html">← 上一章：测试驱动开发</a>\n        <a href="19-performance-tuning.html">下一章：性能调优 →</a>',
     ),
-    "18-performance-tuning.html": (
-        '<a href="17-testing-quality.html">← 上一章：测试·质量</a>\n        <a href="19-devops-cloud-native.html">下一章：工程化·DevOps →</a>',
+    "19-performance-tuning.html": (
+        '<a href="18-testing-quality.html">← 上一章：测试·质量</a>\n        <a href="20-devops-cloud-native.html">下一章：工程化·DevOps →</a>',
     ),
-    "19-devops-cloud-native.html": (
-        '<a href="18-performance-tuning.html">← 上一章：性能调优</a>\n        <a href="20-ai-development.html">下一章：AI 辅助开发 →</a>',
+    "20-devops-cloud-native.html": (
+        '<a href="19-performance-tuning.html">← 上一章：性能调优</a>\n        <a href="21-ai-development.html">下一章：AI 辅助开发 →</a>',
     ),
-    "20-ai-development.html": (
-        '<a href="19-devops-cloud-native.html">← 上一章：工程化·DevOps</a>\n        <a href="21-business-intelligence.html">下一章：业务智能化 →</a>',
+    "21-ai-development.html": (
+        '<a href="20-devops-cloud-native.html">← 上一章：工程化·DevOps</a>\n        <a href="22-business-intelligence.html">下一章：业务智能化 →</a>',
     ),
-    "21-business-intelligence.html": (
-        '<a href="20-ai-development.html">← 上一章：AI 辅助开发</a>\n        <a href="glossary.html">下一章：术语字典 →</a>',
+    "22-business-intelligence.html": (
+        '<a href="21-ai-development.html">← 上一章：AI 辅助开发</a>\n        <a href="glossary.html">下一章：术语字典 →</a>',
     ),
 }
 

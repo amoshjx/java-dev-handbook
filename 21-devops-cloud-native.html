@@ -30,14 +30,15 @@
             <li class="sidebar-subitem"><a href="12-spring-framework.html">12 Spring Framework</a></li>
             <li class="sidebar-subitem"><a href="13-build-packaging-deploy.html">13 构建·打包·部署</a></li>
             <li class="sidebar-subitem"><a href="14-ruoyi-framework.html">14 RuoYi 框架</a></li>
-            <li class="sidebar-subitem"><a href="15-common-modules.html">15 常见功能模块</a></li>
-            <li class="sidebar-subitem"><a href="16-security-development.html">16 安全开发</a></li>
-            <li class="sidebar-subitem"><a href="17-test-driven-development.html">17 测试驱动开发</a></li>
-            <li><a href="18-testing-quality.html">18 测试·质量</a></li>
-            <li><a href="19-performance-tuning.html">19 性能调优</a></li>
-            <li><a href="20-devops-cloud-native.html">20 工程化·DevOps·CI/CD</a></li>
-            <li><a href="21-ai-development.html">21 AI 辅助开发</a></li>
-            <li><a href="22-business-intelligence.html">22 业务智能化</a></li>
+            <li class="sidebar-subitem"><a href="15-project-code-generator.html">15 项目代码生成器</a></li>
+            <li class="sidebar-subitem"><a href="16-common-modules.html">16 常见功能模块</a></li>
+            <li class="sidebar-subitem"><a href="17-security-development.html">17 安全开发</a></li>
+            <li class="sidebar-subitem"><a href="18-test-driven-development.html">18 测试驱动开发</a></li>
+            <li><a href="19-testing-quality.html">19 测试·质量</a></li>
+            <li><a href="20-performance-tuning.html">20 性能调优</a></li>
+            <li><a href="21-devops-cloud-native.html">21 工程化·DevOps·CI/CD</a></li>
+            <li><a href="22-ai-development.html">22 AI 辅助开发</a></li>
+            <li><a href="23-business-intelligence.html">23 业务智能化</a></li>
             <li><a href="glossary.html">术语字典</a></li>
           </ul>
         </div>
@@ -47,7 +48,7 @@
     <main class="main">
       <header class="page-header">
         <h1>20 工程化·DevOps·CI/CD</h1>
-        <p>本章回答两件事：<strong>为什么要搞</strong>（避免协作与上线的常见陷阱），以及<strong>怎么落地</strong>（从规范、CI、CD 到监控闭环）。示例项目 <code>fdc-webservice</code>（Java 21 · Spring Boot 3.x · Maven 3.9+）；构建与 K8s 细节见<a href="13-build-packaging-deploy.html">第 13 章</a>，测试与质量见<a href="17-test-driven-development.html">第 17 章</a>、<a href="18-testing-quality.html">第 18 章</a>。</p>
+        <p>本章回答两件事：<strong>为什么要搞</strong>（避免协作与上线的常见陷阱），以及<strong>怎么落地</strong>（从规范、CI、CD 到监控闭环）。示例项目 <code>fdc-webservice</code>（Java 21 · Spring Boot 3.x · Maven 3.9+）；构建与 K8s 细节见<a href="13-build-packaging-deploy.html">第 13 章</a>，测试与质量见<a href="18-test-driven-development.html">第 18 章</a>、<a href="19-testing-quality.html">第 19 章</a>。</p>
       </header>
 
       <section class="section" id="overview">
@@ -71,7 +72,7 @@
 
         <h4>3. 测试滞后地狱</h4>
         <p>代码写完了一直不测，直到上线前夕才交给 QA。测出一堆 Bug，开发只能熬夜修，越修越乱，主干长期处于「不可发布」状态。</p>
-        <p><strong>对策方向：</strong>每次提交触发 <code>mvn test</code>，覆盖率不达标就熔断；测试左移见<a href="17-test-driven-development.html">第 17 章</a>。</p>
+        <p><strong>对策方向：</strong>每次提交触发 <code>mvn test</code>，覆盖率不达标就熔断；测试左移见<a href="18-test-driven-development.html">第 18 章</a>。</p>
 
         <h4>4.「孤岛」地狱</h4>
         <p>开发（Dev）只管写代码，运维（Ops）只管看服务器。上线出了问题互相甩锅：「代码写得烂」「环境配得不对」。缺少共同语言和可观测数据，责任边界模糊。</p>
@@ -159,7 +160,7 @@
             <li><strong>打包</strong>：测试通过后执行 <code>mvn clean package -DskipTests</code>，产出 JAR（或 WAR）。</li>
           </ol>
 
-          <p>可选阶段：SonarQube 静态扫描、依赖漏洞扫描（OWASP Dependency-Check），均应在合并前完成。测试写法与覆盖率门禁见<a href="17-test-driven-development.html">第 17 章</a>、<a href="18-testing-quality.html">第 18 章</a>。</p>
+          <p>可选阶段：SonarQube 静态扫描、依赖漏洞扫描（OWASP Dependency-Check），均应在合并前完成。测试写法与覆盖率门禁见<a href="18-test-driven-development.html">第 18 章</a>、<a href="19-testing-quality.html">第 19 章</a>。</p>
 
           <h4 id="gitlab-java-cicd">GitLab CI 示例（fdc-webservice）</h4>
           <pre><code># .gitlab-ci.yml（CI 阶段核心）
@@ -215,7 +216,7 @@ package:
 
           <h4>Dockerfile 示例</h4>
           <pre><code># 多阶段构建更优；此处为最小示例
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:22-jre-alpine
 WORKDIR /app
 COPY target/fdc-webservice-*.jar app.jar
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]</code></pre>
@@ -265,10 +266,10 @@ deploy-prod:
               <tr><td>链路追踪</td><td>Jaeger、Zipkin、SkyWalking</td><td>微服务间调用耗时与异常定位</td></tr>
             </tbody>
           </table>
-          <p>调优与 SLO 设计见<a href="19-performance-tuning.html">第 19 章</a>；安全扫描与密钥管理见<a href="16-security-development.html">第 16 章</a>。</p>
+          <p>调优与 SLO 设计见<a href="20-performance-tuning.html">第 20 章</a>；安全扫描与密钥管理见<a href="17-security-development.html">第 17 章</a>。</p>
 
           <h4 id="messaging">消息与异步集成（延伸阅读）</h4>
-          <p>业务解耦、Outbox、MQ 选型与通知链路见<a href="03-architecture-design.html#event-driven-architecture">第 03 章事件驱动</a>、<a href="15-common-modules.html">第 15 章消息通知</a>；CI/CD 侧保证镜像与配置版本一致即可。</p>
+          <p>业务解耦、Outbox、MQ 选型与通知链路见<a href="03-architecture-design.html#event-driven-architecture">第 03 章事件驱动</a>、<a href="16-common-modules.html">第 16 章消息通知</a>；CI/CD 侧保证镜像与配置版本一致即可。</p>
 
           <h4 id="nginx">网关与流量（延伸阅读）</h4>
           <p>Ingress / API 网关、蓝绿与金丝雀流量切换见<a href="13-build-packaging-deploy.html#kubernetes">第 13 章 K8s 部署</a>；与 CD 滚动更新配合验证无 502 尖刺（见<a href="12-spring-framework.html">第 12 章</a>优雅停机）。</p>
@@ -335,8 +336,8 @@ deploy-prod:
       </section>
 
       <nav class="chapter-nav">
-        <a href="19-performance-tuning.html">← 上一章：性能调优</a>
-        <a href="21-ai-development.html">下一章：AI 辅助开发 →</a>
+        <a href="20-performance-tuning.html">← 上一章：性能调优</a>
+        <a href="22-ai-development.html">下一章：AI 辅助开发 →</a>
       </nav>
     </main>
   </div>  <script src="assets/diagram.js" defer></script>

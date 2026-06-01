@@ -30,14 +30,15 @@
             <li class="sidebar-subitem"><a href="12-spring-framework.html">12 Spring Framework</a></li>
             <li class="sidebar-subitem"><a href="13-build-packaging-deploy.html">13 构建·打包·部署</a></li>
             <li class="sidebar-subitem"><a href="14-ruoyi-framework.html">14 RuoYi 框架</a></li>
-            <li class="sidebar-subitem"><a href="15-common-modules.html">15 常见功能模块</a></li>
-            <li class="sidebar-subitem"><a href="16-security-development.html">16 安全开发</a></li>
-            <li class="sidebar-subitem"><a href="17-test-driven-development.html">17 测试驱动开发</a></li>
-            <li><a href="18-testing-quality.html">18 测试·质量</a></li>
-            <li><a href="19-performance-tuning.html">19 性能调优</a></li>
-            <li><a href="20-devops-cloud-native.html">20 工程化·DevOps·CI/CD</a></li>
-            <li><a href="21-ai-development.html">21 AI 辅助开发</a></li>
-            <li><a href="22-business-intelligence.html">22 业务智能化</a></li>
+            <li class="sidebar-subitem"><a href="15-project-code-generator.html">15 项目代码生成器</a></li>
+            <li class="sidebar-subitem"><a href="16-common-modules.html">16 常见功能模块</a></li>
+            <li class="sidebar-subitem"><a href="17-security-development.html">17 安全开发</a></li>
+            <li class="sidebar-subitem"><a href="18-test-driven-development.html">18 测试驱动开发</a></li>
+            <li><a href="19-testing-quality.html">19 测试·质量</a></li>
+            <li><a href="20-performance-tuning.html">20 性能调优</a></li>
+            <li><a href="21-devops-cloud-native.html">21 工程化·DevOps·CI/CD</a></li>
+            <li><a href="22-ai-development.html">22 AI 辅助开发</a></li>
+            <li><a href="23-business-intelligence.html">23 业务智能化</a></li>
             <li><a href="glossary.html">术语字典</a></li>
           </ul>
         </div>
@@ -47,7 +48,7 @@
     <main class="main">
       <header class="page-header">
         <h1>17 测试驱动开发</h1>
-        <p>面向 Java 团队的<strong>TDD 开发范式与实战流程</strong>：红-绿-重构循环、测试金字塔下的单元测试驱动、Fake/Mock 选型、BDD 衔接、遗留代码加测、Spring Boot 切片测试、AI 辅助测试先行与团队 CI 实践。JUnit/Mockito/Testcontainers 语法与静态分析见<a href="18-testing-quality.html">第 18 章测试·质量</a>；Harness 约束见<a href="21-ai-development.html#harness-engineering">第 21 章 Harness Engineering</a>。</p>
+        <p>面向 Java 团队的<strong>TDD 开发范式与实战流程</strong>：红-绿-重构循环、测试金字塔下的单元测试驱动、Fake/Mock 选型、BDD 衔接、遗留代码加测、Spring Boot 切片测试、AI 辅助测试先行与团队 CI 实践。JUnit/Mockito/Testcontainers 语法与静态分析见<a href="19-testing-quality.html">第 19 章测试·质量</a>；Harness 约束见<a href="22-ai-development.html#harness-engineering">第 22 章 Harness Engineering</a>。</p>
       </header>
 
       <section class="section" id="tdd-red-green-refactor">
@@ -116,7 +117,7 @@ public BigDecimal discount(BigDecimal subtotal) {
           <div class="card-block block-explain">
             <h4>讲解</h4>
             <p><strong>TDD 价值</strong>：① 可执行规格——测试即文档；② 小步反馈——秒级发现回归；③ 驱动可测试设计——依赖注入、纯函数、小类；④ 重构信心——安全网允许持续改进结构。</p>
-            <p><strong>高回报场景</strong>：领域规则（定价、风控、状态机）、纯逻辑 Service、API 契约、Bug 修复（先写复现测试再修）。<strong>低回报或需变通</strong>：探索性原型（需求未稳定，测试会频繁调整）、复杂 UI/动画（测行为成本高，可采用 E2E 或手工探索 + 下层 TDD）、无 seam 的遗留大泥球（先特征测试再局部 TDD，见<a href="#legacy-code-tdd">遗留代码卡片</a>）、强集成依赖且 Mock 失真（用 Testcontainers 或契约测试，见<a href="18-testing-quality.html#testcontainers">第 18 章 Testcontainers</a>）。</p>
+            <p><strong>高回报场景</strong>：领域规则（定价、风控、状态机）、纯逻辑 Service、API 契约、Bug 修复（先写复现测试再修）。<strong>低回报或需变通</strong>：探索性原型（需求未稳定，测试会频繁调整）、复杂 UI/动画（测行为成本高，可采用 E2E 或手工探索 + 下层 TDD）、无 seam 的遗留大泥球（先特征测试再局部 TDD，见<a href="#legacy-code-tdd">遗留代码卡片</a>）、强集成依赖且 Mock 失真（用 Testcontainers 或契约测试，见<a href="19-testing-quality.html#testcontainers">第 19 章 Testcontainers</a>）。</p>
           </div>
           <div class="card-block block-tips">
             <h4>关键/技巧</h4>
@@ -215,7 +216,7 @@ void shouldDebitAndPersist() {
           <h3>@Test、AssertJ 与参数化：TDD 日常工具链</h3>
           <div class="card-block block-explain">
             <h4>讲解</h4>
-            <p>TDD 工作流依赖<strong>快速、表达力强的断言</strong>。JUnit 5 <code>@Test</code> + AssertJ 流式 API 让失败信息可读；<code>@ParameterizedTest</code> 在绿之后扩展边界用例；<code>@Nested</code> 按规则分组。完整 API 与 Mockito 扩展见<a href="18-testing-quality.html#junit5">第 18 章 JUnit 5</a>，本章聚焦 TDD 节奏下的用法。</p>
+            <p>TDD 工作流依赖<strong>快速、表达力强的断言</strong>。JUnit 5 <code>@Test</code> + AssertJ 流式 API 让失败信息可读；<code>@ParameterizedTest</code> 在绿之后扩展边界用例；<code>@Nested</code> 按规则分组。完整 API 与 Mockito 扩展见<a href="19-testing-quality.html#junit5">第 19 章 JUnit 5</a>，本章聚焦 TDD 节奏下的用法。</p>
           </div>
           <div class="card-block block-example">
             <h4>示例：TDD 迭代中的测试演进</h4>
@@ -266,7 +267,7 @@ class PasswordValidatorTest {
           <h3>何时 Mock、何时真实对象 / Testcontainers</h3>
           <div class="card-block block-explain">
             <h4>讲解</h4>
-            <p>Mockito 语法与 @Mock/@InjectMocks 见<a href="18-testing-quality.html#mockito">第 18 章 Mockito</a>。TDD 视角的边界：</p>
+            <p>Mockito 语法与 @Mock/@InjectMocks 见<a href="19-testing-quality.html#mockito">第 19 章 Mockito</a>。TDD 视角的边界：</p>
             <ul>
               <li><strong>适合 Mock</strong>：外部支付网关、邮件 SDK、跨团队 HTTP Client——慢、不可控、需验证「是否调用一次」。</li>
               <li><strong>不适合 Mock</strong>：同模块 POJO、值对象、算法类——直接 new；Repository 优先 Fake 或 @DataJpaTest。</li>
@@ -324,7 +325,7 @@ class NotifyOrderHandlerTest {
     TDD --> REF[小步重构]</pre>
               <p class="diagram-caption">图：遗留代码 TDD 切入路径</p>
             </div>
-            <p>与<a href="18-testing-quality.html#code-review">第 18 章 Code Review</a>联动：Review 发现重复或过长方法时，要求「先绿 → 重构 PR → 仍绿」。Approval Test、Snapshot 适合复杂 JSON/HTML 输出基线。</p>
+            <p>与<a href="19-testing-quality.html#code-review">第 19 章 Code Review</a>联动：Review 发现重复或过长方法时，要求「先绿 → 重构 PR → 仍绿」。Approval Test、Snapshot 适合复杂 JSON/HTML 输出基线。</p>
           </div>
           <div class="card-block block-example">
             <h4>示例：特征测试锁定 legacy 行为</h4>
@@ -491,7 +492,7 @@ class OrderControllerTest {
           <div class="card-block block-explain">
             <h4>讲解</h4>
             <p>AI 辅助 TDD 的有效姿势：<strong>人写/审行为规格</strong> → AI 生成<strong>失败测试骨架</strong> → 人确认断言语义 → AI 或人写最小实现 → CI 跑全绿 → 人做重构 Review。反模式：AI 直接生成功能代码再补测——会削弱测试先行带来的设计驱动。</p>
-            <p>Harness 约束（详见<a href="21-ai-development.html#harness-engineering">第 21 章 Harness Engineering</a>）：Cursor Rules 要求「改生产代码前必须有失败测试」；CI 跑 <code>mvn test</code> + SpotBugs；Eval 集用于回归核心 Scenario。Prompt 示例：「为 PricingService 写 JUnit5+AssertJ 测试，先只写 shouldApplyDiscountWhen...，不要写实现类。」</p>
+            <p>Harness 约束（详见<a href="22-ai-development.html#harness-engineering">第 22 章 Harness Engineering</a>）：Cursor Rules 要求「改生产代码前必须有失败测试」；CI 跑 <code>mvn test</code> + SpotBugs；Eval 集用于回归核心 Scenario。Prompt 示例：「为 PricingService 写 JUnit5+AssertJ 测试，先只写 shouldApplyDiscountWhen...，不要写实现类。」</p>
           </div>
           <div class="card-block block-example">
             <h4>示例：AI TDD Prompt 模板</h4>
@@ -524,7 +525,7 @@ class OrderControllerTest {
           <h3>结对 TDD、门禁策略与可测性文化</h3>
           <div class="card-block block-explain">
             <h4>讲解</h4>
-            <p><strong>结对 TDD</strong>：Navigator 写测试/spec，Driver 写实现；或定时交换——传播节奏与断言风格。<strong>CI 门禁</strong>：PR 必跑 unit + 关键 integration；main 分支保护；测试失败禁止合并。与<a href="20-devops-cloud-native.html">第 20 章 CI</a>联动。</p>
+            <p><strong>结对 TDD</strong>：Navigator 写测试/spec，Driver 写实现；或定时交换——传播节奏与断言风格。<strong>CI 门禁</strong>：PR 必跑 unit + 关键 integration；main 分支保护；测试失败禁止合并。与<a href="21-devops-cloud-native.html">第 21 章 CI</a>联动。</p>
             <p><strong>覆盖率误用</strong>：80% 行覆盖 ≠ 行为正确；assert 空测试也能刷 coverage。更好指标：突变测试（PIT）、关键路径 Scenario 全绿、生产缺陷率。团队规范：新 Bug 必须带复现测试；Sonar「新代码覆盖」作参考非 KPI。</p>
           </div>
           <div class="card-block block-example">
@@ -605,8 +606,8 @@ jobs:
       </section>
 
       <nav class="chapter-nav">
-        <a href="16-security-development.html">← 上一章：安全开发</a>
-        <a href="18-testing-quality.html">下一章：测试·质量 →</a>
+        <a href="17-security-development.html">← 上一章：安全开发</a>
+        <a href="19-testing-quality.html">下一章：测试·质量 →</a>
       </nav>
     </main>
   </div>  <script src="assets/diagram.js" defer></script>
