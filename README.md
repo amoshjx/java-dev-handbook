@@ -1,6 +1,6 @@
 ﻿# Java项目手册（更新版）
 
-面向**高级 Java 开发者**的离线 HTML 多页速查站点：23 章，按软件工程生命周期编排。
+面向**高级 Java 开发者**的离线 HTML 多页速查站点：24 章，按软件工程生命周期编排。
 
 ## 章节结构
 
@@ -8,11 +8,11 @@
 - `01-requirements-analysis.html` ~ `04-project-scheduling.html`：需求·原型·架构·项目排期（一级章）
 - `java-development.html`：**开发实现** landing 页（一级分组入口；采用 Java 语言实现，默认 Java 21 LTS / Spring Framework 6.x / Spring Boot 3.x）
 - `05-dev-environment.html` ~ `18-test-driven-development.html`：开发实现子章（二级，编号 05–18；含 `11-persistence.html`、`14-ruoyi-framework.html`、`15-project-code-generator.html`；`06-java-basics.html` 含集合/泛型/Stream 内容）
-- `19-testing-quality.html` ~ `23-business-intelligence.html`：测试·性能·交付·AI（一级章）
+- `19-testing-quality.html` ~ `24-palantir-aip.html`：测试·性能·交付·AI（一级章）
 - `glossary.html`：术语字典（统一口径）
 - `assets/`：样式与前端脚本
 
-侧边栏为 **2 级目录**：`01`–`04` 与 `19`–`23` 为一级项；`05`–`18` 归入 **开发实现** 分组（缩进子项）。章节 prev/next 线性导航仍为 03 → 04 → … → 18 → 19。
+侧边栏为 **2 级目录**：`01`–`04` 与 `19`–`24` 为一级项；`05`–`18` 归入 **开发实现** 分组（缩进子项）。章节 prev/next 线性导航仍为 03 → 04 → … → 18 → 19 → … → 24。
 
 ## 统一技术基线
 

@@ -39,6 +39,7 @@
             <li><a href="21-devops-cloud-native.html">21 工程化·DevOps·CI/CD</a></li>
             <li><a href="22-ai-development.html">22 AI 辅助开发</a></li>
             <li><a href="23-business-intelligence.html">23 业务智能化</a></li>
+            <li><a href="24-palantir-aip.html">24 Palantir AIP 架构</a></li>
             <li><a href="glossary.html">术语字典</a></li>
           </ul>
         </div>
@@ -218,6 +219,26 @@
           </div>
         </article>
 
+        <article class="knowledge-card" id="graph-database">
+          <h3>图数据库（Graph Database）</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>以点、边、属性建模关系网络，擅长多跳遍历与路径分析；通常作 OLTP 的读模型，由 CDC 同步。与向量库、Ontology 组合用于 GraphRAG/风控。见<a href="03-architecture-design.html#graph-database-selection">第 03 章图数据库选型</a>、<a href="24-palantir-aip.html#aip-ontology-rag">第 24 章 GraphRAG</a>。</p>
+          </div>
+        </article>
+
+        <article class="knowledge-card" id="aip-ontology">
+          <h3>AIP / Ontology / Guardrails</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <ul>
+              <li><strong>AIP</strong>（Artificial Intelligence Platform）：企业级 AI 微操作系统，四层隔离（网关、本体、护栏、回写），非单纯聊天框。见<a href="24-palantir-aip.html#aip-four-layers">第 24 章</a>。</li>
+              <li><strong>Ontology</strong>：将异构数据映射为统一业务对象与关系图，供 LLM 检索与推理，禁止裸库直连。</li>
+              <li><strong>Guardrails</strong>：Prompt 前置与 Tool 后置审计链，防越权与 Prompt Injection。</li>
+            </ul>
+          </div>
+        </article>
+
         <article class="knowledge-card" id="i18n-l10n">
           <h3>i18n / l10n</h3>
           <div class="card-block block-explain">
@@ -228,7 +249,7 @@
       </section>
 
       <nav class="chapter-nav">
-        <a href="index.html">← 返回目录</a>
+        <a href="24-palantir-aip.html">← 上一章：Palantir AIP 架构</a>
         <a href="01-requirements-analysis.html">下一章：需求分析 →</a>
       </nav>
     </main>

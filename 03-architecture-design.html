@@ -39,6 +39,7 @@
             <li><a href="21-devops-cloud-native.html">21 工程化·DevOps·CI/CD</a></li>
             <li><a href="22-ai-development.html">22 AI 辅助开发</a></li>
             <li><a href="23-business-intelligence.html">23 业务智能化</a></li>
+            <li><a href="24-palantir-aip.html">24 Palantir AIP 架构</a></li>
             <li><a href="glossary.html">术语字典</a></li>
           </ul>
         </div>
@@ -66,7 +67,7 @@
               <li><strong>模块 B（模式与风格）</strong>：<a href="#architecture-patterns">架构模式选型</a>、<a href="#event-driven-architecture">事件驱动架构</a>、<a href="#microservice-architecture">微服务架构</a></li>
               <li><strong>模块 C（关键决策方法）</strong>：<a href="#decision-methods">决策框架与评估方法</a>、<a href="#api-design">API 与集成设计</a></li>
               <li><strong>模块 D（质量属性权衡）</strong>：<a href="#quality-attribute-tradeoffs">性能·一致性·安全·成本权衡</a>、<a href="#finops-cloud-cost">FinOps 与云成本估算</a></li>
-              <li><strong>模块 E（数据与落地）</strong>：<a href="#data-architecture">数据架构与存储选型</a>、<a href="#table-schema-design">表结构设计</a>、<a href="#architecture-decision">ADR 与架构评审</a>、<a href="#requirements-to-architecture">需求→架构追溯</a>、<a href="#chapter-execution-checklist">章末实战闭环</a></li>
+              <li><strong>模块 E（数据与落地）</strong>：<a href="#data-architecture">数据架构与存储选型</a>、<a href="#graph-database-selection">图数据库选型</a>、<a href="#table-schema-design">表结构设计</a>、<a href="#architecture-decision">ADR 与架构评审</a>、<a href="#requirements-to-architecture">需求→架构追溯</a>、<a href="#chapter-execution-checklist">章末实战闭环</a></li>
             </ul>
           </div>
           <div class="card-block block-tips">
@@ -1409,12 +1410,14 @@ http.server.errors{route, code="order.stock.insufficient"}
     ODS --> DWD[("明细主题层 DWD")]
     DWD --> ADS[("应用服务层 ADS")]
     ODS --> SEARCH[("检索引擎 Elasticsearch")]
+    ODS --> GRAPH[("图数据库 Graph DB")]
     ODS --> MQ[("事件流 Kafka/Pulsar")]
+    MQ --> GRAPH
     ADS --> BI["分析报表 BI/ML"]
     APP --> OBJ[("对象存储 Object Storage")]</pre>
               <p class="diagram-caption">图：OLTP/OLAP 分层与多存储协同（示意）</p>
             </div>
-            <p>数据架构回答三件事：<strong>数据如何正确（Correctness）</strong>、<strong>如何扩展（Scalability）</strong>、<strong>如何控本与治理（Cost &amp; Governance）</strong>。设计应先定义数据所有权（Data Ownership）、一致性边界（Consistency Boundary）与保留策略（Retention Policy），再决定存储组合，而不是先选技术栈。</p>
+            <p>数据架构回答三件事：<strong>数据如何正确（Correctness）</strong>、<strong>如何扩展（Scalability）</strong>、<strong>如何控本与治理（Cost &amp; Governance）</strong>。设计应先定义数据所有权（Data Ownership）、一致性边界（Consistency Boundary）与保留策略（Retention Policy），再决定存储组合，而不是先选技术栈。涉及<strong>多跳关系、风控/供应链/知识图谱</strong>时，见同节 <a href="#graph-database-selection">图数据库选型与落地</a>（与 OLTP、ES、向量库分工）。</p>
           </div>
           <div class="card-block block-deliverable">
             <h4>目标与原则（Goals &amp; Principles）</h4>
@@ -1444,7 +1447,8 @@ http.server.errors{route, code="order.stock.insufficient"}
 | Kafka / Pulsar | 事件总线、异步解耦、CDC 扩散 | 高吞吐、可回放、削峰填谷 | 运维复杂、消息语义需治理 | 跨系统事件驱动与重放需求 |
 | 对象存储 Object Storage | 附件、归档、数据湖 | 低成本、高耐久、海量扩展 | 低延迟随机读写能力弱 | 冷数据、文件型与归档场景 |
 | 时序库 Time-series DB | 指标监控、设备遥测 | 时间窗口聚合高效、压缩比高 | 高基数标签易爆炸 | 以时间维度聚合为主 |
-| ClickHouse / StarRocks | 实时分析、看板查询 | 列式压缩、聚合快 | 更新语义受限、建模要求高 | 秒级分析与多维聚合 |</code></pre>
+| ClickHouse / StarRocks | 实时分析、看板查询 | 列式压缩、聚合快 | 更新语义受限、建模要求高 | 秒级分析与多维聚合 |
+| 图数据库 Graph DB      | 关系网络、风控图谱、知识图谱、多跳推理 | 邻接遍历高效、关系一等公民 | 非 OLTP 事实源、双写治理难、运维技能栈独立 | 查询以 k 跳/路径/子图为主且关系比表 JOIN 更自然 |</code></pre>
           </div>
           <div class="card-block block-tips">
             <h4>一致性与事务策略（Consistency &amp; Transaction）</h4>
@@ -1508,6 +1512,8 @@ LIMIT 100;</code></pre>
 3) 没有数据分级就“全量上云仓”
 4) 分库分表后缺失全局 ID/时钟治理
 5) 只做备份不做恢复演练
+6) 用图数据库承担核心账务事实源或强一致写路径
+7) OLTP 与图库双写无对账、无 CDC 版本戳
 
 落地 Checklist
 □ 已定义数据所有权、主键策略、时间与时区规范
@@ -1516,10 +1522,111 @@ LIMIT 100;</code></pre>
 □ 已建立索引基线与慢查询治理阈值
 □ 已配置脱敏、加密、审计与留存策略
 □ 已明确 RPO/RTO 并完成演练记录
-□ 已建立容量预测模型（峰值、增长、冗余）</code></pre>
+□ 已建立容量预测模型（峰值、增长、冗余）
+□ 若引入图库：已明确事实源、CDC/对账、最大跳数与查询超时</code></pre>
           </div>
           <div class="card-block block-reading">
-            <p>延伸阅读：<em>Designing Data-Intensive Applications</em>（DDIA）、<em>Fundamentals of Data Engineering</em>、<a href="https://microservices.io/patterns/data/transactional-outbox.html">Transactional Outbox Pattern</a>、<a href="https://www.postgresql.org/docs/current/indexes-intro.html">PostgreSQL Indexes</a>、<a href="https://kafka.apache.org/documentation/">Apache Kafka Documentation</a>。</p>
+            <p>延伸阅读：<em>Designing Data-Intensive Applications</em>（DDIA）、<em>Fundamentals of Data Engineering</em>、<a href="https://microservices.io/patterns/data/transactional-outbox.html">Transactional Outbox Pattern</a>、<a href="https://www.postgresql.org/docs/current/indexes-intro.html">PostgreSQL Indexes</a>、<a href="https://kafka.apache.org/documentation/">Apache Kafka Documentation</a>、<a href="https://neo4j.com/docs/">Neo4j Documentation</a>、<a href="https://docs.nebula-graph.io/">NebulaGraph Docs</a>；图数据库见 <a href="#graph-database-selection">图数据库选型</a>。</p>
+          </div>
+        </article>
+
+        <article class="knowledge-card" id="graph-database-selection">
+          <h3>图数据库（Graph Database）选型与落地</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>属性图（Property Graph）</strong>以<strong>点（Vertex）</strong>、<strong>边（Edge）</strong>、<strong>属性（Property）</strong>建模：适合「谁与谁关联、资金怎么走、设备依赖链、供应链上下游」等<strong>多跳关系查询</strong>。图库通常作为 OLTP 的<strong>读模型（CQRS）</strong>或分析/智能层存储，<strong>不作为核心交易事实源（Source of Truth）</strong>——订单金额、库存扣减仍以 MySQL/PostgreSQL 为准，图库由 CDC/批同步派生。</p>
+            <p>与「关系库 + 递归 CTE」的边界：跳数少（≤2）、关系模式固定、数据量百万级内，PostgreSQL 边表 + 递归 CTE 往往够用（企业 Ontology 常见做法，见<a href="24-palantir-aip.html#aip-ontology-schema">第 24 章 Ontology</a>）；当需要<strong>深度遍历、路径算法、实时图分析</strong>或亿级边规模时，再引入专用图数据库。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart LR
+    OLTP[("OLTP 事实源")] --> CDC["CDC / 批同步"]
+    CDC --> GRAPH[("图数据库")]
+    APP["应用 / Agent"] -->|"多跳查询"| GRAPH
+    APP -->|"强一致读写"| OLTP
+    GRAPH --> VEC[("向量库 可选")]
+    VEC --> RAG["GraphRAG / 风控"]</pre>
+              <p class="diagram-caption">图：OLTP 为事实源，图库为关系读模型（可与向量库组合）</p>
+            </div>
+          </div>
+          <div class="card-block block-example">
+            <h4>何时用图库 vs 关系库模拟图</h4>
+            <pre><code>| 信号 | 优先关系库 + 边表/CTE | 优先专用图数据库 |
+|------|------------------------|------------------|
+| 典型查询 | 1~2 跳邻居、固定 JOIN | 3~N 跳、最短路径、PageRank、社区发现 |
+| 数据规模 | 边量级 &lt; 千万、QPS 中等 | 亿级边、高并发图遍历 |
+| 团队能力 | 已深度使用 PostgreSQL | 有图建模/运维经验或托管图服务 |
+| 一致性 | 同事务写实体+边 | 接受 CDC 最终一致 + 对账 |
+| 合规 | 密级与 OLTP 同库易统一 | 需独立图集群 + 边级 ACL 策略 |</code></pre>
+          </div>
+          <div class="card-block block-example">
+            <h4>主流技术对比（架构选型口径）</h4>
+            <pre><code>| 技术 | 模型 | 典型场景 | Java 生态 | 备注 |
+|------|------|----------|-----------|------|
+| Neo4j | 属性图 | 风控图谱、知识图谱、推荐 | neo4j-java-driver、Spring Data Neo4j | 成熟 Cypher；企业版集群与因果集群 |
+| NebulaGraph | 属性图 | 超大图、分布式遍历 | nebula-java | 存储计算分离，适合海量边 |
+| JanusGraph + Cassandra/ES | 属性图 | 需后端存储可插拔 | Gremlin Java | 运维复杂，历史项目常见 |
+| AWS Neptune | 属性图/RDF | 云原生、托管运维 | Gremlin / openCypher | 按云厂商锁定评估 |
+| PostgreSQL 边表 + CTE | 逻辑图 | Ontology、轻量关联、AIP 原型 | JDBC/MyBatis | 无额外组件；深度遍历需控跳数 |
+| RDF 三元组库 | RDF | 语义网、本体推理 | Jena、RDF4J | 与属性图建模思维不同，慎用混用 |</code></pre>
+          </div>
+          <div class="card-block block-explain">
+            <h4>建模与查询（Property Graph）</h4>
+            <ul>
+              <li><strong>建模</strong>：业务名词 → Label（如 <code>Order</code>、<code>Account</code>）；动词/关联 → Relationship Type（如 <code>PAID_BY</code>、<code>OWNS</code>）；唯一业务键存入属性，并与 OLTP 主键映射（<code>source_system</code> + <code>source_pk</code>）。</li>
+              <li><strong>查询</strong>：Cypher / openCypher / Gremlin 表达多跳；生产须限制跳数、超时与结果集上限，避免全图扫描。</li>
+              <li><strong>索引</strong>：对高频过滤属性建索引（租户 ID、证件号哈希、风险标签）；超级节点（Super Node）需拆分或汇总边。</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>Cypher 多跳查询示例（风控：账户关联环）</h4>
+            <pre><code>// 查找某账户 3 跳内的其他账户（示意，须加 LIMIT 与超时）
+MATCH (a:Account {accountId: $id})-[:TRANSFER*1..3]-(b:Account)
+WHERE a.tenantId = $tenantId AND b.tenantId = $tenantId
+  AND b.riskFlag = true
+RETURN DISTINCT b.accountId, b.riskFlag
+LIMIT 200;</code></pre>
+          </div>
+          <div class="card-block block-example">
+            <h4>与 OLTP 同步（推荐 CDC，避免应用双写）</h4>
+            <pre><code>// 模式：Debezium 监听 orders / relations 变更 → Kafka → 图同步消费者
+// 消费者幂等：以 (source_system, source_pk) 为图节点业务键 upsert
+// 失败：进 DLQ + 对账任务比对 OLTP 与图库边数量/校验和
+
+void upsertOrderNode(OrderEvent e) {
+  graphClient.run(
+    "MERGE (o:Order {orderId: $id}) SET o.status = $status, o.updatedAt = $ts",
+    Map.of("id", e.getOrderId(), "status", e.getStatus(), "ts", e.getUpdatedAt()));
+}</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>与 AI / 本体（Ontology）组合</h4>
+            <ul>
+              <li><strong>GraphRAG</strong>：向量检索命中实体 → 在图库或 Ontology 子图上扩展邻居 → 组装 LLM Context（<a href="24-palantir-aip.html#aip-ontology-rag">第 24 章 GraphRAG</a>）。</li>
+              <li><strong>权限</strong>：边/点带 <code>classification</code> 或 <code>tenantId</code>，查询谓词强制过滤；勿在 Prompt 里拼用户无权看见的节点 ID。</li>
+              <li><strong>向量 + 图</strong>：向量库管「相似」，图库管「关联」；二者通过统一 <code>instance_id</code> / 业务主键关联。</li>
+            </ul>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>图库 ADR 应记录的取舍</h4>
+            <ul>
+              <li>事实源是否仍为 OLTP？同步延迟 SLA（秒级/分钟级）？</li>
+              <li>最大遍历深度、QPS、P95 延迟预算与结果集上限。</li>
+              <li>超级节点治理、租户隔离、备份恢复（RPO/RTO）。</li>
+              <li>与 Elasticsearch（全文）、向量库（语义）的分工边界。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>图库与 OLTP 应用层<strong>双写</strong>且无对账——关系边丢失或重复难以发现。</li>
+              <li>把图库当交易库做转账扣款——缺少 ACID 与成熟事务语义。</li>
+              <li>无跳数/超时限制，一次查询拖垮集群。</li>
+              <li>超级节点（如「全国仓」）百万边挂在单点，遍历爆炸。</li>
+              <li>属性图与 RDF 混在同一项目两套语义，团队查询语言分裂。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「交易在 OLTP，关系在图库；CDC 同步，多跳查询；浅层用 CTE，深层用 Graph。」</p>
           </div>
         </article>
       </section>

@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>24 Palantir AIP 企业智能化架构 — Java项目手册</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/sidebar.js" defer></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">Java项目手册</div>
+      <nav>
+        <div class="nav-group">
+          <ul class="nav-list">
+            <li><a href="index.html">目录首页</a></li>
+            <li><a href="01-requirements-analysis.html">01 需求分析</a></li>
+            <li><a href="02-prototype-design.html">02 原型设计</a></li>
+            <li><a href="03-architecture-design.html">03 架构设计</a></li>
+            <li><a href="04-project-scheduling.html">04 项目排期</a></li>
+            <li class="sidebar-group"><span class="sidebar-group-label"><a href="java-development.html">开发实现</a></span></li>
+            <li class="sidebar-subitem"><a href="05-dev-environment.html">05 开发环境搭建</a></li>
+            <li class="sidebar-subitem"><a href="06-java-basics.html">06 Java基础语法</a></li>
+            <li class="sidebar-subitem"><a href="07-oop.html">07 面向对象</a></li>
+            <li class="sidebar-subitem"><a href="08-jvm.html">08 JVM</a></li>
+            <li class="sidebar-subitem"><a href="09-concurrency.html">09 并发编程</a></li>
+            <li class="sidebar-subitem"><a href="10-io-nio-network.html">10 IO·NIO·网络</a></li>
+            <li class="sidebar-subitem"><a href="11-persistence.html">11 持久化</a></li>
+            <li class="sidebar-subitem"><a href="12-spring-framework.html">12 Spring Framework</a></li>
+            <li class="sidebar-subitem"><a href="13-build-packaging-deploy.html">13 构建·打包·部署</a></li>
+            <li class="sidebar-subitem"><a href="14-ruoyi-framework.html">14 RuoYi 框架</a></li>
+            <li class="sidebar-subitem"><a href="15-project-code-generator.html">15 项目代码生成器</a></li>
+            <li class="sidebar-subitem"><a href="16-common-modules.html">16 常见功能模块</a></li>
+            <li class="sidebar-subitem"><a href="17-security-development.html">17 安全开发</a></li>
+            <li class="sidebar-subitem"><a href="18-test-driven-development.html">18 测试驱动开发</a></li>
+            <li><a href="19-testing-quality.html">19 测试·质量</a></li>
+            <li><a href="20-performance-tuning.html">20 性能调优</a></li>
+            <li><a href="21-devops-cloud-native.html">21 工程化·DevOps·CI/CD</a></li>
+            <li><a href="22-ai-development.html">22 AI 辅助开发</a></li>
+            <li><a href="23-business-intelligence.html">23 业务智能化</a></li>
+            <li><a href="24-palantir-aip.html">24 Palantir AIP 架构</a></li>
+            <li><a href="glossary.html">术语字典</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="page-header">
+        <h1>24 Palantir AIP 级企业智能化架构设计与开发实现</h1>
+        <p>在企业级 AI 落地中，「LLM 对话框」正被<strong>企业级 AI 微操作系统</strong>取代——类似 Palantir AIP：本体描述业务世界、护栏约束模型、Action 将决策<strong>幂等、可审计</strong>写回老系统。本章覆盖四层架构、Ontology/GraphRAG、护栏链与回写总线（Java 21 / Spring Boot 3.x）。与<a href="23-business-intelligence.html">第 23 章</a>（场景/Eval）、<a href="22-ai-development.html">第 22 章</a>（开发侧 AI）、<a href="17-security-development.html">第 17 章</a>、<a href="11-persistence.html">第 11 章</a>衔接。建议先读<a href="#aip-module-map">模块导览</a>。</p>
+        <div class="diagram-block">
+          <pre class="mermaid">flowchart TB
+    GW[统一网关与安全透传] --> ONT[数据本体 Ontology]
+    ONT --> GR[AIP Guardrails 护栏]
+    GR --> AG[Agent 编排与回写总线]
+    AG --> LEG[ERP / CRM / MES 老系统]
+    ONT --> VDB[(向量库 RAG)]
+    GR --> LLM[大模型推理]
+    LLM --> GR</pre>
+          <p class="diagram-caption">图：AIP 四层隔离架构总览</p>
+        </div>
+      </header>
+
+      <section class="section" id="aip-module-map">
+        <h2>本章模块导览</h2>
+        <article class="knowledge-card">
+          <h3>从场景识别到生产级 AIP 的阅读路径</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>建议按「先边界、再数据、再安全、最后行动回写」顺序阅读。每节产出物可直接写入 ADR、接口规格或 Sprint Backlog。默认技术栈：<strong>Java 21</strong>、<strong>Spring Boot 3.x</strong>、<strong>Spring AI / LangChain4j</strong>、PostgreSQL + Pgvector、Kafka、OAuth2 Resource Server。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart LR
+    M0[定位与对比] --> M1[四层与微服务]
+    M1 --> M2[Ontology + GraphRAG]
+    M2 --> M3[Guardrails 链]
+    M3 --> M4[Action 回写]</pre>
+              <p class="diagram-caption">图：本章模块依赖顺序</p>
+            </div>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>模块划分</h4>
+            <ul>
+              <li><strong>模块 A（定位）</strong>：<a href="#aip-preface">课程前言</a>、<a href="#aip-vs-chatbot">与 Chatbot/RAG 对比</a></li>
+              <li><strong>模块 B（架构）</strong>：<a href="#aip-four-layers">四层职责</a>、<a href="#aip-microservices">微服务边界</a>、<a href="#aip-gateway-context">上下文透传</a></li>
+              <li><strong>模块 C（本体）</strong>：<a href="#aip-ontology-schema">库表</a>、<a href="#aip-ontology-sync">同步 ingest</a>、<a href="#aip-ontology-graph-query">图遍历</a>、<a href="#aip-ontology-rag">GraphRAG</a></li>
+              <li><strong>模块 D（护栏）</strong>：<a href="#aip-guardrails-pipeline">管道</a>、<a href="#aip-guardrails-audit">意图审计</a>、<a href="#aip-audit-trail">审计留痕</a></li>
+              <li><strong>模块 E（行动）</strong>：<a href="#aip-action-contract">Tool 契约</a>、<a href="#aip-legacy-adapter">老系统 Adapter</a>、<a href="#aip-action-workflow">审批回写</a>、<a href="#aip-saga">Saga 补偿</a>、<a href="#aip-conclusion">结语</a></li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="aip-preface">
+        <h2>课程前言</h2>
+        <article class="knowledge-card" id="aip-vs-chatbot">
+          <h3>从对话框到企业 AI 操作系统</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>核心矛盾：如何让「有幻觉、不可控」的 LLM，在「严谨、古板」的企业系统里<strong>安全打工</strong>？AIP 的答案不是无限调 Prompt，而是<strong>架构约束确定性</strong>：模型只能看见 Ontology 导出的上下文、只能调用白名单 Tool、写回必须经护栏与（可选）人工审批。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>三种形态对比</h4>
+            <pre><code>| 维度           | Chatbot 套壳     | 独立 RAG 平台    | AIP 级系统              |
+|----------------|------------------|------------------|-------------------------|
+| 数据视图       | 文档片段         | 向量 Chunk       | 业务对象 + 关系图       |
+| 权限           | 粗粒度 API Key   | 检索 metadata    | 细胞级密级 + 数据边界   |
+| 写回能力       | 无或人工复制     | 少见             | 强类型 Tool + 幂等总线  |
+| 审计           | 对话日志         | ingest 版本      | Prompt/Tool/Action 全链 |
+| 适用           | 内部 FAQ         | 制度/手册问答    | 跨系统决策与闭环操作    |</code></pre>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>成熟度阶梯（自评用）</h4>
+            <ul>
+              <li><strong>L1</strong>：单应用 + 直连 LLM API，无统一鉴权。</li>
+              <li><strong>L2</strong>：独立 RAG，检索带 tenant 过滤（见<a href="23-business-intelligence.html#rag-architecture">第 23 章 RAG</a>）。</li>
+              <li><strong>L3</strong>：Ontology + Guardrails，只读问答，无写回。</li>
+              <li><strong>L4</strong>：Tool + 异步审批回写 + 全链路审计（本章目标）。</li>
+              <li><strong>L5</strong>：多 Agent Saga、跨域补偿、生产 Eval 门禁与模型路由。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「Chatbot 会说话，RAG 会查资料，AIP 会办事且办得可追溯。」</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="aip-architecture">
+        <h2>第一部分：AIP 系统总体架构设计</h2>
+        <article class="knowledge-card" id="aip-four-layers">
+          <h3>1.1 四层架构职责划分</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>AIP 采用<strong>四层隔离架构</strong>，每层职责单一、可独立演进与审计：</p>
+            <ol>
+              <li><strong>统一网关与安全透传层（AIP Gateway &amp; Auth）</strong>：拦截所有用户请求，OAuth2 / OIDC 认证；核心职责是<strong>透传 SecurityContext</strong>（角色、部门、密级标签如 L5_SECRET）至下游微服务。</li>
+              <li><strong>数据本体与语义上下文层（Ontology Engine）</strong>：拒绝 LLM 直连原始库表；将关系表、NoSQL、文档转为统一业务对象（Objects）与关系（Relations），结合 Pgvector / Milvus 做动态 RAG，为 LLM 绘制企业「数字孪生」地图。</li>
+              <li><strong>安全合规护栏层（AIP Guardrails &amp; Policy）</strong>：Prompt 前置审计（越权提问、敏感词）；LLM 响应后、Action 执行前后置审计（意图越权、参数异常）。</li>
+              <li><strong>智能体编排与行动回写层（Agent &amp; Write-back Bus）</strong>：Tool Calling 分发；经 Kafka 等事件总线与双向适配器，将 AI 决策<strong>幂等、可审计</strong>写回 ERP / CRM / MES。</li>
+            </ol>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart LR
+    USER[用户/应用] --> GW[Gateway + Auth]
+    GW --> ONT[Ontology + RAG]
+    ONT --> PRE[preHandlePrompt]
+    PRE --> LLM[LLM]
+    LLM --> POST[postHandleResponse]
+    POST --> TOOL[Tool / Action]
+    TOOL --> KAFKA[Kafka Write-back]
+    KAFKA --> ADAPTER[老系统 Adapter]</pre>
+              <p class="diagram-caption">图：请求在各层间的典型流转</p>
+            </div>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>网关层只做身份与上下文，不把业务规则堆在 BFF。</li>
+              <li>LLM 永远只看到 Ontology 导出的上下文，而非裸 SQL 结果集。</li>
+              <li>与<a href="03-architecture-design.html">第 03 章架构设计</a>的 ADR、质量属性权衡一并归档四层边界。</li>
+            </ul>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li><strong>AIP 上下文图（C4 L2）</strong>：四层边界、外部系统、数据流</li>
+              <li><strong>质量属性表</strong>：安全、可审计、可用性、延迟预算（见下表口径）</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>质量属性与架构对策（摘录）</h4>
+            <pre><code>| 质量属性   | 目标口径              | 架构对策                          |
+|------------|-----------------------|-----------------------------------|
+| 安全       | 零信任、最小权限      | Gateway 透传 + Guardrails 双检    |
+| 可审计     | Action 100% 可追溯    | 审计表 + Kafka 事件 + traceId     |
+| 可用性     | LLM 降级仍可只读问答  | 缓存 Ontology 子图、规则兜底话术  |
+| 性能       | P95 问答 &lt; 8s（含检索）| 子图深度≤2、向量 Top-K≤8、流式输出 |</code></pre>
+          </div>
+        </article>
+
+        <article class="knowledge-card" id="aip-microservices">
+          <h3>1.2 推荐微服务拆分与职责</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>不必一开始拆得过细，但<strong>逻辑边界</strong>须清晰，便于独立扩缩容与合规审计：</p>
+            <ul>
+              <li><strong>aip-gateway</strong>：OAuth2 终结、限流、<code>Aip-Nonce-Key</code> 签发、SecurityContext 序列化透传。</li>
+              <li><strong>aip-ontology-service</strong>：实体/关系 CRUD、子图遍历、向量索引、ingest 任务（无 LLM）。</li>
+              <li><strong>aip-agent-orchestrator</strong>：对话状态机、Prompt 组装、调用 LLM、调度 Tool（不直连老库）。</li>
+              <li><strong>aip-guardrails-service</strong>（可内嵌 orchestrator）：拦截器链、策略配置、审计写入。</li>
+              <li><strong>aip-action-service</strong>：ActionTask 状态机、审批 API、Kafka 生产。</li>
+              <li><strong>aip-adapter-*</strong>：按域拆分（order-adapter、mes-adapter），消费写回主题、幂等执行、回调 Ontology 刷新。</li>
+            </ul>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart TB
+    subgraph edge["边缘"]
+      GW[aip-gateway]
+    end
+    subgraph core["AIP 核心"]
+      ONT[aip-ontology-service]
+      AG[aip-agent-orchestrator]
+      ACT[aip-action-service]
+    end
+    subgraph legacy["企业系统"]
+      ERP[ERP]
+      CRM[CRM]
+    end
+    GW --> AG
+    AG --> ONT
+    AG --> ACT
+    ACT --> KFK[(Kafka)]
+    KFK --> ADP[aip-adapter]
+    ADP --> ERP
+    ADP --> CRM</pre>
+              <p class="diagram-caption">图：推荐微服务拓扑（逻辑视图）</p>
+            </div>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>在 orchestrator 内嵌 MyBatis 直连业务库——破坏 Ontology 单一数据视图。</li>
+              <li>所有域共用一个 adapter，故障爆炸半径过大。</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="knowledge-card" id="aip-gateway-context">
+          <h3>1.3 SecurityContext 透传（Gateway → 下游）</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>下游服务<strong>禁止</strong>再次解析用户自然语言来推断权限；只信任 Gateway 注入的上下文。推荐 JWT Custom Claims 或内部 <code>X-AIP-Context</code>（mTLS 内网 + 签名防篡改）。与<a href="17-security-development.html">第 17 章</a> Resource Server 配置一致。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>JWT Claims 与 Filter 还原</h4>
+            <pre><code>// Gateway 签发时写入（示意）
+{
+  "sub": "u10086",
+  "roles": ["ROLE_MANAGER"],
+  "permissions": ["MODIFY_ORDER", "QUERY_ONTOLOGY"],
+  "deptId": "D-SH-01",
+  "maxClassification": "L3_INTERNAL",
+  "traceId": "8f3c..."
+}
+
+// 下游 aip-agent-orchestrator
+@Component
+public class AipSecurityContextFilter extends OncePerRequestFilter {
+  @Override
+  protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
+      throws ServletException, IOException {
+    Jwt jwt = (Jwt) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    AipUserContext ctx = AipUserContext.fromJwt(jwt);
+    AipContextHolder.set(ctx);
+    try { chain.doFilter(req, res); } finally { AipContextHolder.clear(); }
+  }
+}</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li><code>permissions</code> 与 Tool 名称一一映射，避免模型自创 action 名。</li>
+              <li><code>maxClassification</code> 用于 Ontology 检索前过滤，见下文密级矩阵。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="aip-ontology">
+        <h2>第二部分：数据本体（Ontology）模块开发实现</h2>
+        <article class="knowledge-card" id="aip-ontology-schema">
+          <h3>2.1 关系表模拟图结构的数据库设计</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>兼顾关系库严谨性与图结构灵活性，PostgreSQL 推荐 <strong>EAV 扩展 + 拓扑关系表</strong>：实体类型元数据、实例 JSONB 动态属性、显式边表表达 CONTAINS / REQUIRED_BY 等关系。每条实例带 <code>security_classification</code>，供检索前按用户密级过滤（细胞级权限）。亿级边、深度路径分析场景可另选专用图库，存储分工见<a href="03-architecture-design.html#graph-database-selection">第 03 章图数据库选型</a>。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>DDL 示例</h4>
+            <pre><code>-- 1. 实体类型定义表（元数据）
+CREATE TABLE aip_entity_type (
+    type_key VARCHAR(50) PRIMARY KEY,
+    display_name VARCHAR(100) NOT NULL,
+    description TEXT
+);
+
+-- 2. 实体实例表（JSONB 动态属性）
+CREATE TABLE aip_entity_instance (
+    instance_id VARCHAR(64) PRIMARY KEY,
+    type_key VARCHAR(50) REFERENCES aip_entity_type(type_key),
+    display_name VARCHAR(200),
+    properties JSONB NOT NULL,
+    security_classification VARCHAR(50),
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3. 关系拓扑表
+CREATE TABLE aip_relation (
+    relation_id BIGSERIAL PRIMARY KEY,
+    source_id VARCHAR(64) REFERENCES aip_entity_instance(instance_id),
+    target_id VARCHAR(64) REFERENCES aip_entity_instance(instance_id),
+    relation_type VARCHAR(50) NOT NULL,
+    description TEXT
+);
+
+-- 4. 索引建议
+CREATE INDEX idx_entity_type ON aip_entity_instance(type_key);
+CREATE INDEX idx_entity_props ON aip_entity_instance USING GIN (properties);
+CREATE INDEX idx_relation_src ON aip_relation(source_id);
+CREATE INDEX idx_relation_tgt ON aip_relation(target_id);
+
+-- 5. 可选：实体描述向量（GraphRAG 语义入口）
+-- embedding vector(1536) 存 Pgvector，对 display_name + description 做嵌入</code></pre>
+          </div>
+          <div class="card-block block-example">
+            <h4>密级与可见性矩阵（示例）</h4>
+            <pre><code>| 用户 maxClassification | 可见实体 security_classification |
+|------------------------|--------------------------------------|
+| L1_PUBLIC              | L1_PUBLIC                            |
+| L3_INTERNAL            | L1_PUBLIC, L2_TEAM, L3_INTERNAL      |
+| L5_SECRET              | 全部（含 L5_SECRET，需 ROLE 额外校验）|
+
+检索 SQL 片段: WHERE security_classification &lt;= :userMaxLevel</code></pre>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>JSONB 无 schema 约束导致 LLM 上下文字段漂移——应对高频属性做 generated column 或校验触发器。</li>
+              <li>二度以上图遍历未设深度上限，Prompt 爆炸。</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="knowledge-card" id="aip-ontology-java">
+          <h3>2.2 拓扑图检索与 LLM 语义转换（Java）</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>用户针对某实体提问时，引擎执行<strong>一度或二度邻居</strong>动态图遍历，组装为 LLM 易读的结构化 Markdown 上下文，降低幻觉。实现上可用递归 CTE 或应用层 BFS；输出前再次按 <code>security_classification</code> 过滤节点。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>OntologySubGraph → LLM Context</h4>
+            <pre><code>@Data
+public class OntologySubGraph {
+    private Map&lt;String, EntityInstance&gt; entities = new HashMap&lt;&gt;();
+    private List&lt;RelationEdge&gt; edges = new ArrayList&lt;&gt;();
+
+    public String toLlmContext() {
+        StringBuilder sb = new StringBuilder("=== 发现的相关业务实体 (Ontology Context) ===\n");
+        entities.values().forEach(e -&gt; {
+            sb.append(String.format("- [%s](类型: %s): 属性=%s\n",
+                e.getInstanceId(), e.getTypeKey(), e.getProperties().toString()));
+        });
+        sb.append("\n=== 实体之间的关联拓扑关系 ===\n");
+        edges.forEach(edge -&gt; {
+            sb.append(String.format("- 实体 [%s] 通过关系 {%s} 连接到 实体 [%s]\n",
+                edge.getSourceId(), edge.getRelationType(), edge.getTargetId()));
+        });
+        return sb.toString();
+    }
+}</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>上下文模板版本化，便于 Eval 对比幻觉率。</li>
+              <li>向量检索命中实体后，再以 instance_id 为种子做子图扩展（GraphRAG 常见模式）。</li>
+              <li>子图 Token 预算：实体数 ≤ 30、边数 ≤ 50，超出则按关系权重截断。</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="knowledge-card" id="aip-ontology-sync">
+          <h3>2.3 老系统 → Ontology 同步（Ingest）</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>Ontology 不是一次性 ETL，而是<strong>持续对齐</strong>企业真相源：CDC（Debezium）、定时批同步、或领域事件（订单已支付 → 更新 <code>Order</code> 实例）。每条 ingest 记录 <code>source_system</code>、<code>source_pk</code>、<code>sync_version</code>，便于对账与 LLM 引用「数据截至时间」。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>映射配置（YAML 示意）</h4>
+            <pre><code>ontology:
+  types:
+    - typeKey: Order
+      source: erp.order_header
+      idMapping: "ORD-{order_id}"
+      properties:
+        status: status_code
+        amount: total_amount
+      classification: "L3_INTERNAL"
+  relations:
+    - type: CONTAINS
+      from: Order
+      to: OrderLine
+      join: order_id</code></pre>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li><strong>Ingest 映射表</strong>：源表 → typeKey / 属性 / 关系</li>
+              <li><strong>同步 SLA</strong>：延迟上限、失败重试与死信队列策略</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="knowledge-card" id="aip-ontology-graph-query">
+          <h3>2.4 二度邻居图遍历（SQL + Service）</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>PostgreSQL 用<strong>递归 CTE</strong>做有界深度遍历；应用层须传入 <code>maxDepth</code>（建议 2）与密级过滤，避免全图扫库。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>递归 CTE（深度 ≤ 2）</h4>
+            <pre><code>WITH RECURSIVE graph AS (
+  SELECT source_id, target_id, relation_type, 1 AS depth
+  FROM aip_relation WHERE source_id = :seedId
+  UNION ALL
+  SELECT r.source_id, r.target_id, r.relation_type, g.depth + 1
+  FROM aip_relation r
+  JOIN graph g ON r.source_id = g.target_id
+  WHERE g.depth &lt; :maxDepth
+)
+SELECT DISTINCT e.* FROM aip_entity_instance e
+WHERE e.instance_id IN (
+  SELECT source_id FROM graph UNION SELECT target_id FROM graph UNION SELECT :seedId
+)
+AND e.security_classification &lt;= :userMaxLevel;</code></pre>
+          </div>
+          <div class="card-block block-example">
+            <h4>OntologyQueryService（Java 示意）</h4>
+            <pre><code>@Service
+@RequiredArgsConstructor
+public class OntologyQueryService {
+  private final OntologySubGraphMapper mapper;
+
+  public OntologySubGraph loadSubGraph(String seedId, int maxDepth, String userMaxLevel) {
+    List&lt;EntityInstance&gt; entities = mapper.selectSubGraphEntities(seedId, maxDepth, userMaxLevel);
+    List&lt;RelationEdge&gt; edges = mapper.selectEdgesAmong(
+        entities.stream().map(EntityInstance::getInstanceId).toList());
+    OntologySubGraph graph = new OntologySubGraph();
+    entities.forEach(e -&gt; graph.getEntities().put(e.getInstanceId(), e));
+    graph.getEdges().addAll(edges);
+    return graph;
+  }
+}</code></pre>
+          </div>
+        </article>
+
+        <article class="knowledge-card" id="aip-ontology-rag">
+          <h3>2.5 GraphRAG：向量入口 + 子图扩展</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>纯向量 RAG 易丢失<strong>结构关系</strong>（「该订单下的延期组件」）。GraphRAG 标准路径：① 用户问题 Embedding；② 在 Ontology 实体描述向量上 Top-K；③ 以命中 <code>instance_id</code> 为种子拉子图；④ <code>toLlmContext()</code> 与可选文档 Chunk 合并进 Prompt。与<a href="23-business-intelligence.html#rag-architecture">第 23 章 RAG</a>互补——本章强调<strong>结构化对象</strong>而非仅文档。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart LR
+    Q[用户问题] --> EMB[Query Embedding]
+    EMB --> VEC[Ontology 向量 Top-K]
+    VEC --> SEED[种子 instance_id]
+    SEED --> SUB[子图遍历 depth≤2]
+    SUB --> CTX[Markdown Context]
+    DOC[可选文档 RAG] --> CTX
+    CTX --> LLM[LLM]</pre>
+              <p class="diagram-caption">图：GraphRAG 与文档 RAG 组合</p>
+            </div>
+          </div>
+          <div class="card-block block-example">
+            <h4>Spring AI 组合顾问（概念示意）</h4>
+            <pre><code>String ontologyCtx = ontologyQueryService
+    .loadSubGraph(seedId, 2, ctx.getMaxClassification())
+    .toLlmContext();
+
+ChatResponse response = chatClient.prompt()
+    .system("仅依据 ONTOLOGY_CONTEXT 与 DOC_CONTEXT 回答，禁止编造实体 ID。")
+    .user("ONTOLOGY_CONTEXT:\n" + ontologyCtx + "\n\n问题: " + question)
+    .advisors(new QuestionAnswerAdvisor(docVectorStore)) // 可选文档层
+    .call()
+    .chatResponse();</code></pre>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="aip-guardrails">
+        <h2>第三部分：安全护栏（Guardrails）安全拦截机制</h2>
+        <article class="knowledge-card" id="aip-guardrails-pipeline">
+          <h3>3.1 拦截器管道（Interceptor Pipeline）设计</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>类比 Spring MVC <code>HandlerInterceptor</code>，在「大模型推理前」与「工具执行前」架设两道防火墙。所有拦截器实现统一接口，可链式组合（敏感词、密级、租户、自定义策略）。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>接口契约</h4>
+            <pre><code>public interface AipGuardrailInterceptor {
+    boolean preHandlePrompt(String prompt, SecurityContext userAuth);
+    boolean postHandleResponse(LLMResponse response, SecurityContext userAuth);
+}</code></pre>
+          </div>
+          <div class="card-block block-example">
+            <h4>责任链注册（Spring）</h4>
+            <pre><code>@Configuration
+public class GuardrailConfig {
+  @Bean
+  AipGuardrailChain guardrailChain(List&lt;AipGuardrailInterceptor&gt; interceptors) {
+    return new AipGuardrailChain(interceptors); // 按 @Order 排序
+  }
+}
+
+public class AipGuardrailChain {
+  private final List&lt;AipGuardrailInterceptor&gt; chain;
+  public void preHandle(String prompt, SecurityContext ctx) {
+    for (var i : chain) {
+      if (!i.preHandlePrompt(prompt, ctx)) {
+        throw new GuardrailBlockedException("preHandle blocked");
+      }
+    }
+  }
+  public boolean postHandle(LLMResponse resp, SecurityContext ctx) {
+    for (var i : chain) {
+      if (!i.postHandleResponse(resp, ctx)) return false;
+    }
+    return true;
+  }
+}</code></pre>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>推荐拦截器清单</h4>
+            <ul>
+              <li><strong>ClassificationInterceptor</strong>：Prompt 是否触及超密级关键词。</li>
+              <li><strong>PiiRedactionInterceptor</strong>：身份证/手机号进 LLM 前掩码（日志同理）。</li>
+              <li><strong>PromptInjectionHeuristicInterceptor</strong>：「忽略上文规则」类模式评分。</li>
+              <li><strong>SecurityGuardrailInterceptor</strong>：Tool 垂直/水平越权（见下节）。</li>
+              <li><strong>RateBudgetInterceptor</strong>：单用户 Token/Action 日配额。</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="knowledge-card" id="aip-guardrails-audit">
+          <h3>3.2 后置「意图审计」核心实现</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>防御 Prompt Injection 与模型缺陷导致的越权写回：<strong>垂直越权</strong>检查用户是否具备 Action 权限；<strong>水平越权</strong>检查目标资源（如 orderId）是否落在用户数据边界内。审计失败应阻断 Tool 执行并留痕，不可静默降级为「仅返回文本」。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>SecurityGuardrailInterceptor</h4>
+            <pre><code>@Component
+@Slf4j
+public class SecurityGuardrailInterceptor implements AipGuardrailInterceptor {
+
+    @Override
+    public boolean preHandlePrompt(String prompt, SecurityContext userAuth) {
+        if (prompt.contains("SECRET_PROJECT")
+                &amp;&amp; !userAuth.getRoles().contains("ROLE_DIRECTOR")) {
+            throw new SecurityException("AIP 安全拦截：您无权向大模型探听核心机密项目。");
+        }
+        return true;
+    }
+
+    @Override
+    public boolean postHandleResponse(LLMResponse response, SecurityContext userAuth) {
+        if (response.isToolCall()) {
+            String targetAction = response.getToolName();
+            Map&lt;String, Object&gt; params = response.getToolArguments();
+
+            if (!userAuth.getPermissions().contains(targetAction)) {
+                log.error("安全警报！AI Agent 试图代表用户 {} 执行未授权动作: {}",
+                    userAuth.getUserId(), targetAction);
+                return false;
+            }
+
+            String targetOrderId = (String) params.get("orderId");
+            if (!checkDataBoundary(userAuth.getUserId(), targetOrderId)) {
+                log.error("安全警报！用户 {} 试图通过 AI 修改越权数据: {}",
+                    userAuth.getUserId(), targetOrderId);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean checkDataBoundary(String userId, String orderId) {
+        return true; // 查库核验订单是否属于用户管辖区域/部门
+    }
+}</code></pre>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>仅校验 Tool 名称，不校验参数中的资源 ID。</li>
+              <li>权限列表来自 LLM 上下文而非登录态，可被注入伪造。</li>
+              <li>postHandle 返回 false 仍执行 Tool——须在编排层<strong>硬阻断</strong>，不能仅打日志。</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>编排层硬阻断（示意）</h4>
+            <pre><code>LLMResponse resp = llmClient.complete(prompt, tools);
+if (resp.isToolCall() &amp;&amp; !guardrailChain.postHandle(resp, userCtx)) {
+  auditService.logBlocked(userCtx, resp);
+  return AgentReply.blocked("该操作未通过安全审计，已拒绝执行。");
+}
+return toolExecutor.execute(resp); // 仅审计通过后</code></pre>
+          </div>
+        </article>
+
+        <article class="knowledge-card" id="aip-audit-trail">
+          <h3>3.3 全链路审计留痕</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>合规与事故复盘要求：<strong>谁、何时、问了什么、模型回了什么、试图执行哪条 Action、是否审批、老系统最终状态</strong>。审计记录只追加、不更新；敏感字段脱敏存储；保留期按等保/行业规范配置。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>审计表 DDL（摘录）</h4>
+            <pre><code>CREATE TABLE aip_audit_event (
+    event_id        BIGSERIAL PRIMARY KEY,
+    trace_id        VARCHAR(64) NOT NULL,
+    user_id         VARCHAR(64) NOT NULL,
+    event_type      VARCHAR(32) NOT NULL,  -- PROMPT / LLM_RESPONSE / TOOL_BLOCKED / ACTION_APPROVED
+    payload_json    JSONB,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_audit_trace ON aip_audit_event(trace_id);
+CREATE INDEX idx_audit_user_time ON aip_audit_event(user_id, created_at DESC);</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li><code>traceId</code> 从 Gateway 贯穿 Kafka、Adapter，对齐<a href="20-performance-tuning.html">第 20 章</a>链路追踪。</li>
+              <li>Prompt 原文可 hash 存证 + 加密对象存储，库内只存摘要。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="aip-writeback">
+        <h2>第四部分：智能体行动与数据回写（Action Write-back）</h2>
+        <article class="knowledge-card" id="aip-action-contract">
+          <h3>4.1 强类型契约与反向上下文注入</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>禁止大模型自由生成 SQL 改库。通过 LangChain4j <code>@Tool</code> 或 Spring AI 注解向模型声明<strong>有限参数、强类型</strong>方法。LLM 常只有语义（「给张三延期」），缺少老系统需要的 operatorId、客户端 IP 等——由代理层从 <code>SecurityContext</code><strong>反向注入</strong>，绝不信任模型传入的操作人字段。</p>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>Tool 定义遵循 JSON Schema，保持<strong>模型无感知（Model Agnostic）</strong>，可切换不同 LLM 供应商。</li>
+              <li>高危 Action 默认走审批流，见下一节。</li>
+              <li>参数校验用 Jakarta Validation（<code>@NotBlank</code>、枚举），拒绝模型传入非法状态码。</li>
+            </ul>
+          </div>
+          <div class="card-block block-example">
+            <h4>Spring AI @Tool + 反向注入</h4>
+            <pre><code>@Configuration
+class OrderTools {
+  @Bean
+  @Description("修改订单状态，需主管审批")
+  Function&lt;ModifyOrderRequest, String&gt; modifyOrder(AipActionWorkflowEngine engine) {
+    return req -&gt; {
+      AipUserContext ctx = AipContextHolder.get(); // 来自 Filter，非 LLM
+      return engine.modifyOrderStatus(
+          req.orderId(), req.newStatus(), req.reason(), ctx);
+    };
+  }
+}
+
+public record ModifyOrderRequest(
+    @NotBlank String orderId,
+    @Pattern(regexp = "DELAYED|SHIPPED|CANCELLED") String newStatus,
+    @Size(max = 500) String reason) {}</code></pre>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>在 Tool 方法签名暴露 <code>operatorId</code> 参数——必须由框架注入。</li>
+              <li>Tool 内部写 JDBC 绕过 Adapter——破坏幂等与审计统一出口。</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="knowledge-card" id="aip-legacy-adapter">
+          <h3>4.2 老系统 Adapter 与幂等消费</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>Adapter 是<strong>唯一</strong>允许调用 ERP/MES 写接口的进程。消费 Kafka 时用 <code>taskId</code> 作幂等键：先查 <code>aip_idempotency_record</code>，已 SUCCESS 则 ack 跳过；执行成功再写 SUCCESS；失败进 DLQ 并告警。禁止 LLM 或 orchestrator 直连 SOAP/遗留 RPC。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>Kafka 消费者（摘录）</h4>
+            <pre><code>@KafkaListener(topics = "aip-writeback-topic")
+public void onMessage(ConsumerRecord&lt;String, String&gt; record) {
+  String taskId = record.key();
+  if (idempotencyStore.exists(taskId)) return;
+
+  ActionTask task = parse(record.value());
+  try {
+    legacyOrderClient.updateStatus(
+        task.getPayload().get("orderId"),
+        task.getPayload().get("status"),
+        task.getOperatorId());
+    idempotencyStore.markSuccess(taskId);
+    ontologySyncService.refreshEntity("Order", task.getPayload().get("orderId"));
+  } catch (Exception ex) {
+    idempotencyStore.markFailed(taskId, ex.getMessage());
+    throw ex; // 触发重试 / DLQ 策略
+  }
+}</code></pre>
+          </div>
+        </article>
+
+        <article class="knowledge-card" id="aip-action-workflow">
+          <h3>4.3 异步回写（Human-in-the-Loop）架构</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>高危变更采用<strong>状态机 + Kafka + 人工审批</strong>：Tool 调用只创建 <code>PENDING_APPROVAL</code> 任务并挂起 Agent；主管批准后以 taskId 为幂等键投递写回主题，由老系统 Adapter 消费执行。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">stateDiagram-v2
+    [*] --> PENDING_APPROVAL: "LLM Tool 调用"
+    PENDING_APPROVAL --> APPROVED: "主管审批"
+    PENDING_APPROVAL --> REJECTED: "驳回"
+    APPROVED --> PUBLISHED: "Kafka 投递"
+    PUBLISHED --> [*]: "Adapter 幂等执行"</pre>
+              <p class="diagram-caption">图：Action 任务状态机</p>
+            </div>
+          </div>
+          <div class="card-block block-example">
+            <h4>AipActionWorkflowEngine</h4>
+            <pre><code>@Service
+public class AipActionWorkflowEngine {
+
+    @Autowired private KafkaTemplate&lt;String, String&gt; kafkaTemplate;
+    @Autowired private ActionTaskRepository taskRepository;
+
+    @Tool("修改指定订单的状态，并记录延期原因")
+    public String modifyOrderStatus(String orderId, String newStatus, String reason,
+            @ObjectContext SecurityContext auth) {
+
+        ActionTask task = new ActionTask();
+        task.setTaskId(UUID.randomUUID().toString());
+        task.setActionType("MODIFY_ORDER");
+        task.setOperatorId(auth.getUserId());
+        task.setPayload(Map.of("orderId", orderId, "status", newStatus, "reason", reason));
+        task.setStatus("PENDING_APPROVAL");
+        taskRepository.save(task);
+
+        return "Action 已挂起，审批单 [" + task.getTaskId()
+            + "]，请等待主管确认（Human-in-the-loop）。";
+    }
+
+    public void onApprovalSuccess(String taskId) {
+        ActionTask task = taskRepository.findById(taskId).orElseThrow();
+        task.setStatus("APPROVED");
+        taskRepository.save(task);
+        kafkaTemplate.send("aip-writeback-topic", task.getTaskId(),
+            JacksonUtil.toJson(task));
+    }
+}</code></pre>
+          </div>
+          <div class="card-block block-example">
+            <h4>ActionTask 表（扩展字段）</h4>
+            <pre><code>CREATE TABLE aip_action_task (
+    task_id       VARCHAR(64) PRIMARY KEY,
+    action_type   VARCHAR(50) NOT NULL,
+    operator_id   VARCHAR(64) NOT NULL,
+    status        VARCHAR(32) NOT NULL,
+    payload       JSONB NOT NULL,
+    nonce_key     VARCHAR(64),          -- 对话级防重放
+    trace_id      VARCHAR(64),
+    approved_by   VARCHAR(64),
+    approved_at   TIMESTAMP,
+    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);</code></pre>
+          </div>
+        </article>
+
+        <article class="knowledge-card" id="aip-saga">
+          <h3>4.4 多步骤回写与 Saga 补偿</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>Agent 编排「扣 MES 库存 → 改 ERP 订单金额」时，第二步失败必须触发<strong>已定义好的补偿 Tool</strong>（恢复库存、冲正凭证），由 Java 状态机驱动，而非让 LLM「想办法撤销」。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">sequenceDiagram
+    participant AG as Agent
+    participant MES as MES Adapter
+    participant ERP as ERP Adapter
+    AG->>MES: Step1 扣库存
+    MES-->>AG: OK
+    AG->>ERP: Step2 改账
+    ERP-->>AG: FAIL
+    AG->>MES: Compensate 回滚库存</pre>
+              <p class="diagram-caption">图：失败后的补偿路径</p>
+            </div>
+          </div>
+          <div class="card-block block-example">
+            <h4>补偿 Action 注册（示意）</h4>
+            <pre><code>@Tool("回滚 MES 库存扣减")
+public String compensateMesStock(String mesTxnId, @ObjectContext AipUserContext ctx) {
+  return mesAdapter.reverse(mesTxnId, ctx.getUserId());
+}
+
+// Saga 状态: RUNNING -> COMPENSATING -> COMPLETED / FAILED
+// 每步落库 aip_saga_step，幂等键 = sagaId + stepIndex</code></pre>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>补偿本身非幂等——须用 mesTxnId 唯一键。</li>
+              <li>LLM 自行决定调用补偿 Tool 的顺序——应由编排引擎按状态机触发。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="aip-conclusion">
+        <h2>结语</h2>
+        <article class="knowledge-card">
+          <h3>工业级躯壳，而非无限调参</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p>构建 Palantir AIP 级别系统的本质，是用工业级分布式架构和严密元数据管控，为大模型打造<strong>安全、稳定、高确定性</strong>的运行环境。上线前自检：</p>
+            <ul>
+              <li>LLM 是否<strong>从未</strong>直连业务库？</li>
+              <li>每次 Tool 调用是否有 pre/post 护栏与审计 <code>traceId</code>？</li>
+              <li>写回是否全部经 Adapter + 幂等键？</li>
+              <li>是否已规划 Eval 与发布门禁（见<a href="23-business-intelligence.html#ai-evaluation">第 23 章</a>）？</li>
+            </ul>
+            <p>后续结合<a href="23-business-intelligence.html#ai-evaluation">Eval 门禁</a>、<a href="21-devops-cloud-native.html">CI/CD</a>、<a href="19-testing-quality.html">测试策略</a>将 AIP 纳入标准发布。与第 23 章分工不变：23 定业务场景与 RAG 产品规格，本章定<strong>平台级工程实现</strong>。</p>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>本章交付物清单</h4>
+            <ul>
+              <li>AIP 四层 / 微服务上下文图（C4 L2）</li>
+              <li>Ontology DDL + Ingest 映射 + GraphRAG 流程说明</li>
+              <li>Guardrails 拦截器清单 + 审计表结构</li>
+              <li>Action 状态机 + Adapter 幂等设计 + Saga 补偿表</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <nav class="chapter-nav">
+        <a href="23-business-intelligence.html">← 上一章：业务智能化</a>
+        <a href="glossary.html">下一章：术语字典 →</a>
+      </nav>
+    </main>
+  </div>
+  <script src="assets/diagram.js" defer></script>
+  <script src="assets/explain-format.js" defer></script>
+  <script src="assets/chapter-toc.js" defer></script>
+</body>
+</html>

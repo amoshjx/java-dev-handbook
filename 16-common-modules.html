@@ -39,6 +39,7 @@
             <li><a href="21-devops-cloud-native.html">21 工程化·DevOps·CI/CD</a></li>
             <li><a href="22-ai-development.html">22 AI 辅助开发</a></li>
             <li><a href="23-business-intelligence.html">23 业务智能化</a></li>
+            <li><a href="24-palantir-aip.html">24 Palantir AIP 架构</a></li>
             <li><a href="glossary.html">术语字典</a></li>
           </ul>
         </div>
@@ -48,7 +49,7 @@
     <main class="main">
       <header class="page-header">
         <h1>15 常见功能模块</h1>
-        <p>Spring Boot 企业项目中的「标配能力」——权限、分页、导入导出、数据校验、全局异常、HTTP 请求、规则引擎、定时任务、消息、工作流与日志体系；每模块讲清组件选型、配置方式、代码写法与生产注意点（交叉引用第 12 章 Spring Framework、第 11 章持久化、第 17 章安全开发、第 21 章 Redis/MQ/可观测性）。</p>
+        <p>Spring Boot 企业项目中的「标配能力」——权限、分页、导入导出、二维码与标签设计及打印、数据校验、全局异常、HTTP 请求、规则引擎、定时任务、消息、工作流与日志体系；每模块讲清组件选型、配置方式、代码写法与生产注意点（交叉引用第 12 章 Spring Framework、第 11 章持久化、第 17 章安全开发、第 21 章 Redis/MQ/可观测性）。</p>
       </header>
 
       <section class="section" id="system-logging">
@@ -874,6 +875,231 @@ public SignedUrlVO downloadUrl(@PathVariable Long id) {
             </ul>
           </div>
         </article>
+      </section>
+
+      <section class="section" id="qr-code">
+        <h2>二维码生成</h2>
+        <article class="knowledge-card">
+          <h3>ZXing / Hutool 服务端生成、纠错级别与 Logo 叠加</h3>
+          <div class="card-block block-explain">
+            <h4>讲解</h4>
+            <p><strong>典型场景</strong>：商品/资产追溯码、仓储拣货位、设备巡检点、活动签到、支付跳转 URL、小程序 scene 参数。架构上二维码生成属于<strong>轻量无状态能力</strong>——按业务主键或 URL 模板即时渲染 PNG/SVG，或预生成上传 <a href="#file-upload">OSS</a> 供 CDN 缓存。</p>
+            <p><strong>选型</strong>：<strong>ZXing</strong>（<code>com.google.zxing:core</code> + <code>javase</code>）生态成熟、可控纠错与编码；<strong>Hutool</strong> <code>QrCodeUtil</code> 封装 ZXing，一行生成适合内部工具；前端 <code>qrcode.js</code> 适合纯展示、减轻服务端压力。服务端统一生成便于<strong>审计、水印、Logo 叠加</strong>与权限校验（防任意 URL 二维码钓鱼）。</p>
+            <p><strong>编码与纠错</strong>：内容超容量时自动升 Version；中文须指定 <code>Charset.forName("UTF-8")</code>。纠错级别 <code>L/M/Q/H</code>（约 7%～30% 可恢复）——带 Logo 或户外标签选 <code>H</code>；纯数字 URL 用 <code>M</code> 即可。边距（quiet zone）至少 4 模块宽，否则扫码枪难识别。</p>
+            <p><strong>输出形态</strong>：① HTTP 接口直接 <code>image/png</code> 流式响应；② 生成 <code>byte[]</code> 上传 OSS 返回 URL；③ Base64 嵌入 PDF/标签模板（见<a href="#label-print">标签设计及打印</a>）。动态内容（含 Token、一次性核销码）禁止长期 CDN 缓存；静态物料码可缓存。</p>
+            <p><strong>安全</strong>：二维码内容<strong>不编码</strong>明文密码、完整身份证；支付/登录类用短链 + 服务端校验。开放「任意内容生成」接口须鉴权 + 域名白名单，防钓鱼码批量生成。</p>
+            <div class="diagram-block">
+              <pre class="mermaid">flowchart LR
+    REQ[业务请求] --> SVC[QrCodeService]
+    SVC --> ZX[ZXing 编码 Matrix]
+    ZX --> IMG[BufferedImage PNG]
+    IMG --> OUT{输出}
+    OUT -->|流式| HTTP[HttpServletResponse]
+    OUT -->|持久化| OSS[OSS 对象存储]
+    OUT -->|嵌入| PDF[标签/PDF 模板]</pre>
+              <p class="diagram-caption">图：二维码从业务参数到 PNG/OSS/PDF 的生成路径</p>
+            </div>
+          </div>
+          <div class="card-block block-example">
+            <h4>示例代码</h4>
+            <pre><code>// Maven：com.google.zxing:core + javase（或 cn.hutool:hutool-extra）
+@Service
+public class QrCodeService {
+
+  public byte[] generatePng(String content, int sizePx, ErrorCorrectionLevel ecLevel) {
+    var hints = Map.of(
+        EncodeHintType.CHARACTER_SET, "UTF-8",
+        EncodeHintType.ERROR_CORRECTION, ecLevel,
+        EncodeHintType.MARGIN, 2);
+    BitMatrix matrix = new MultiFormatWriter()
+        .encode(content, BarcodeFormat.QR_CODE, sizePx, sizePx, hints);
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    MatrixToImageWriter.writeToStream(matrix, "PNG", out);
+    return out.toByteArray();
+  }
+
+  /** 中心 Logo：缩小码区后叠加，纠错须 ≥ H */
+  public byte[] generateWithLogo(String content, int sizePx, BufferedImage logo) {
+    BufferedImage qr = MatrixToImageWriter.toBufferedImage(
+        new MultiFormatWriter().encode(content, BarcodeFormat.QR_CODE, sizePx, sizePx,
+            Map.of(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.H,
+                   EncodeHintType.CHARACTER_SET, "UTF-8")));
+    int logoSize = sizePx / 5;
+    Graphics2D g = qr.createGraphics();
+    g.drawImage(logo, (sizePx - logoSize) / 2, (sizePx - logoSize) / 2, logoSize, logoSize, null);
+    g.dispose();
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    ImageIO.write(qr, "PNG", out);
+    return out.toByteArray();
+  }
+}
+
+@RestController
+@RequestMapping("/api/qrcode")
+public class QrCodeController {
+  @GetMapping(produces = MediaType.IMAGE_PNG_VALUE)
+  public void png(@RequestParam String content,
+                  @RequestParam(defaultValue = "256") int size,
+                  HttpServletResponse resp) throws IOException {
+    validateContent(content); // 长度、URL 白名单
+    byte[] png = qrCodeService.generatePng(content, size, ErrorCorrectionLevel.M);
+    resp.setHeader("Cache-Control", "no-store"); // 动态码不缓存
+    resp.getOutputStream().write(png);
+  }
+}
+
+// Hutool 简写（内部工具场景）
+byte[] png = QrCodeUtil.generatePng("https://example.com/p/SKU001", 300, 2);</code></pre>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>仓储/产线标签常用 <code>CODE_128</code> 一维码 + QR 双码并存——一维码快扫、二维码容量大；ZXing 同一套 API 支持。</li>
+              <li>批量预生成走异步 Job：按 SKU 列表写 OSS，DB 存 <code>object_key</code>，打印时只取 URL。</li>
+              <li>打印 DPI 与像素：300 DPI 下 30mm 标签约需 354px 边长，生成时按物理尺寸反算 <code>sizePx</code>。</li>
+              <li>测试用真实扫码枪/手机多距离验证，勿只看浏览器预览。</li>
+            </ul>
+          </div>
+          <div class="card-block block-pitfalls">
+            <h4>易错点</h4>
+            <ul>
+              <li>未指定 UTF-8——中文乱码或扫不出。</li>
+              <li>Logo 过大仍用低纠错——中心区域损坏无法识别。</li>
+              <li>把 JWT/Session 直接编进 QR——泄露即被盗用；用短期 ticket 换正式会话。</li>
+              <li>颜色反色（白底黑码为标准）或压缩失真——识别率骤降。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「UTF-8 + 合适纠错，Logo 用 H；动态码 no-store，敏感信息不进码。」</p>
+          </div>
+          <div class="card-block block-reading">
+            <p>延伸阅读：ZXing GitHub Wiki；<a href="#label-print">本章标签设计及打印</a>、<a href="#file-upload">文件上传 OSS</a></p>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" id="label-print">
+        <h2>标签设计及打印</h2>
+        <div class="section-prose">
+          <h3>从版面设计到出纸的完整链路</h3>
+          <p>仓储面单、生产批次标、资产台账、实验室样品、零售价签等场景，都需要把业务数据变成<strong>可扫描、可粘贴、尺寸固定</strong>的物理标签。企业项目里这一能力常被拆成「设计」与「打印」两步，但落地时应视为一条链路：<strong>规格定义 → 模板设计 → 数据绑定 → 渲染 → 下发打印 → 补打审计</strong>。设计阶段决定条码能否扫、文字能否读；打印阶段决定能否静默出纸、批量是否稳定。</p>
+
+          <p><strong>1. 先定规格，再画版式</strong></p>
+          <p>标签设计的第一输入不是「长什么样」，而是<strong>物理约束</strong>：</p>
+          <ul>
+            <li><strong>尺寸</strong>：常见 40×30mm、60×40mm、100×150mm；多规格各做独立模板，禁止同一 HTML/PDF 硬缩放适配所有纸型。</li>
+            <li><strong>打印机与 DPI</strong>：热敏常见 203/300 DPI；激光/喷墨按 A4 或自定义纸。像素与毫米换算：<code>px ≈ mm × DPI / 25.4</code>。例如 300 DPI 下 30mm 二维码边长约 354px。</li>
+            <li><strong>元素清单</strong>：一维码（拣货快扫）、<a href="#qr-code">二维码</a>（追溯 URL/大容量）、文字（SKU、批次、日期、操作员）、Logo/警示图标。明确<strong>必填/选填</strong>与超长截断规则。</li>
+            <li><strong>留白与静区</strong>：条码/二维码四周须留 quiet zone（通常 ≥ 4 模块宽），否则工业扫码枪识别率骤降。</li>
+          </ul>
+          <p>规格应写入 <code>label_spec</code> 表或配置中心（宽、高、DPI、打印机类型、模板版本），业务只引用 <code>templateCode</code>，避免页面里写死毫米数。</p>
+
+          <p><strong>2. 模板设计：可视化 vs 代码化</strong></p>
+          <ul>
+            <li><strong>可视化设计器</strong>：BarTender、NiceLabel、LabelShop 等，适合运营/实施自助改版；导出 ZPL/TSPL 或 PDF 背景，后端只做字段替换。优点：所见即所得；缺点：版本管理、CI 回归需额外流程。</li>
+            <li><strong>代码化模板</strong>：Thymeleaf/Freemarker HTML、JasperReports JRXML、ZPL 字符串模板。适合 Java 团队全权掌控、字段与 API 同步演进。模板与数据解耦：存 DB/OSS + 版本号，运行时传入 DTO/<code>Map</code>。</li>
+            <li><strong>混合模式</strong>：设计器出「底图 + 坐标」，Java 按坐标填文字与条码——兼顾美观与动态数据。</li>
+          </ul>
+          <p>无论哪种方式，模板变更必须<strong>升版本</strong>并保留历史，Print Agent 按版本拉取，避免旧客户端缺字段。</p>
+
+          <p><strong>3. 渲染与输出格式</strong></p>
+          <ul>
+            <li><strong>HTML + CSS 打印</strong>：<code>@page { size: 60mm 40mm; margin: 2mm; }</code>，浏览器预览后 <code>window.print()</code>。零客户端，适合办公室激光/A4 或不追求静默的场景。</li>
+            <li><strong>服务端 PDF</strong>：OpenPDF、iText、Flying Saucer 或 JasperReports，毫米级布局，可归档、可邮件、可下载。批量时合并 multipage PDF。</li>
+            <li><strong>指令式热敏</strong>：Zebra <strong>ZPL</strong>、TSC <strong>TSPL</strong>、Godex EPL，经网络 9100 或 USB 直写，工业现场主流。条码用 <code>^BC</code>、二维码用 <code>^BQ</code>，模块大小与打印机 DPI 对齐。</li>
+            <li><strong>国产静默打印</strong>：Lodop / C-Lodop，常见于政务、医疗 Win 客户端；新系统优先评估 Print Agent，减少浏览器插件依赖。</li>
+          </ul>
+
+          <div class="diagram-block">
+            <pre class="mermaid">flowchart TB
+    SPEC[标签规格 label_spec] --> TPL[模板设计 HTML/ZPL/JRXML]
+    TPL --> BIND[业务数据绑定]
+    BIND --> RENDER{渲染}
+    RENDER --> PDF[PDF]
+    RENDER --> ZPL[ZPL/TSPL]
+    PDF --> PREVIEW[浏览器预览/下载]
+    PDF --> AGENT[Print Agent]
+    ZPL --> NET[网络打印机 :9100]
+    AGENT --> USB[USB/系统打印队列]</pre>
+            <p class="diagram-caption">图：标签从规格、模板到 PDF/ZPL 的设计与打印链路</p>
+          </div>
+
+          <p><strong>4. 打印下发：浏览器无法直连 USB</strong></p>
+          <p>Web 应用受浏览器沙箱限制，不能直接操作本地 USB 打印机。常见路径：</p>
+          <ul>
+            <li><strong>A. 人工</strong>：预览 HTML 或下载 PDF，用户自行打印——实现最简单，不适合产线节拍。</li>
+            <li><strong>B. Print Agent</strong>：内网部署小服务（Java / Electron），轮询 <code>print_job</code> 队列，拉取 ZPL/PDF 后调系统打印 API；适合仓库工位 PC。</li>
+            <li><strong>C. 服务端代打</strong>：应用服务器向内网打印机 IP:9100 写 ZPL——须网络隔离、IP 白名单、任务鉴权，<strong>禁止暴露公网</strong>。</li>
+            <li><strong>D. 云打印</strong>：部分厂商提供云端到设备的通道，按 SLA 与数据合规评估是否采用。</li>
+          </ul>
+          <p>批量打印建议走 MQ + 幂等任务表：写入 <code>print_job(status=PENDING)</code> → Agent 消费 → 回写 <code>PRINTED/FAILED</code>；失败可重试，与<a href="#scheduled-jobs">定时任务</a>配合做补打对账。</p>
+
+          <h4>示例：HTML 预览 + ZPL 热敏 + 打印任务</h4>
+          <pre><code>// Thymeleaf — resources/templates/label/wms-pick.html
+&lt;style&gt;
+  @page { size: 60mm 40mm; margin: 2mm; }
+  @media print { .toolbar { display: none; } }
+  .label { font-family: sans-serif; font-size: 10pt; }
+&lt;/style&gt;
+&lt;div class="label"&gt;
+  &lt;img th:src="'data:image/png;base64,' + ${qrBase64}" style="width:22mm;height:22mm"/&gt;
+  &lt;div th:text="${skuCode}"&gt;&lt;/div&gt;
+  &lt;div th:text="${batchNo}"&gt;&lt;/div&gt;
+&lt;/div&gt;
+
+@Service
+public class LabelDesignService {
+  public String renderHtmlPreview(WmsPickLabel data) {
+    String qrBase64 = Base64.getEncoder().encodeToString(
+        qrCodeService.generatePng(data.traceUrl(), 354, ErrorCorrectionLevel.M));
+    Context ctx = new Context();
+    ctx.setVariable("qrBase64", qrBase64);
+    ctx.setVariable("skuCode", data.skuCode());
+    ctx.setVariable("batchNo", data.batchNo());
+    return templateEngine.process("label/wms-pick", ctx);
+  }
+
+  public String buildZpl(WmsPickLabel data) {
+    return """
+        ^XA
+        ^FO40,20^A0N,28,28^FD%s^FS
+        ^FO40,60^BQN,2,5^FDQA,%s^FS
+        ^FO40,200^A0N,22,22^FDBatch: %s^FS
+        ^XZ
+        """.formatted(data.skuCode(), data.traceUrl(), data.batchNo());
+  }
+}
+
+@RestController
+@RequestMapping("/api/labels")
+public class LabelController {
+  @PostMapping("/wms-pick/preview")
+  public ResponseEntity&lt;String&gt; preview(@RequestBody WmsPickLabel req) {
+    return ResponseEntity.ok()
+        .contentType(MediaType.TEXT_HTML)
+        .body(labelDesignService.renderHtmlPreview(req));
+  }
+
+  @PostMapping("/wms-pick/print-jobs")
+  public PrintJobVO enqueue(@RequestBody WmsPickLabel req) {
+    return printJobService.enqueue("ZPL", labelDesignService.buildZpl(req));
+  }
+}</code></pre>
+
+          <p><strong>5. 生产注意点</strong></p>
+          <ul>
+            <li>布局一律用<strong>毫米</strong>思维，HTML/PDF/ZPL 各自按物理尺寸换算，勿依赖浏览器缩放。</li>
+            <li>换打印机型号或 DPI 后必须<strong>回归扫码</strong>——同一 ZPL 在 203 与 300 DPI 机器上表现不同。</li>
+            <li><strong>补打</strong>须二次鉴权并记审计（操作人、单号、原因），防止重复出库或重复贴标。</li>
+            <li>嵌入的二维码分辨率按打印尺寸生成，低清图放大打印后无法识别（详见<a href="#qr-code">二维码生成</a>）。</li>
+            <li>9100 端口、Print Agent 接口仅内网可达；模板与任务 API 走统一鉴权与 RBAC。</li>
+          </ul>
+
+          <p><strong>小结</strong>：标签能力 = <strong>设计规范</strong>（规格、模板版本、元素约束）+ <strong>渲染引擎</strong>（HTML/PDF/ZPL）+ <strong>打印通道</strong>（预览、Agent、网络代打）。MVP 可从「HTML 预览 + 手动打印」起步；产线规模化再上 ZPL 与 Print Agent 队列。</p>
+
+          <p class="section-reading">延伸阅读：Zebra ZPL 编程手册；JasperReports；OpenPDF；<a href="#qr-code">本章二维码生成</a>、<a href="#file-upload">文件上传 OSS</a>（模板与 PDF 归档）</p>
+        </div>
       </section>
 
       <section class="section" id="charts">
