@@ -411,71 +411,6 @@ jcmd  &lt;pid&gt; JFR.start name=gc settings=profile duration=180s filename=/tmp
         </article>
       </section>
 
-      <section class="section" id="oom-troubleshooting">
-        <h2>常见 OOM 与排障</h2>
-        <table border="1" cellspacing="0" cellpadding="8">
-          <thead>
-            <tr>
-              <th>OOM 类型</th>
-              <th>现象</th>
-              <th>本质问题</th>
-              <th>常见原因</th>
-              <th>排查方向</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Java heap space</td>
-              <td>堆内存溢出</td>
-              <td>Heap 被对象占满</td>
-              <td>大对象、内存泄漏、缓存无限增长、一次性加载数据</td>
-              <td>jmap dump + MAT、GC log 看 Full GC</td>
-            </tr>
-        
-            <tr>
-              <td>GC overhead limit exceeded</td>
-              <td>系统卡顿 + OOM</td>
-              <td>GC 大量运行但回收极少</td>
-              <td>内存严重不足、对象存活率高、Old Gen 压力大</td>
-              <td>看 Full GC 频率、Old Gen 是否持续高占用</td>
-            </tr>
-        
-            <tr>
-              <td>Metaspace</td>
-              <td>类相关 OOM</td>
-              <td>类元数据区满</td>
-              <td>动态代理类过多、ClassLoader 泄漏、频繁热部署</td>
-              <td>jcmd / Arthas 查看 classloader、类数量</td>
-            </tr>
-        
-            <tr>
-              <td>Direct buffer memory</td>
-              <td>NIO OOM</td>
-              <td>堆外内存不足</td>
-              <td>Netty/ByteBuffer 未释放、MaxDirectMemorySize 太小</td>
-              <td>Netty leak 检测、堆外内存监控</td>
-            </tr>
-        
-            <tr>
-              <td>Unable to create new native thread</td>
-              <td>无法创建线程</td>
-              <td>OS 线程资源耗尽</td>
-              <td>线程池失控、线程过多、ulimit限制、-Xss过大</td>
-              <td>ps -eLf、线程池配置、OS限制</td>
-            </tr>
-        
-            <tr>
-              <td>Requested array size exceeds VM limit</td>
-              <td>数组创建失败</td>
-              <td>数组过大超限</td>
-              <td>new 超大数组、一次性加载超大数据</td>
-              <td>检查数组大小 / 改为分批处理</td>
-            </tr>
-          </tbody>
-        </table>
-        排查 = 定位内存区域 + 找最大对象 + 判断泄漏或峰值问题
-      </section>
-
       <section class="section" id="jvm-flags">
         <h2>JVM 参数调优</h2>
         <article class="knowledge-card">
@@ -706,6 +641,78 @@ jcmd &lt;pid&gt; JFR.start name=latency settings=profile duration=180s filename=
             </ul>
           </div>
         </article>
+      </section>
+
+      <section class="section" id="oom-troubleshooting">
+        <h2>常见 OOM 与排障</h2>
+        <table border="1" cellspacing="0" cellpadding="8">
+          <thead>
+            <tr>
+              <th>OOM 类型</th>
+              <th>现象</th>
+              <th>本质问题</th>
+              <th>常见原因</th>
+              <th>排查方向</th>
+              <th>常见解决方法</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Java heap space</td>
+              <td>堆内存溢出</td>
+              <td>Heap 被对象占满</td>
+              <td>大对象、内存泄漏、缓存无限增长、一次性加载数据</td>
+              <td>jmap dump + MAT、GC log 看 Full GC</td>
+              <td>修复对象泄漏；给本地缓存设置容量、TTL 和淘汰策略；大文件/大查询改为分页、流式或分批处理；确认业务峰值确实需要后再调整 <code>-Xmx</code> 和容器内存</td>
+            </tr>
+        
+            <tr>
+              <td>GC overhead limit exceeded</td>
+              <td>系统卡顿 + OOM</td>
+              <td>GC 大量运行但回收极少</td>
+              <td>内存严重不足、对象存活率高、Old Gen 压力大</td>
+              <td>看 Full GC 频率、Old Gen 是否持续高占用</td>
+              <td>先定位并清理老年代长生命周期对象；降低分配速率和对象保活时间；拆分批任务或削峰限流；必要时增大堆、调整新老年代比例或切换更适合的 GC</td>
+            </tr>
+        
+            <tr>
+              <td>Metaspace</td>
+              <td>类相关 OOM</td>
+              <td>类元数据区满</td>
+              <td>动态代理类过多、ClassLoader 泄漏、频繁热部署</td>
+              <td>jcmd / Arthas 查看 classloader、类数量</td>
+              <td>修复 ClassLoader 泄漏，释放线程、ThreadLocal、静态集合和 SPI 引用；减少运行期无限生成代理类；控制热部署次数；按服务画像设置 <code>-XX:MaxMetaspaceSize</code></td>
+            </tr>
+        
+            <tr>
+              <td>Direct buffer memory</td>
+              <td>NIO OOM</td>
+              <td>堆外内存不足</td>
+              <td>Netty/ByteBuffer 未释放、MaxDirectMemorySize 太小</td>
+              <td>Netty leak 检测、堆外内存监控</td>
+              <td>确保 DirectByteBuffer、Netty ByteBuf、文件映射和连接资源及时释放；开启 Netty leak detection 定位遗漏；限制池化缓冲区规模；在容器预算内设置 <code>-XX:MaxDirectMemorySize</code></td>
+            </tr>
+        
+            <tr>
+              <td>Unable to create new native thread</td>
+              <td>无法创建线程</td>
+              <td>OS 线程资源耗尽</td>
+              <td>线程池失控、线程过多、ulimit限制、-Xss过大</td>
+              <td>ps -eLf、线程池配置、OS限制</td>
+              <td>收敛线程池数量和最大线程数，禁止无界创建线程；排查阻塞任务和连接池耗尽；适当降低 <code>-Xss</code>；提升进程、用户和容器的线程/进程限制</td>
+            </tr>
+        
+            <tr>
+              <td>Requested array size exceeds VM limit</td>
+              <td>数组创建失败</td>
+              <td>数组过大超限</td>
+              <td>new 超大数组、一次性加载超大数据</td>
+              <td>检查数组大小 / 改为分批处理</td>
+              <td>增加数组长度和数据量校验；避免一次性读入全量结果；改用分页、游标、流式解析或磁盘临时文件；对外部输入设置大小上限</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>排查 = 定位内存区域 + 找最大对象/类/线程 + 判断泄漏、峰值还是资源上限问题；解决 = 先修代码和资源生命周期，再按压测证据调整 JVM 与容器参数。</p>
       </section>
 
       <section class="section" id="production-checklist">
