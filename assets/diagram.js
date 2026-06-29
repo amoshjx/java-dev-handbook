@@ -1,12 +1,43 @@
 (function () {
   'use strict';
 
-  var MERMAID_LOCAL = 'assets/mermaid.min.js?v=10.9.3';
-  var MERMAID_CDN =
-    'https://cdn.jsdelivr.net/npm/mermaid@10.9.3/dist/mermaid.min.js';
+  var MERMAID_VERSION = '10.9.3';
+  var MERMAID_FILE = 'mermaid.min.js?v=' + MERMAID_VERSION;
+  // 国内可访问的 CDN 镜像（BootCDN / Staticfile / npmmirror）
+  var MERMAID_CDNS = [
+    'https://cdn.bootcdn.net/ajax/libs/mermaid/' +
+      MERMAID_VERSION +
+      '/mermaid.min.js',
+    'https://cdn.staticfile.net/mermaid/' +
+      MERMAID_VERSION +
+      '/mermaid.min.js',
+    'https://registry.npmmirror.com/mermaid/' +
+      MERMAID_VERSION +
+      '/files/dist/mermaid.min.js'
+  ];
   var MERMAID_WAIT_MS = 8000;
   var FONT_FAMILY =
     '"Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif';
+
+  function getDiagramScriptBase() {
+    var scripts = document.getElementsByTagName('script');
+    for (var i = scripts.length - 1; i >= 0; i--) {
+      var src = scripts[i].src;
+      if (src && src.indexOf('diagram.js') !== -1) {
+        return src.slice(0, src.lastIndexOf('/') + 1);
+      }
+    }
+    return 'assets/';
+  }
+
+  function resolveAssetUrl(file) {
+    var base = getDiagramScriptBase();
+    try {
+      return new URL(file, base).href;
+    } catch (e) {
+      return base + file;
+    }
+  }
 
   function loadScript(src) {
     return new Promise(function (resolve, reject) {
@@ -16,6 +47,20 @@
       s.onerror = reject;
       document.head.appendChild(s);
     });
+  }
+
+  function loadFirstScript(urls) {
+    var index = 0;
+
+    function tryNext() {
+      if (index >= urls.length) {
+        return Promise.reject(new Error('所有 Mermaid 资源均加载失败'));
+      }
+      var url = urls[index++];
+      return loadScript(url).catch(tryNext);
+    }
+
+    return tryNext();
   }
 
   function waitForGlobal(name, timeoutMs) {
@@ -42,12 +87,13 @@
 
   function ensureMermaid() {
     if (window.mermaid) return Promise.resolve(window.mermaid);
-    return loadScript(MERMAID_LOCAL)
+    var localUrl = resolveAssetUrl(MERMAID_FILE);
+    return loadScript(localUrl)
       .then(function () {
         return waitForGlobal('mermaid', MERMAID_WAIT_MS);
       })
       .catch(function () {
-        return loadScript(MERMAID_CDN).then(function () {
+        return loadFirstScript(MERMAID_CDNS).then(function () {
           return waitForGlobal('mermaid', MERMAID_WAIT_MS);
         });
       });

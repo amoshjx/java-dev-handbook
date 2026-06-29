@@ -57,7 +57,7 @@
         <article class="knowledge-card">
           <h3>结构化 Prompt 与角色设定</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>有效 Prompt 包含：角色、上下文、任务、约束、输出格式、验收标准。避免模糊动词（「优化一下」）；给出输入输出示例（few-shot）。复杂任务拆步：先设计接口签名，再实现，再补测试。引用具体文件路径与现有约定，减少幻觉。</p>
             <div class="diagram-block">
               <pre class="mermaid">flowchart TD
@@ -101,7 +101,7 @@
         <article class="knowledge-card">
           <h3>让 AI 当第一轮 Reviewer</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>提交 PR 前先用 AI 审查 diff：并发安全、事务边界、N+1、空指针、日志敏感信息、测试覆盖缺口。要求 AI 按严重级别分级（blocker/suggestion/nit）并引用行号。人工审查聚焦架构与业务语义，AI 主要用于提前暴露低级缺陷。</p>
           </div>
           <div class="card-block block-example">
@@ -131,7 +131,7 @@
         <article class="knowledge-card">
           <h3>从行为规格到测试用例</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>把 Given-When-Then 验收标准直接喂给 AI 生成 JUnit5 + AssertJ + Mockito 测试。指定命名规范、fixture 位置、禁止真实 DB。生成后人工审查：断言是否测行为而非实现、mock 是否过度。</p>
           </div>
           <div class="card-block block-example">
@@ -166,7 +166,7 @@ class PayOrderUseCaseTest {
         <article class="knowledge-card">
           <h3>数据隐私与供应链风险</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>禁止将生产密钥、用户 PII、未脱敏日志粘贴给外部模型。企业环境应使用隐私模式（privacy mode）或本地模型处理敏感代码。AI 建议引入的依赖需人工审计（如 typosquatting 风险）。许可证合规同样需要人工把关：AI 输出可能混入受限许可证代码片段。可通过 Cursor Rules 与 <code>.cursorignore</code> 排除 secrets 目录。</p>
           </div>
           <div class="card-block block-example">
@@ -198,7 +198,7 @@ class PayOrderUseCaseTest {
         <article class="knowledge-card">
           <h3>Agent 模式最佳实践</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>Cursor Agent 可跨文件读写、执行终端命令并调用 MCP。有效工作流：明确目标 → 限定范围（文件/模块）→ 分步验收 → 每步执行 git diff 人工审查。大重构先在 Plan 模式对齐方案，再进入 Agent 模式实施。用 Rules 固化项目约定（包结构、命名、测试风格）。</p>
           </div>
           <div class="card-block block-example">
@@ -290,7 +290,7 @@ class PayOrderUseCaseTest {
         <article class="knowledge-card">
           <h3>为 Agent 构建可控、可测、可复现的执行 Harness</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>Harness（执行约束框架）</strong>指包裹 LLM/Agent 的<strong>执行环境</strong>：不仅是一次性 Prompt，而是<strong>工具边界 + 上下文策略 + 输出契约 + 评估回路 + 人工审批</strong>的组合。裸 Prompt 容易让模型无约束扩写；Harness 让行为<strong>可预测、可审计、可回归</strong>。</p>
             <p>Java 团队尤其需要 Harness：<strong>编译/测试/静态分析</strong>是硬 gate；金融/政务要求<strong>变更可追溯</strong>；多模块 monorepo 里 Agent 误改 <code>pom.xml</code>、事务边界或密钥文件代价极高。Harness 把「AI 当实习生」变成「AI 在受控流水线里干活」。</p>
             <p><strong>核心组件</strong>（可分层落地）：</p>
@@ -413,7 +413,7 @@ jobs:
         <article class="knowledge-card">
           <h3>Gemma / Llama / Qwen / DeepSeek 选型与部署方式概览</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>当代码含业务逻辑、未脱敏日志或内网架构时，<strong>本地开源模型</strong>比公有云 API 更可控（见本章「安全边界」）。主流家族简要对比：</p>
             <ul>
               <li><strong>Gemma</strong>（Google）：采用 Gemma 专用许可条款（非 Apache License）；英文与代码能力强，9B/27B 适合审查与补全；Gemma 3 支持更长上下文与多模态（图像理解）。</li>
@@ -476,7 +476,7 @@ jobs:
         <article class="knowledge-card">
           <h3>Ollama 部署 Gemma 2/3 与 Java / Cursor 集成</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>Gemma</strong> 是 Google 发布的开源权重模型系列，当前主流：<strong>Gemma 2</strong>（2B / 9B / 27B，代码与推理较均衡）与 <strong>Gemma 3</strong>（1B / 4B / 12B / 27B，长上下文与多模态输入能力更强）。Java 开发场景可从 <code>gemma2:9b</code> 或 <code>gemma3:12b</code> 起步，再按延迟和质量逐步调参。</p>
             <p><strong>硬件要求</strong>：NVIDIA GPU 8 GB+ 体验更稳定；16 GB 系统内存可 CPU 推理（tokens/s 会明显下降）。Apple Silicon 可通过 Ollama 原生加速。无 GPU 时建议选 2B–4B 或高量化版本，并接受更高延迟。</p>
             <p><strong>隐私与离线优势</strong>：权重与推理可全部在本地执行，源码/配置/日志无需外发；适合金融、政务、内网 Maven 私服场景。即便如此，仍需用 <code>.cursorignore</code> 排除密钥文件并做好主机侧访问控制——本地部署不等于自动合规。</p>
@@ -625,7 +625,7 @@ public class CodeReviewAssistant {
         <article class="knowledge-card">
           <h3>Token 预算与知识沉淀</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>上下文窗口有限：优先给当前任务相关文件，而非整个 monorepo。重复性知识写入 Cursor Rules / Skills / ADR，而非每次会话重复粘贴。长会话后期 AI 容易遗忘早期约束——关键约束应写入 Rule 或每轮简要 recap。</p>
           </div>
           <div class="card-block block-tips">

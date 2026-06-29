@@ -58,7 +58,7 @@
         <article class="knowledge-card">
           <h3>企业 Java 应用开发的基础框架</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>Spring Framework</strong> 是企业级 Java 应用的基础框架，核心目标是把对象创建、依赖组装、横切能力、事务、Web 请求处理和数据访问统一到可测试、可替换、可演进的应用模型中。它不是某个单一 Web 框架，而是一组围绕 <strong>IoC Container（控制反转容器）</strong> 的开发能力。</p>
             <p>应用开发时要把 Spring 理解为“业务对象运行的容器”：容器管理 Bean，<strong>DI（Dependency Injection，依赖注入）</strong>连接对象，<strong>AOP（Aspect-Oriented Programming，面向切面编程）</strong>承载日志、审计、权限、事务等横切逻辑，<strong>Spring MVC</strong>处理 HTTP，<strong>Data Access Abstraction（数据访问抽象）</strong>统一 JDBC、事务与 ORM 集成。</p>
             <div class="diagram-block">
@@ -196,7 +196,7 @@
         <article class="knowledge-card">
           <h3>Bean 定义、组件扫描、构造器注入与生命周期</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>Bean</strong> 是由 Spring 容器创建和管理的对象。业务类通常用 <code>@Component</code>、<code>@Service</code>、<code>@Repository</code>、<code>@Controller</code> 通过 <strong>Component Scan（组件扫描）</strong>注册；第三方客户端、连接工厂、策略对象更适合通过 <code>@Configuration</code> + <code>@Bean</code> 显式定义。</p>
             <p>依赖注入优先使用<strong>构造器注入</strong>：依赖可见、字段可 <code>final</code>、测试可直接 new。默认 <strong>Scope（作用域）</strong> 是 singleton，每个 ApplicationContext 一个实例；prototype 每次获取新实例；Web 场景还有 request、session。生命周期从 BeanDefinition 加载、实例化、属性填充、Aware 回调、BeanPostProcessor、初始化，到容器关闭时销毁。</p>
           </div>
@@ -250,7 +250,7 @@ class PaymentConfig {
         <article class="knowledge-card">
           <h3>日志、审计、权限与事务背后的代理机制</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>AOP</strong> 用于把横切逻辑从业务方法中抽离。典型场景包括接口访问日志、操作审计、权限校验、幂等、限流、缓存和声明式事务。Spring AOP 默认基于代理：目标类有接口时可用 <strong>JDK Dynamic Proxy（JDK 动态代理）</strong>，无接口时常用 <strong>CGLIB</strong> 创建子类代理。</p>
             <p>理解代理是排障关键：调用方必须通过 Spring 代理对象进入方法，通知才会执行；同类 <code>this.method()</code> 自调用、<code>private</code> 方法、<code>final</code> 方法、非 Spring Bean 方法都容易让切面和事务失效。切面顺序用 <code>@Order</code> 控制，权限、事务、审计的先后要有明确策略。</p>
             <div class="diagram-block">
@@ -296,7 +296,7 @@ class AuditAspect {
         <article class="knowledge-card">
           <h3>DispatcherServlet、Controller、绑定、校验与异常处理</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>Spring MVC</strong> 的入口是 <strong>DispatcherServlet（前端控制器）</strong>。请求进入后依次经过 FilterChain、HandlerMapping、HandlerAdapter、Controller、参数绑定、校验、业务调用、返回值处理和 HttpMessageConverter。Controller 应保持薄：完成协议适配、入参校验、调用 Application Service、返回 DTO。</p>
             <p><strong>Filter（过滤器）</strong> 位于 Servlet 层，适合 TraceId、编码、认证入口、CORS；<strong>HandlerInterceptor（拦截器）</strong> 位于 MVC 层，适合审计、幂等、灰度标签。异常处理集中到 <code>@RestControllerAdvice</code>，把领域异常、校验异常和系统异常映射为稳定错误码与 <code>ProblemDetail</code>。</p>
             <div class="diagram-block diagram-rest-chain">
@@ -365,7 +365,7 @@ class ApiExceptionHandler {
         <article class="knowledge-card">
           <h3>JdbcTemplate、事务管理与 MyBatis / JPA 集成位置</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>Spring 的数据访问抽象把连接获取、资源释放、异常转换和事务同步统一起来。<strong>JdbcTemplate</strong> 适合显式 SQL、批处理和性能敏感路径；<strong>MyBatis</strong> 适合 SQL 可控、复杂报表和已有 SQL 资产；<strong>JPA</strong> 适合领域模型清晰、对象关系映射收益高的系统。它们都应位于 Repository / Infrastructure 层，由 Application Service 定义事务边界。</p>
             <p><strong>PlatformTransactionManager</strong> 是事务管理抽象：JDBC 使用 <code>DataSourceTransactionManager</code>，JPA 使用 <code>JpaTransactionManager</code>。Spring 还提供 <code>DataAccessException</code> 统一异常层，避免业务层直接依赖不同驱动的 SQLException。</p>
           </div>
@@ -414,7 +414,7 @@ public interface JpaOrderRepository extends JpaRepository&lt;OrderEntity, UUID&g
         <article class="knowledge-card">
           <h3>@Transactional 的传播、隔离、回滚规则与失效场景</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><code>@Transactional</code> 通过 AOP 代理在方法前后开启、提交或回滚事务。常用 <strong>Propagation（传播行为）</strong>：<code>REQUIRED</code> 加入当前事务或新建；<code>REQUIRES_NEW</code> 挂起当前事务新开事务；<code>NESTED</code> 使用保存点；<code>SUPPORTS</code> 有事务则加入。常用 <strong>Isolation（隔离级别）</strong> 包括 READ_COMMITTED、REPEATABLE_READ、SERIALIZABLE，默认通常交给数据库。</p>
             <p>默认只对 <code>RuntimeException</code> 和 <code>Error</code> 回滚，checked 异常需要 <code>rollbackFor</code>。事务边界应尽量短，不要把慢 HTTP、MQ 等外部调用长时间包在数据库事务里；跨服务一致性优先使用 Outbox、消息最终一致或 Saga，而不是分布式大事务。</p>
           </div>
@@ -456,7 +456,7 @@ class PlaceOrderService {
         <article class="knowledge-card">
           <h3>Environment、Profile、PropertySource 与外部化配置</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>Environment（环境抽象）</strong> 统一读取系统属性、环境变量、配置文件、命令行参数和自定义 <strong>PropertySource（属性源）</strong>。<strong>Profile</strong> 用于按环境启用 Bean 或配置，例如 dev、test、prod。应用代码应读取类型安全配置对象，而不是散落字符串 key。</p>
             <p>新项目优先使用 Java Config 和外部化配置：本地使用 YAML / properties，生产由环境变量、Secret、配置中心或部署平台注入。Profile 管环境差异，不应承载复杂业务分支。</p>
           </div>
@@ -499,7 +499,7 @@ app:
         <article class="knowledge-card">
           <h3>ApplicationEvent、监听器与同步 / 异步事件</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>ApplicationEvent（应用事件）</strong> 适合在同一应用内解耦模块，例如订单创建后发送站内信、记录审计、触发缓存刷新。默认事件是同步发布，监听器异常会影响发布方；启用 <code>@Async</code> 后可异步执行，但事务上下文、异常处理和重试策略需要单独设计。</p>
             <p>事件不是消息队列替代品。进程内事件适合同一 JVM 内的模块解耦；跨服务、可靠投递和削峰应使用 MQ，并配合 Outbox 或事务消息。</p>
           </div>
@@ -541,7 +541,7 @@ class OrderEventListener {
         <article class="knowledge-card">
           <h3>JSR 380 / Jakarta Validation 在入参与业务模型中的使用</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>Spring Framework 6 使用 Jakarta EE 9+ 命名空间，因此校验注解来自 <code>jakarta.validation</code>。Web 入参使用 <code>@Valid</code> 触发对象图校验，Service 方法级校验可用 <code>@Validated</code>。校验适合表达格式、长度、必填、范围、集合元素等规则；涉及库存、额度、状态流转的业务规则应放在领域对象或应用服务中。</p>
           </div>
           <div class="card-block block-example">
@@ -580,7 +580,7 @@ class CustomerService {
         <article class="knowledge-card">
           <h3>Controller / Application Service / Domain / Repository / Infrastructure</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>Spring 应用不是把所有类放进 service 包就结束。推荐按业务上下文组织包，再在上下文内分层：<strong>Controller</strong> 负责 HTTP 适配；<strong>Application Service</strong> 编排用例和事务；<strong>Domain</strong> 承载实体、值对象、领域服务和规则；<strong>Repository</strong> 表达持久化端口；<strong>Infrastructure</strong> 实现数据库、MQ、第三方客户端等技术细节。</p>
             <p>物理目录遵循 Maven/Gradle 标准布局（<code>src/main/java</code>、<code>src/main/resources</code>、<code>src/test/java</code>），源码包内再按业务上下文与分层职责划分；启动类与全局 <code>@Configuration</code> 通常放在根包，便于组件扫描覆盖全部业务模块。</p>
             <div class="diagram-block">
@@ -644,7 +644,7 @@ class CustomerService {
         <article class="knowledge-card">
           <h3>Boot 是基于 Spring 的工程化快速启动层</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>Spring Boot</strong> 不是 Spring Framework 的替代品，而是基于 Spring 的工程化快速启动层。Boot 提供 Starter 依赖组合、Auto Configuration（自动配置）、内嵌 Web Server、配置绑定、Actuator、测试切片与打包部署约定，让团队更快创建可运行应用。</p>
             <p>本章主角是 Spring Framework 的应用开发模型。Boot 在真实项目中通常作为脚手架和运行时约定使用：它减少样板配置，但底层仍是 IoC、AOP、MVC、事务、数据访问、Environment 与事件机制。高级开发者需要能解释 Boot 默认 Bean 从哪里来、如何覆盖和如何排障，但设计业务边界时仍以 Spring Framework 能力和分层原则为核心。</p>
           </div>
@@ -668,7 +668,7 @@ public class ShopApplication {
         <article class="knowledge-card">
           <h3>Actuator · 健康探针 · 优雅停机</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>生产环境 Spring Boot 应用须与 K8s 探针、发布策略对齐。<strong>Actuator</strong> 暴露运维端点；<strong>Liveness</strong> 判断进程是否存活（失败则重启 Pod）；<strong>Readiness</strong> 判断能否接流量（失败则从 Service 摘除）。<strong>Graceful Shutdown</strong> 在 SIGTERM 后停止接收新请求、等待在途请求完成再退出，避免发布时 502。</p>
             <p>安全：生产仅暴露 <code>health</code>、<code>info</code>、<code>prometheus</code>（若用），且须认证或网络隔离——详见<a href="17-security-development.html">第 17 章安全开发</a>。</p>
           </div>
@@ -723,7 +723,7 @@ management:
         <article class="knowledge-card">
           <h3>契约先行在 Spring Boot 的落地</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>springdoc-openapi</strong> 从 Controller 注解生成 OpenAPI 3 文档，或配合<strong>契约先行</strong>：先写 <code>openapi.yaml</code>，再生成接口骨架。与<a href="03-architecture-design.html#api-design">第 03 章 API 契约</a>、<a href="02-prototype-design.html">第 02 章 Mock</a>对齐：文档即单一事实源，CI 用 Spectral lint + 契约测试门禁。</p>
           </div>
           <div class="card-block block-example">
@@ -771,7 +771,7 @@ public class OrderController {
         <article class="knowledge-card">
           <h3>Entity / DTO / VO 转换规范</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>分层边界要求：<strong>Controller 只暴露 DTO/VO</strong>，不泄漏 JPA Entity 或懒加载关联。<strong>MapStruct</strong> 在编译期生成映射代码，性能优于反射，类型安全。复杂映射（枚举翻译、嵌套聚合）在 <code>@Mapper</code> 中声明 <code>@Mapping</code> 或 default 方法。</p>
           </div>
           <div class="card-block block-example">
@@ -809,7 +809,7 @@ public class OrderQueryService {
         <article class="knowledge-card">
           <h3>@Async · 事件 · 虚拟线程与上下文传播</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><code>@Async</code> 将方法提交到线程池执行，适合非阻塞通知、审计落库。<strong>虚拟线程</strong>（<code>spring.threads.virtual.enabled=true</code>）适合高并发阻塞 IO，见<a href="09-concurrency.html">第 09 章</a>。异步线程默认<strong>无</strong> SecurityContext / MDC / Locale——需 <code>DelegatingSecurityContextAsyncTaskExecutor</code> 或手动传播（见<a href="17-security-development.html">第 17 章</a>）。领域事件：事务提交后再发布（<code>@TransactionalEventListener(phase = AFTER_COMMIT)</code>）。</p>
           </div>
           <div class="card-block block-example">
@@ -840,7 +840,7 @@ class OrderAppService {
         <article class="knowledge-card">
           <h3>超时 · 重试 · 熔断 · 舱壁 · 限流</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>Resilience4j</strong> 为 Spring Boot 3 推荐的轻量容错库，替代 Hystrix。与<a href="03-architecture-design.html#api-design">第 03 章 API 幂等/重试</a>对齐：仅对幂等请求重试；熔断打开后快速失败，避免级联故障。网关层限流（Sentinel/Gateway）与应用层 Resilience4j 互补。</p>
           </div>
           <div class="card-block block-example">
@@ -883,7 +883,7 @@ class PaymentClient {
         <article class="knowledge-card">
           <h3>业务异常 · Problem Details · @ControllerAdvice</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>异常分层：<strong>业务异常</strong>（可预期，4xx，稳定 error code）vs <strong>系统异常</strong>（5xx，日志告警）。对外响应遵循 RFC 9457 <strong>Problem Details</strong>，与<a href="03-architecture-design.html#api-design">第 03 章错误规范</a>一致。错误码用英文常量（如 <code>order.not_found</code>），用户可见文案走 MessageSource（见<a href="16-common-modules.html#i18n">第 16 章 i18n</a>）。</p>
           </div>
           <div class="card-block block-example">

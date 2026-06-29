@@ -58,7 +58,7 @@
         <article class="knowledge-card">
           <h3>版本基线（Baseline）与安装顺序（Order）</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>建议安装顺序：<strong>Java 21 LTS → IDE → Git → Maven → Node.js LTS → Postman → WSL2 → WSL 内 Docker → WSL 内 minikube/kubectl → DBeaver → MobaXterm → 本地数据库</strong>。核心原则：先装运行时（Runtime），再装开发工具（Tools），最后装数据与远程协作组件，避免 PATH 冲突与依赖缺失。本地 K8s 在 WSL 中完成，见<a href="#minikube-wsl">WSL 内 minikube</a>，供<a href="13-build-packaging-deploy.html#kubernetes">第 13 章 K8s 部署</a>使用。</p>
           </div>
           <div class="card-block block-example">

@@ -57,7 +57,7 @@
         <article class="knowledge-card">
           <h3>Logback 分级、JSON 结构化、MDC traceId 与 ELK/Loki 采集</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>与操作审计分工</strong>：<a href="#audit-log">操作日志审计</a>记「谁对谁做了什么」——业务动作、合规留痕、可检索的审计表；<strong>系统日志</strong>记应用<strong>运行态</strong>——启动、依赖调用、异常栈、慢查询线索，面向运维排障与可观测性，通常不落业务审计表而走日志管道。<strong>日志分级</strong>（SLF4J）：<code>TRACE</code> 极细调试（生产关闭）；<code>DEBUG</code> 开发/联调用；<code>INFO</code> 关键业务里程碑与启动信息；<code>WARN</code> 可恢复异常、降级、重试；<code>ERROR</code> 需介入的失败（附 stack，勿吞异常）。原则：生产默认 <code>INFO</code>，包级可对 <code>com.yourcorp</code> 临时开 <code>DEBUG</code>；禁止用 <code>ERROR</code> 打正常分支。</p>
             <p><strong>Spring Boot 日志</strong>：默认 Logback（<code>spring-boot-starter-logging</code>）；可换 Log4j2（排除 logging 依赖）。<code>logback-spring.xml</code> 支持 Profile：<code>console</code> 开发、`rolling-file` 生产（按天+大小滚动，保留 30 天）。<code>application.yml</code> 可覆盖级别与文件路径：<code>logging.level.root</code>、<code>logging.file.name</code>。</p>
             <p><strong>结构化日志</strong>：单行 JSON 便于 Filebeat/Vector 解析；<code>logstash-logback-encoder</code> 的 <code>LogstashEncoder</code> 统一字段：<code>timestamp</code>、<code>level</code>、<code>logger</code>、<code>message</code>、<code>traceId</code>、<code>spanId</code>、<code>userId</code>、<code>service</code>（应用名）。Kibana/Loki 按字段过滤，避免正则扒文本。</p>
@@ -175,7 +175,7 @@ TaskDecorator mdcTaskDecorator() {
         <article class="knowledge-card">
           <h3>注解 + AOP 与变更前后快照</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>合规与排障需要「谁、何时、对什么、做了什么、结果如何」。实现：<code>@AuditLog(module, action)</code> + AOP 拦截 Controller 或 Service；记录 userId、IP、User-Agent、请求参数（脱敏）、耗时、成功/失败。数据变更：MyBatis 拦截器或 Envers 存 before/after JSON diff。存储：热数据 MySQL，冷数据 ES（第 21 章 ELK）；禁止记密码、Token、完整身份证号。查询：管理端分页检索，导出受 RBAC 与数据权限约束。</p>
           </div>
           <div class="card-block block-example">
@@ -231,7 +231,7 @@ public class AuditAspect {
         <article class="knowledge-card">
           <h3>Jakarta Bean Validation、分组校验与统一 400 响应</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>为何必须后端校验</strong>：前端/网关可被绕过，API 是唯一可信边界——格式、必填、长度、枚举范围必须在服务端兜底。<strong>Jakarta Bean Validation</strong>（Hibernate Validator）用声明式注解描述<strong>格式与简单约束</strong>：<code>@NotNull</code>、<code>@Size</code>、<code>@Pattern</code>、<code>@Email</code>、<code>@Min/@Max</code>；嵌套对象加 <code>@Valid</code> 级联校验。Controller 入参 <code>@Valid @RequestBody CreateOrderCmd cmd</code>；类级 <code>@Validated</code> 配合分组接口（如 <code>Create.class</code> / <code>Update.class</code>）区分新建与修改必填项。</p>
             <p><strong>分层分工</strong>：Controller/ DTO 层做<strong>格式校验</strong>（BV）；Service 层做<strong>业务规则</strong>（库存、状态、唯一性、跨字段逻辑）；<strong>多条件组合、可运营变更的复杂规则</strong>交给<a href="#rule-engine">规则引擎</a>——边界：「字段对不对」→ BV，「业务能不能做」→ Service/引擎。批量<a href="#excel">Excel 导入</a>在监听器里复用同一套 DTO 校验 + 行号聚合错误；持久层用参数化查询/ORM，防 SQL 注入见<a href="17-security-development.html#owasp-injection-xss-ssrf">第 17 章</a>。</p>
           </div>
@@ -330,7 +330,7 @@ public Order create(CreateOrderCmd cmd) {
         <article class="knowledge-card">
           <h3>@RestControllerAdvice、Problem Details 与分层错误码</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>全局异常处理</strong>是 API 层的<strong>统一出口</strong>：Controller/Service 只抛领域化异常（如 <code>BusinessException</code>），由 <code>@RestControllerAdvice</code>（或 <code>@ControllerAdvice</code>）集中映射为稳定的 HTTP 状态码、业务错误码与用户可见文案——避免每个接口 try-catch、避免把堆栈或 SQL 细节泄漏给客户端。</p>
             <p><strong>异常分层</strong>：① <strong>校验异常</strong>（<code>MethodArgumentNotValidException</code>、<code>ConstraintViolationException</code>）→ 400 + 字段级 errors，见<a href="#backend-validation">后端数据校验</a>；② <strong>业务异常</strong>（库存不足、状态非法）→ 4xx + 稳定 <code>code</code>（如 <code>order.stock.insufficient</code>）；③ <strong>鉴权/授权</strong>（Spring Security <code>AccessDeniedException</code>、自定义未登录）→ 401/403；④ <strong>系统异常</strong>（未捕获 <code>Exception</code>）→ 500 + 通用 <code>internal.error</code>，详细栈只写<a href="#system-logging">系统日志</a>。错误码命名与 HTTP 语义分工见<a href="03-architecture-design.html#api-design">第 03 章 API 设计</a>；Spring 机制细节见<a href="12-spring-framework.html#exception-handling">第 12 章统一异常</a>。</p>
             <p><strong>响应体约定</strong>：Spring Boot 3 推荐 RFC 9457 <strong>Problem Details</strong>（<code>ProblemDetail</code>），字段含 <code>type</code>、<code>title</code>、<code>status</code>、<code>detail</code>、扩展属性 <code>code</code>/<code>errors</code>；与 OpenAPI 中声明的 <code>ApiError</code> 模型保持一致，便于前端与网关统一解析。用户可见 <code>detail</code> 走 MessageSource + locale（见<a href="#i18n">国际化</a>），日志与对外文案分离。</p>
@@ -447,7 +447,7 @@ public Order get(Long id) {
         <article class="knowledge-card">
           <h3>springdoc-openapi 集成、注解建模与调试入口</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>Swagger / OpenAPI 是什么</strong>：OpenAPI 是 HTTP API 的标准描述格式，Swagger 生态提供可视化与调试能力。对 Java 团队，它不是「好看文档」，而是<strong>接口契约中心</strong>：前后端联调、第三方对接、测试用例生成、网关/SDK 生成都依赖同一份契约。Spring Boot 3.x 主流方案是 <strong>springdoc-openapi</strong>（替代老版本 springfox），可自动扫描 Controller、参数、返回结构并输出 <code>/v3/api-docs</code>。</p>
             <p><strong>架构位置</strong>：OpenAPI 文档属于「接口治理与开发体验」能力，和<a href="#backend-validation">后端校验</a>、<a href="#global-exception-handling">全局异常处理</a>、<a href="#rbac">RBAC</a>、<a href="#auth-sso">统一登录</a>协同：文档告诉调用方「怎么调」，鉴权、校验与异常映射决定「能不能调、调错怎么报」。生产环境建议仅内网开放或按环境开关。</p>
           </div>
@@ -535,7 +535,7 @@ springdoc:
         <article class="knowledge-card">
           <h3>SSO / OAuth2 / JWT 与网关统一鉴权</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>架构</strong>：Spring Authorization Server / Keycloak / 企业 IdP 签发 Token；业务服务为 Resource Server，只验签不存 Session。网关（Spring Cloud Gateway）统一校验 JWT、透传 <code>X-User-Id</code> / <code>Authorization</code>。Access Token 短生命周期（15–30 min），Refresh Token 长周期存 HttpOnly Cookie 或 Redis 白名单。多端登录：同账号允许多端或「踢后者」——Redis 存 <code>userId → latestTokenJti</code>，校验时比对。单点登出：IdP 回调 + 各服务 Token 黑名单（Redis，TTL=剩余有效期）。</p>
           </div>
           <div class="card-block block-example">
@@ -596,7 +596,7 @@ public void validateJti(String userId, String jti) {
         <article class="knowledge-card">
           <h3>Spring Security / Sa-Token 与菜单·按钮·API 三级权限</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>横切能力架构</strong>：RBAC/SSO 位于<strong>网关 + 认证层</strong>（统一 Token 校验），业务服务为 Resource Server；菜单/按钮/API 三级权限码同一套枚举。数据权限在 Repository 层拦截（与功能权限正交）。架构反模式：各微服务自建一套权限体系——应抽<strong>身份与权限平台</strong>或共享 auth 模块。与<a href="17-security-development.html#authentication">第 17 章 OAuth2</a>、<a href="03-architecture-design.html#api-design">第 03 章 BFF</a>联动。</p>
             <div class="diagram-block">
               <pre class="mermaid">flowchart TD
@@ -670,7 +670,7 @@ public record AuthVO(
         <article class="knowledge-card">
           <h3>行级 / 部门 / 租户隔离</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>场景</strong>：同表不同人看到不同行——本人数据、本部门、本部门及下级、自定义、全部（管理员）。<strong>方案选型</strong>：① MyBatis 拦截器 / MyBatis-Plus <code>DataPermissionInterceptor</code> 自动拼 <code>WHERE dept_id IN (...)</code>；② JPA <code>Specification</code> 或 Hibernate Filter；③ 注解 + AOP 把数据范围写入 ThreadLocal，Repository 层读取拼接。多租户：共享库加 <code>tenant_id</code> 列 + 租户解析器（Header/子域）；独立库/schema 适合强隔离合规场景。与 RBAC 关系：功能权限决定「能不能调接口」，数据权限决定「接口返回哪些行」。</p>
           </div>
           <div class="card-block block-example">
@@ -728,7 +728,7 @@ public Specification&lt;Order&gt; deptScope(Long deptId, Set&lt;Long&gt; childId
         <article class="knowledge-card">
           <h3>PageHelper / Spring Data Pageable 与复杂查询</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>MyBatis</strong> 生态用 <strong>PageHelper</strong>：<code>PageHelper.startPage(page, size)</code> 后紧跟查询，自动 count + limit。<strong>Spring Data JPA</strong> 用 <code>Pageable</code> + <code>Page&lt;T&gt;</code>。统一响应：<code>{ total, page, size, records }</code>。排序：白名单字段防 SQL 注入（<code>Sort.by(allowedFields)</code>）。多条件：QueryDSL / JPA Specification / MyBatis 动态 SQL <code>&lt;if&gt;</code>；复杂报表可专用 Query Object。导出联动：列表与导出共用同一 Query Service，导出时 <code>size=MAX</code> 或游标分批（见 Excel 章节）。</p>
           </div>
           <div class="card-block block-example">
@@ -781,7 +781,7 @@ public record PageResult&lt;T&gt;(long total, int page, int size, List&lt;T&gt; 
         <article class="knowledge-card">
           <h3>EasyExcel / POI 与大文件流式处理</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>选型</strong>：<strong>EasyExcel</strong>（阿里）流式读写，百万行内存可控；Apache POI 适合复杂样式、公式，大文件需 SXSSF 模式。导出：Controller 设 <code>Content-Disposition</code>，<code>EasyExcel.write(response.getOutputStream())</code> 分批查库写行。导入：监听器 <code>AnalysisEventListener</code> 逐批校验入库（如 500 行一批），失败行收集错误信息。模板下载：预置带下拉、表头说明的 xlsx 放 <code>resources/template/</code>。校验：JSR-380 + 业务规则（唯一性、外键）；错误回写生成「结果文件」供用户修正重导。</p>
           </div>
           <div class="card-block block-example">
@@ -838,7 +838,7 @@ public class OrderImportListener extends AnalysisEventListener&lt;OrderImportRow
         <article class="knowledge-card">
           <h3>本地存储、OSS 与预签名 URL</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>小文件可存本地/NFS；生产推荐对象存储（MinIO、阿里云 OSS、S3）。模式：前端直传 OSS（后端签 Policy/STS）减轻应用带宽；或经后端流式转发。元数据表记录 <code>file_id, original_name, bucket, object_key, size, mime, uploader</code>。下载：私有桶用预签名 URL（限时）；或后端 <code>StreamingResponseBody</code> 代理。安全：白名单扩展名 + Magic Number 校验、病毒扫描（ClamAV）、单文件大小与总配额限制。</p>
           </div>
           <div class="card-block block-example">
@@ -882,7 +882,7 @@ public SignedUrlVO downloadUrl(@PathVariable Long id) {
         <article class="knowledge-card">
           <h3>ZXing / Hutool 服务端生成、纠错级别与 Logo 叠加</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>典型场景</strong>：商品/资产追溯码、仓储拣货位、设备巡检点、活动签到、支付跳转 URL、小程序 scene 参数。架构上二维码生成属于<strong>轻量无状态能力</strong>——按业务主键或 URL 模板即时渲染 PNG/SVG，或预生成上传 <a href="#file-upload">OSS</a> 供 CDN 缓存。</p>
             <p><strong>选型</strong>：<strong>ZXing</strong>（<code>com.google.zxing:core</code> + <code>javase</code>）生态成熟、可控纠错与编码；<strong>Hutool</strong> <code>QrCodeUtil</code> 封装 ZXing，一行生成适合内部工具；前端 <code>qrcode.js</code> 适合纯展示、减轻服务端压力。服务端统一生成便于<strong>审计、水印、Logo 叠加</strong>与权限校验（防任意 URL 二维码钓鱼）。</p>
             <p><strong>编码与纠错</strong>：内容超容量时自动升 Version；中文须指定 <code>Charset.forName("UTF-8")</code>。纠错级别 <code>L/M/Q/H</code>（约 7%～30% 可恢复）——带 Logo 或户外标签选 <code>H</code>；纯数字 URL 用 <code>M</code> 即可。边距（quiet zone）至少 4 模块宽，否则扫码枪难识别。</p>
@@ -1107,7 +1107,7 @@ public class LabelController {
         <article class="knowledge-card">
           <h3>后端聚合 API 与 ECharts 数据约定</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>图表数据由<strong>后端聚合</strong>，前端只负责渲染——避免把明细拉到浏览器再 groupBy。接口设计：按图表类型返回 ECharts 友好结构——折线/柱状 <code>{ categories: [], series: [{ name, data: [] }] }</code>；饼图 <code>[{ name, value }]</code>。大屏：独立只读 API，Redis 缓存聚合结果（TTL 30s–5min），WebSocket 推送增量可选。报表 vs 实时：报表走 OLAP/预聚合表；实时监控走时序库或滑动窗口 SQL。权限：统计 API 同样套数据权限与 RBAC。</p>
           </div>
           <div class="card-block block-example">
@@ -1155,7 +1155,7 @@ public ChartVO orderTrend(@RequestParam YearMonth month) {
         <article class="knowledge-card">
           <h3>RestClient / WebClient / OpenFeign 与第三方·微服务调用</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>HTTP 请求模块</strong>是企业项目的<strong>出站集成层</strong>：调用第三方支付、短信/OCR、地图、ERP，或内部微服务 REST API。与<a href="#swagger-openapi">OpenAPI 文档</a>（描述「别人怎么调我」）相对，本章聚焦「我怎么调别人」。架构原则：业务 Service 不直接散落 <code>new HttpClient()</code>，而是经<strong>统一 Client 封装 + 防腐层（ACL）</strong>隔离外部 DTO 与领域模型；超时、重试、熔断、日志 traceId 在基础设施层统一治理。</p>
             <p><strong>客户端选型</strong>（Spring Boot 3）：<strong>RestClient</strong>——同步阻塞，MVC + 虚拟线程场景首选，替代已废弃的 RestTemplate；<strong>WebClient</strong>——响应式/异步，WebFlux 或需并发聚合多下游时用；<strong>OpenFeign</strong>——声明式 HTTP，微服务间强契约、配合 Nacos/LoadBalancer；底层仍可走 JDK <code>HttpClient</code>（见<a href="10-io-nio-network.html#http-client">第 10 章</a>）。容错与 Resilience4j 集成见<a href="12-spring-framework.html#resilience4j">第 12 章</a>；幂等与重试边界见<a href="03-architecture-design.html#api-design">第 03 章 API 设计</a>。</p>
             <div class="diagram-block">
@@ -1287,7 +1287,7 @@ public class TraceIdInterceptor implements ClientHttpRequestInterceptor {
         <article class="knowledge-card">
           <h3>Druid 连接池治理、监控与生产调优</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>Druid 定位</strong>：阿里开源的 JDBC 连接池（Connection Pool），核心价值是<strong>连接管理 + SQL 监控 + Web 控制台</strong>一体化，适合对数据库访问可观测性要求较高的中大型业务系统。<strong>适用场景</strong>：你需要在线观察 SQL 执行统计、慢 SQL、连接活跃度，且希望在不引入额外 APM 组件时也有基础诊断能力。</p>
             <p><strong>与 HikariCP 简要对比</strong>：<strong>HikariCP</strong>（Spring Boot 默认）性能与延迟表现更极致，配置更精简；<strong>Druid</strong>在监控治理能力上更「开箱即用」。选型建议：极致吞吐优先 HikariCP；运维监控与 SQL 画像优先 Druid。二者都可用于生产，关键在于参数治理与容量规划。</p>
             <p><strong>核心配置思想</strong>：<code>initialSize</code>/<code>minIdle</code>/<code>maxActive</code> 控制池容量；<code>maxWait</code> 控制获取连接等待上限；<code>timeBetweenEvictionRunsMillis</code> + <code>minEvictableIdleTimeMillis</code> 做空闲连接回收与健康检测；泄漏治理关注长事务和未关闭连接（Connection Leak）。建议结合第 11 章 SQL 优化与第 20 章容量评估一起调参。</p>
@@ -1413,7 +1413,7 @@ public class DruidMonitorConfig {
         <article class="knowledge-card">
           <h3>Spring @Scheduled、Quartz 与 XXL-JOB</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>选型</strong>：<code>@Scheduled</code> 适合单实例、简单 cron；<strong>Quartz</strong> 集群需 JDBC JobStore；<strong>XXL-JOB</strong> 国内常用，控制台调度、分片、失败告警、执行日志开箱即用。分布式防重复：Redis 分布式锁（Redisson <code>tryLock</code>）、数据库悲观锁、或 XXL-JOB 路由策略「第一个/分片」。任务要<strong>幂等</strong>：重复触发不产生脏数据。长任务：记录进度、支持中断；失败指数退避重试，最终进死信人工处理。</p>
           </div>
           <div class="card-block block-example">
@@ -1468,7 +1468,7 @@ public void orderTimeoutCancel() {
         <article class="knowledge-card">
           <h3>站内信、邮件、短信与 WebSocket / SSE</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>消息通知</strong>在架构中属于<strong>异步集成层</strong>：业务服务写 Outbox（与本地事务同事务）→ MQ → 通知消费者调用短信/邮件/站内信/WebSocket 网关。通道选型：交易类必达 → MQ + 重试 + DLQ；实时推送 → WebSocket/SSE（集群用 Redis Pub/Sub 广播）。架构原则：同步 HTTP 不阻塞等第三方通知；频控与模板在通知服务统一治理。与<a href="21-devops-cloud-native.html#messaging">第 21 章 MQ</a>、<a href="03-architecture-design.html#architecture-patterns">第 03 章 Outbox</a>一致。</p>
           </div>
           <div class="card-block block-example">
@@ -1519,7 +1519,7 @@ public SseEmitter inbox(@AuthenticationPrincipal User u) {
         <article class="knowledge-card">
           <h3>Flowable / Camunda 与 Spring Statemachine</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>工作流</strong>在架构中承担<strong>人机协同编排</strong>：BPMN 引擎（Flowable/Camunda）管审批流实例与任务；业务表存 <code>process_instance_id</code> 关联。与纯状态机分工：多级审批/会签/驳回 → BPMN；系统内订单状态流转 → 轻量状态机（枚举+转移表）。与 AI Agent 结合：LLM 填表单 → 工作流审批节点 → 执行 Tool（见<a href="23-business-intelligence.html#agent-workflow-design">第 01 章 Agent</a>）。反模式：在 Controller 散落 <code>setStatus</code> 绕过合法转移。</p>
             <div class="diagram-block">
               <pre class="mermaid">stateDiagram-v2
@@ -1587,7 +1587,7 @@ public void transit(Order order, OrderStatus target) {
         <article class="knowledge-card">
           <h3>Drools / Easy Rules / Aviator 与 Spring 集成</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>何时用规则引擎 vs 硬编码</strong>：规则<strong>少且稳定</strong>（如订单状态转移）→ 代码 + 枚举即可；规则<strong>多、变、需业务人员参与</strong>（定价档位、风控策略、促销叠加）→ 外置到引擎。硬编码 if-else 链在需求频繁变更时产生「改一行崩全局」——规则引擎把<strong>决策逻辑与执行代码解耦</strong>，支持版本、审计与热更新。</p>
             <p><strong>选型简述</strong>：<strong>Drools</strong>（Red Hat，国内金融/电商常用）——完整 RETE 引擎，支持 <code>.drl</code> 与 Excel 决策表；<strong>Easy Rules</strong>——轻量 POJO 规则，适合简单 if-then；<strong>Aviator</strong>（阿里）——高性能表达式引擎，适合动态公式/脚本化计算（定价表达式、 eligibility 表达式）。<strong>场景</strong>：定价、风控拦截、促销互斥、审批分支条件、会员 eligibility 判断。</p>
             <p><strong>Spring 集成</strong>：Drools 注入 <code>KieContainer</code> / <code>KieSession</code>，规则放 <code>resources/rules/*.drl</code> 或 <code>.xlsx</code> 决策表；执行前 <code>insert(fact)</code>，<code>fireAllRules()</code> 后读取 fact 上结论字段。与<a href="#workflow">工作流</a>分工：<strong>工作流</strong>管「谁在什么节点、任务怎么流转」；<strong>规则引擎</strong>管「这个节点/这个请求该不该通过、算多少钱」——BPMN 网关条件可调用规则服务，但不要把长流程编排写进 DRL。</p>
@@ -1681,7 +1681,7 @@ public class BlacklistRule {
         <article class="knowledge-card">
           <h3>索引设计 · 数据同步 · 检索 API · 重建与一致性</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>适用</strong>：关键词/模糊/聚合/高亮搜索。<strong>不适用</strong>：强一致、万级以下简单前缀——MySQL 即可。MySQL 为 Source of Truth，ES 为 CQRS 读模型（见<a href="03-architecture-design.html#data-architecture">第 03 章数据架构</a>）。同步：<strong>Outbox+CDC</strong> 生产默认；应用双写仅 PoC。</p>
             <pre><code>| 方案          | 优点           | 风险           |
 |---------------|----------------|----------------|
@@ -1721,7 +1721,7 @@ public record OrderSearchDoc(
         <article class="knowledge-card">
           <h3>数据字典、系统参数与缓存刷新</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>数据字典</strong>：枚举的可运营版本——<code>dict_type</code> + <code>dict_item</code>（code、label、sort、status）；前端下拉、后端校验共用 API <code>/api/dict/{type}</code>。系统参数：键值配置（如超时分钟数、开关 feature），管理端 CRUD，应用启动加载 + Redis 缓存；变更发 MQ/Nacos 通知各实例刷新（第 21 章 Nacos）。与 Feature Flag 区别：字典偏展示标签，参数偏运行时行为。业务字典多语言详见<a href="#i18n">国际化（i18n）</a>。</p>
           </div>
           <div class="card-block block-example">
@@ -1772,7 +1772,7 @@ public class SysConfigService {
         <article class="knowledge-card">
           <h3>静态文案 · 动态字典 · 错误码 · API 与 Locale 约定</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>i18n 分层：<strong>静态 UI</strong>（前端 vue-i18n）· <strong>后端消息</strong>（MessageSource）· <strong>动态字典</strong>（DB 多语言列/子表）· <strong>API</strong>（枚举 code 不变，label 随 locale）。Locale 优先级：用户 profile → <code>Accept-Language</code> → 默认 <code>zh_CN</code>。需求阶段见<a href="01-requirements-analysis.html">第 01 章 NFR</a>；统一异常见<a href="12-spring-framework.html#exception-handling">第 12 章</a>、<a href="03-architecture-design.html#api-design">Problem Details</a>。</p>
           </div>
           <div class="card-block block-example">
@@ -1818,7 +1818,7 @@ public List&lt;DictItemVO&gt; items(@PathVariable String type, Locale locale) {
         <article class="knowledge-card">
           <h3>发布开关 · 实验开关 · 运维 Kill Switch</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>Feature Flag</strong> 让未完成特性合并 main 但不暴露用户（见<a href="04-project-scheduling.html">第 04 章</a>、<a href="19-testing-quality.html#uat-environment">UAT 特性开关</a>）。分级：<strong>发布开关</strong>（版本灰度）· <strong>实验开关</strong>（A/B）· <strong>Kill Switch</strong>（故障止损）。实现：Unleash / FF4J / <code>@ConditionalOnProperty</code> + Nacos 动态配置。</p>
           </div>
           <div class="card-block block-example">
@@ -1837,7 +1837,7 @@ class NewCheckoutService { ... }
         <article class="knowledge-card">
           <h3>注册登录、资料维护与多端账号绑定</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>能力边界</strong>：注册/登录、个人资料、头像、密码修改、账号注销；用户状态（启用/禁用/锁定）；多端绑定（手机/邮箱/微信 OAuth）。<strong>表设计</strong>：<code>user</code>（账号主体：username、password_hash、status、lock_until、deleted_at）；<code>user_profile</code>（昵称、性别、生日等非鉴权字段）；<code>user_oauth</code>（provider、open_id、union_id、bind_time）；手机/邮箱可独立 <code>user_credential</code> 表便于换绑。密码只存 BCrypt/Argon2 哈希（见第 19 章 password-encoding）；头像存 OSS key，列表返回缩略图 URL。<strong>分层</strong>：Controller 收 DTO → UserService 编排 → UserRepository / OAuthRepository；对外 VO 脱敏（手机中间四位）。<strong>与鉴权关系</strong>：本模块管「账号生命周期」，登录态与 Token 签发见本章 <a href="#auth-sso">统一登录验证</a>；角色菜单见 <a href="#rbac">RBAC</a>——登录成功后按 userId 加载权限，勿在用户模块硬编码角色逻辑。</p>
           </div>
           <div class="card-block block-example">
@@ -1914,7 +1914,7 @@ public void onLoginFail(String account) {
         <article class="knowledge-card">
           <h3>微信/支付宝/银联统一下单、回调验签与对账退款</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>支付模块</strong>在架构中位于<strong>集成适配层</strong>：统一 <code>PaymentGateway</code> 门面屏蔽微信/支付宝/银联差异；<code>pay_order</code> 为支付域 SoT。主链路：统一下单 → 异步回调（验签+幂等）→ Outbox 投递「支付成功」事件 → 下游发货/开权益（与<a href="03-architecture-design.html#architecture-patterns">第 03 章 Saga/Outbox</a>一致）。回调 HTTP 线程只做验签+改态，长事务走 MQ。T+1 对账 Job 兜底最终一致。演进：MVP 单渠道 → 适配器模式扩展多渠道。</p>
             <div class="diagram-block">
               <pre class="mermaid">sequenceDiagram

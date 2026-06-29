@@ -58,7 +58,7 @@
         <article class="knowledge-card" id="sla-slo-sli">
           <h3>SLA / SLO / SLI</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <ul>
               <li><strong>SLI</strong>：可观测指标，例如可用性、延迟、错误率。</li>
               <li><strong>SLO</strong>：服务目标，例如“月可用性 99.9%、P95 &lt; 200ms”。</li>
@@ -70,7 +70,7 @@
         <article class="knowledge-card" id="qps-tps-rps">
           <h3>QPS / TPS / RPS</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <ul>
               <li><strong>QPS</strong>：每秒查询数（Queries Per Second），偏读查询口径。</li>
               <li><strong>TPS</strong>：每秒事务数（Transactions Per Second），偏业务事务口径。</li>
@@ -82,7 +82,7 @@
         <article class="knowledge-card" id="rbac-abac">
           <h3>RBAC / ABAC</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <ul>
               <li><strong>RBAC</strong>：基于角色授权，规则稳定、治理简单。</li>
               <li><strong>ABAC</strong>：基于属性授权（主体/资源/环境），表达力更强。</li>
@@ -94,7 +94,7 @@
         <article class="knowledge-card" id="bff">
           <h3>BFF（Backend For Frontend）</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>按前端端形态（Web/小程序/App）拆分后端聚合层，统一鉴权、聚合数据、裁剪字段，降低前端跨服务编排复杂度。</p>
           </div>
         </article>
@@ -102,7 +102,7 @@
         <article class="knowledge-card" id="tdd">
           <h3>TDD（Test-Driven Development）</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>测试驱动开发：先写失败测试（Red）→ 通过实现（Green）→ 重构（Refactor），以测试作为重构安全网。</p>
           </div>
         </article>
@@ -110,7 +110,7 @@
         <article class="knowledge-card" id="ci-cd">
           <h3>CI / CD</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <ul>
               <li><strong>CI</strong>：持续集成，强调频繁合并、自动构建与测试。</li>
               <li><strong>CD</strong>：持续交付/部署，强调可重复发布与快速回滚。</li>
@@ -122,7 +122,7 @@
         <article class="knowledge-card" id="blue-green-canary">
           <h3>Blue-Green / Canary</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <ul>
               <li><strong>Blue-Green</strong>：双环境切换，回滚快、资源成本高。</li>
               <li><strong>Canary</strong>：按比例灰度放量，风险可控、观测要求高。</li>
@@ -134,7 +134,7 @@
         <article class="knowledge-card" id="p95-p99">
           <h3>P95 / P99</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>延迟分位数指标：P95 表示 95% 请求低于该值，P99 更关注长尾性能，常用于 SLO 与容量规划。</p>
           </div>
         </article>
@@ -142,7 +142,7 @@
         <article class="knowledge-card" id="mttr">
           <h3>MTTR（Mean Time To Recovery）</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>平均恢复时间，衡量故障从发现到恢复服务的效率，是 DevOps 与 SRE 核心稳定性指标。</p>
           </div>
         </article>
@@ -150,7 +150,7 @@
         <article class="knowledge-card" id="adr">
           <h3>ADR（Architecture Decision Record）</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>架构决策记录，包含背景、备选方案、取舍理由、影响面与回滚策略，用于审计和知识传承。</p>
           </div>
         </article>
@@ -158,7 +158,7 @@
         <article class="knowledge-card" id="idempotency">
           <h3>Idempotency（幂等性）</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>同一请求重复执行对业务状态影响一致，常用于支付、下单、回调等场景防重处理。</p>
           </div>
         </article>
@@ -166,7 +166,7 @@
         <article class="knowledge-card" id="finops-tco">
           <h3>FinOps / TCO</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>FinOps</strong>：云成本治理实践。<strong>TCO</strong>（Total Cost of Ownership）含计算、存储、出站、MQ、AI Token 等全栈成本。见<a href="03-architecture-design.html#finops-cloud-cost">第 03 章</a>。</p>
           </div>
         </article>
@@ -174,7 +174,7 @@
         <article class="knowledge-card" id="egress">
           <h3>Egress（出站流量）</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>云环境中数据传出公网/跨 Region 的流量，常为隐性成本大头；CDN 与 BFF 聚合可优化。</p>
           </div>
         </article>
@@ -182,7 +182,7 @@
         <article class="knowledge-card" id="outbox">
           <h3>Outbox Pattern</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>业务变更与事件写入同一数据库事务，异步投递消息，避免「业务成功但事件丢失」。见<a href="03-architecture-design.html#event-driven-architecture">第 03 章 EDA</a>。</p>
           </div>
         </article>
@@ -190,7 +190,7 @@
         <article class="knowledge-card" id="dlq">
           <h3>DLQ（Dead Letter Queue）</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>消息重试耗尽后进入死信队列，供人工排查与重放，防止 poison message 阻塞消费。</p>
           </div>
         </article>
@@ -198,7 +198,7 @@
         <article class="knowledge-card" id="feature-flag">
           <h3>Feature Flag</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>运行时开关控制特性可见性，支持灰度发布与 Kill Switch。见<a href="16-common-modules.html#feature-flags">第 16 章</a>。</p>
           </div>
         </article>
@@ -206,7 +206,7 @@
         <article class="knowledge-card" id="dsr">
           <h3>DSR（Data Subject Request）</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>数据主体权利请求：导出、更正、删除、被遗忘。见<a href="01-requirements-analysis.html#dsr-compliance">第 01 章</a>。</p>
           </div>
         </article>
@@ -214,7 +214,7 @@
         <article class="knowledge-card" id="sbom">
           <h3>SBOM</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>软件物料清单，列出依赖及版本，用于供应链安全与 CVE 响应。见<a href="17-security-development.html#sbom-supply-chain">第 17 章</a>。</p>
           </div>
         </article>
@@ -222,7 +222,7 @@
         <article class="knowledge-card" id="graph-database">
           <h3>图数据库（Graph Database）</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>以点、边、属性建模关系网络，擅长多跳遍历与路径分析；通常作 OLTP 的读模型，由 CDC 同步。与向量库、Ontology 组合用于 GraphRAG/风控。见<a href="03-architecture-design.html#graph-database-selection">第 03 章图数据库选型</a>、<a href="24-palantir-aip.html#aip-ontology-rag">第 24 章 GraphRAG</a>。</p>
           </div>
         </article>
@@ -230,7 +230,7 @@
         <article class="knowledge-card" id="aip-ontology">
           <h3>AIP / Ontology / Guardrails</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <ul>
               <li><strong>AIP</strong>（Artificial Intelligence Platform）：企业级 AI 微操作系统，四层隔离（网关、本体、护栏、回写），非单纯聊天框。见<a href="24-palantir-aip.html#aip-four-layers">第 24 章</a>。</li>
               <li><strong>Ontology</strong>：将异构数据映射为统一业务对象与关系图，供 LLM 检索与推理，禁止裸库直连。</li>
@@ -242,7 +242,7 @@
         <article class="knowledge-card" id="i18n-l10n">
           <h3>i18n / l10n</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>i18n</strong>（国际化）：设计支持多语言。<strong>l10n</strong>（本地化）：具体语言/区域适配。见<a href="16-common-modules.html#i18n">第 16 章</a>。</p>
           </div>
         </article>

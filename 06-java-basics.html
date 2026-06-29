@@ -210,7 +210,7 @@
         <article class="knowledge-card">
           <h3>Stream 常用操作速查</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <ul>
               <li><strong>心智模型：</strong>Stream 是声明式管道，不修改源数据；结构为 source → intermediate（惰性）→ terminal（触发求值）。</li>
               <li><strong>入口：</strong>日常从 <code>list.stream()</code> 或 <code>Arrays.stream(arr)</code> 开始；无终止操作时中间步骤不执行。</li>
@@ -274,7 +274,7 @@ double avgQty = orders.stream()
         <article class="knowledge-card" id="collectors">
           <h3>Collectors：toList / toMap / groupingBy</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <ul>
               <li><strong>toList：</strong>Java 16+ 优先 <code>.toList()</code>；需可变容器用 <code>Collectors.toCollection(ArrayList::new)</code>。</li>
               <li><strong>toMap：</strong><code>toMap(keyFn, valueFn, mergeFn)</code>——key 可能重复时必须传 mergeFn，否则抛 <code>Duplicate key</code>；value 不可为 null。</li>

@@ -727,6 +727,20 @@ body.has-chapter-toc .layout {
 .card-block ul { margin: 0.35rem 0 0; padding-left: 1.2rem; }
 .card-block p { margin: 0.35rem 0 0; }
 
+.card-block strong {
+  font-weight: 700;
+}
+
+.card-block.block-example strong { color: var(--accent); }
+.card-block.block-tips strong { color: var(--success); }
+.card-block.block-pitfalls strong { color: var(--danger); }
+.card-block.block-memory strong { color: var(--purple); }
+.card-block.block-deliverable strong { color: var(--warning); }
+.card-block.block-reading strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
 .block-explain {
   border-color: var(--explain-accent);
   background: linear-gradient(145deg, var(--explain-bg-start) 0%, var(--explain-bg-end) 100%);
@@ -756,27 +770,22 @@ body.has-chapter-toc .layout {
 }
 
 .block-explain > p {
-  margin: 0 0 0.85em;
+  margin: 0;
   max-width: var(--explain-line-width);
 }
 
 .block-explain > p:first-of-type {
   font-size: 0.97rem;
   line-height: 1.78;
-  margin-bottom: 0.9em;
-}
-
-.block-explain > p:last-child {
-  margin-bottom: 0;
 }
 
 .block-explain > p + p,
 .block-explain > p.explain-sentence + p.explain-sentence {
-  margin-top: 0.55em;
+  margin-top: 0;
 }
 
 .block-explain > p.explain-sentence {
-  margin-bottom: 0.75em;
+  margin-bottom: 0;
 }
 
 .block-explain > p.explain-sentence:last-child {
@@ -788,6 +797,12 @@ body.has-chapter-toc .layout {
   font-weight: 700;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
+}
+
+.block-explain strong:not(.explain-strong-lead) {
+  background: var(--explain-concept-soft);
+  padding: 0.02em 0.22em;
+  border-radius: 3px;
 }
 
 .block-explain strong.explain-strong-lead {
@@ -805,19 +820,17 @@ body.has-chapter-toc .layout {
 }
 
 .block-explain strong.explain-strong-head {
-  display: block;
+  display: inline;
   color: var(--explain-concept);
   font-weight: 700;
-  margin-top: 0.65em;
-  margin-bottom: 0.12em;
   line-height: 1.55;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
 
-.block-explain > p:first-of-type strong.explain-strong-head:first-child,
-.block-explain > p.explain-sentence:first-of-type strong.explain-strong-head:first-child {
-  margin-top: 0;
+.block-explain strong.explain-strong-head::before {
+  content: "\A";
+  white-space: pre;
 }
 
 .block-explain em {
@@ -1286,7 +1299,6 @@ code {
   .block-explain > p,
   .block-explain ul,
   .block-explain ol { max-width: none; }
-  .block-explain strong.explain-strong-head { margin-top: 0.55em; }
 }
 
 @media print {
@@ -1307,6 +1319,14 @@ code {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
+  .block-explain strong:not(.explain-strong-lead) {
+    background: #dbeafe !important;
+  }
+  .card-block.block-example strong { color: #2563eb !important; }
+  .card-block.block-tips strong { color: #059669 !important; }
+  .card-block.block-pitfalls strong { color: #dc2626 !important; }
+  .card-block.block-memory strong { color: #7c3aed !important; }
+  .card-block.block-deliverable strong { color: #d97706 !important; }
   .block-explain strong.explain-strong-lead,
   .block-explain strong.explain-strong-head {
     color: #1d4ed8 !important;

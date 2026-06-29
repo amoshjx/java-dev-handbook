@@ -57,7 +57,7 @@
         <article class="knowledge-card">
           <h3>RED / USE 与 SLI/SLO</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>服务层 RED：Rate（QPS）、Errors（错误率）、Duration（延迟分位）。资源层 USE：Utilization、Saturation、Errors。调优<strong>证据链</strong>：症状（告警/投诉）→ 指标确认（RED/USE）→ Profile（JFR/火焰图/堆 dump）→ 根因 → 修复 → 压测验证 SLO。无 Profile 不调 JVM 参数；无压测不宣称「已优化」。</p>
             <div class="diagram-block">
               <pre class="mermaid">flowchart TD
@@ -96,7 +96,7 @@ ALERT ErrorBudgetBurn
         <article class="knowledge-card">
           <h3>火焰图与线程栈</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>CPU 高：用 async-profiler 分别做 <code>-e cpu</code> 与 <code>-e wall</code> 采样，宽帧即热点。CPU 低但 QPS 上不去：查 BLOCKED/WAITING 线程（锁、连接池、DB）。内存高：Heap Dump + MAT Dominator Tree。分配速率异常：async-profiler <code>-e alloc</code> 或 JFR Object Allocation 事件。预发复现优先于生产 attach；生产侧更推荐短时 JFR（<code>settings=profile</code>），通常可控在低开销（常见约 1%~2%）。</p>
             <div class="diagram-block">
               <pre class="mermaid">flowchart LR
@@ -142,7 +142,7 @@ curl localhost:8080/actuator/prometheus | grep jvm_threads_states</code></pre>
         <article class="knowledge-card">
           <h3>从 GC 日志到参数调整</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>关注指标：GC 频率、单次 pause 时间、allocation rate、晋升失败/疏散失败（promotion failed / evacuation failure）。Young GC 频繁可能是堆太小或对象创建过快；Full GC 频繁可能与老年代压力、metaspace 增长异常或显式 GC 调用有关。调优顺序：先修复代码与对象生命周期问题 → 再调堆大小与代际比例 → 再选收集器 → 最后微调参数。</p>
           </div>
           <div class="card-block block-example">
@@ -341,7 +341,7 @@ int ttl = 300 + ThreadLocalRandom.current().nextInt(60);</code></pre>
         <article class="knowledge-card">
           <h3>压测类型、工具、指标与完整流程</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>压测类型</strong>（别混用术语）：<strong>基准测试（Benchmark）</strong>——单接口、固定并发，建立性能基线；<strong>负载测试（Load）</strong>——预期日常流量下验证 SLO；<strong>压力测试（Stress）</strong>——持续加压直到错误率上升或资源饱和，找系统拐点；<strong>稳定性/浸泡测试（Soak）</strong>——中等负载长时间运行，暴露内存泄漏、连接泄漏、GC 恶化；<strong>峰值测试（Spike）</strong>——短时流量尖刺，验证限流、熔断与队列缓冲。</p>
             <p><strong>工具选型</strong>：通用 <strong>JMeter</strong>（GUI + CLI，生态最大）、<strong>k6</strong>（JS 脚本、thresholds 内置）、<strong>Gatling</strong>（Scala DSL、高并发报告精美）、<strong>wrk</strong>/<strong>ab</strong>（快速 HTTP 探针）。Java 生态常用 <strong>Gatling</strong> 或 <strong>JMeter</strong> 对 Spring Boot REST 做场景化脚本；k6 适合 CI 门禁。压测机与 SUT 分离，避免压测端 CPU 成为瓶颈。</p>
             <p><strong>性能指标</strong>：吞吐统一按 <strong>QPS</strong> 表达（HTTP 场景下常与 RPS 近似等价，TPS 需按业务事务口径单独定义）；延迟 <strong>Avg、P50/P90/P95/P99、Max</strong>（对外承诺看 P95/P99，别只报 Avg）；<strong>错误率</strong>、<strong>并发用户数/VU</strong>；资源 <strong>CPU、内存、GC pause、线程池队列、DB 连接池、慢 SQL</strong>。与<a href="#metrics">指标体系卡片</a>衔接：<strong>SLI</strong>（可测，如 p99 延迟）→ <strong>SLO</strong>（目标，如 p99 &lt; 200ms）→ 压测<strong>验收标准</strong>（预发/发布前必须通过）。</p>
@@ -462,7 +462,7 @@ class OrderSimulation extends Simulation {
         <article class="knowledge-card">
           <h3>Micrometer 对齐、压测报告与容量规划</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>压测期间的指标应与生产<strong>同一套</strong>导出方式：<strong>Micrometer</strong> → <strong>Prometheus</strong> scrape → Grafana 看板（详见<a href="21-devops-cloud-native.html#observability">第 21 章可观测性</a>）。压测脚本 thresholds 与 Prometheus 告警规则使用相同 SLI 口径，避免「压测通过、上线告警」两套标准。</p>
             <p><strong>压测报告模板</strong>（发布评审附件）：场景说明、并发曲线、QPS/P50/P95/P99、错误率、资源峰值（CPU/堆/GC/连接池）、与 SLO 对照表、瓶颈与待办。未达标项必须链到调优工单，禁止仅凭「感觉更快」上线。</p>
             <p><strong>与容量规划</strong>：拐点 QPS × 安全系数 = 单机/集群目标；结合业务增长预测与多 AZ 冗余，反推实例数、DB 规格与缓存容量。压测是<strong>验证</strong>容量模型，不是替代监控。</p>

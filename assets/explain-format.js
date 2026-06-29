@@ -1,12 +1,12 @@
 /**
- * 讲解块自动断句与 strong 分段（仅排版，不改文案）
+ * 概要块自动断句与 strong 分段（仅排版，不改文案）
  * 依赖：DOM 就绪后执行；与 chapter-toc.js 顺序：本脚本在前
  */
 (function () {
   "use strict";
 
   var MIN_SPLIT_LEN = 80;
-  var PROTECTED = { CODE: 1, A: 1, PRE: 1 };
+  var PROTECTED = { CODE: 1, A: 1, PRE: 1, STRONG: 1, EM: 1, BR: 1 };
 
   function textLen(el) {
     return (el.textContent || "").replace(/\s+/g, "").length;
@@ -44,14 +44,45 @@
     return /^[\s：:]+/.test(n.textContent);
   }
 
+  function directStrongCount(p) {
+    var count = 0;
+    var kids = p.childNodes;
+    for (var i = 0; i < kids.length; i++) {
+      if (kids[i].nodeType === 1 && kids[i].nodeName === "STRONG") count++;
+    }
+    return count;
+  }
+
+  function trimLeadingWhitespace(fragment) {
+    while (fragment.firstChild && fragment.firstChild.nodeType === 3) {
+      var trimmed = fragment.firstChild.textContent.replace(/^\s+/, "");
+      if (!trimmed) {
+        fragment.removeChild(fragment.firstChild);
+        continue;
+      }
+      if (trimmed !== fragment.firstChild.textContent) {
+        fragment.firstChild.textContent = trimmed;
+      }
+      break;
+    }
+  }
+
+  function precededByBreak(strong) {
+    var n = strong.previousSibling;
+    while (n && n.nodeType === 3 && !/[^\s]/.test(n.textContent)) {
+      n = n.previousSibling;
+    }
+    return n && n.nodeName === "BR";
+  }
+
   function markStrongLeads(root) {
     var strongs = root.querySelectorAll("strong");
     for (var i = 0; i < strongs.length; i++) {
       var s = strongs[i];
       if (s.closest("code, a, pre")) continue;
-      if (!s.previousSibling) {
-        s.classList.add("explain-strong-lead");
-      } else if (endsSentence(trailingTextBefore(s))) {
+      if (!s.previousSibling) continue;
+      if (precededByBreak(s)) continue;
+      if (endsSentence(trailingTextBefore(s))) {
         s.classList.add("explain-strong-head");
       } else if (strongIsLabel(s)) {
         s.classList.add("explain-strong-head");
@@ -130,6 +161,7 @@
     var len = textLen(p);
     markStrongLeads(p);
     if (len <= MIN_SPLIT_LEN) return;
+    if (directStrongCount(p) >= 2) return;
 
     var segments = segmentParagraph(p);
     if (segments.length <= 1) return;
@@ -139,6 +171,7 @@
     for (var i = 0; i < segments.length; i++) {
       var np = document.createElement("p");
       np.className = "explain-sentence";
+      trimLeadingWhitespace(segments[i]);
       np.appendChild(segments[i]);
       markStrongLeads(np);
       parent.insertBefore(np, ref);

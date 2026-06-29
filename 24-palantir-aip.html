@@ -74,7 +74,7 @@
         <article class="knowledge-card">
           <h3>这章要解决什么问题</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>大多数企业 AI 项目失败，不是因为模型不够强，而是因为模型无法安全理解企业上下文，也无法把建议变成可靠行动。Palantir AIP 的设计重点是“把 AI 接到企业决策系统上”：让 AI 只在授权的数据、逻辑、动作和应用边界内工作，并把每一次读、写、审批和反馈纳入平台治理。</p>
           </div>
           <div class="card-block block-deliverable">
@@ -99,7 +99,7 @@
         <article class="knowledge-card">
           <h3>1.1 AIP 的产品定位</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>AIP，全称 Artificial Intelligence Platform，是 Palantir 在 Foundry 和 Gotham 等平台能力之上构建的企业 AI 平台。它让组织可以用 LLM 构建工作流、Agent、应用和自动化，并让这些能力直接使用 Palantir 平台中的 Ontology 数据、逻辑和动作。</p>
             <p>与“给数据库加一个聊天入口”不同，AIP 的关键价值是把 AI 放进受控的运营体系：模型看到的是经过权限过滤的对象集，调用的是被平台注册和验证过的工具，执行的是被 Action Type 定义过的业务动作，生产上线前还要通过 Evals、审批和发布治理。</p>
           </div>
@@ -147,7 +147,7 @@
         <article class="knowledge-card">
           <h3>1.2 AIP 的核心思想：Decision-Centric Architecture</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>Palantir 反复强调 Ontology 不是抽象数据模型，而是面向企业决策的语义系统。传统数据平台通常把数据、算法、应用、审批和执行系统分散在不同地方，AI 很难知道“这个数据意味着什么、谁能看、能做什么、做了以后会影响哪里”。</p>
             <p>AIP 的做法是把这些关键要素合并进一个可治理的业务层：</p>
             <ul>
@@ -169,7 +169,7 @@
         <article class="knowledge-card">
           <h3>2.1 Ontology 的基本概念</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>Foundry Ontology 是组织世界的数字孪生。它把底层数据资产和模型映射成业务语言中的对象、属性、链接和动作。对业务人员来说，它像“企业的业务地图”；对开发者来说，它像“可查询、可写回、带权限的业务 API”；对 AI Agent 来说，它是可安全推理和行动的上下文边界。</p>
           </div>
           <div class="card-block block-example">
@@ -226,7 +226,7 @@
         <article class="knowledge-card">
           <h3>2.2 从数据库表到 Ontology 的建模方法</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>不要把每张表机械映射成一个 Object Type。Ontology 建模要从业务决策反推：用户和 Agent 需要围绕什么对象做判断？哪些属性影响判断？哪些关系决定上下文？哪些动作会改变业务状态？</p>
           </div>
           <div class="card-block block-deliverable">
@@ -258,7 +258,7 @@
         <article class="knowledge-card">
           <h3>2.3 Action Type：把 AI 建议变成平台内的正式变更</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>Action Type 是 AIP 与普通问答系统的分水岭。它定义一组对对象、属性和链接的变更，也可以包含通知、验证、审批或写回等副作用。用户或 AI 提交动作后，变更会写入 Ontology，并反映到所有基于该 Ontology 的应用中。</p>
           </div>
           <div class="card-block block-example">
@@ -308,7 +308,7 @@
         <article class="knowledge-card">
           <h3>3.1 AIP 应用全景</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>AIP 不是单个应用，而是一组围绕 LLM 工作流的构建能力。不同角色会使用不同入口：业务人员可能从 AIP Threads 和 Workshop 进入，低代码构建者使用 AIP Logic 和 Chatbot Studio，工程师则通过 OSDK、Functions、Code Workspaces、MCP 和平台 API 构建更复杂的应用。</p>
           </div>
           <div class="card-block block-example">
@@ -365,7 +365,7 @@
         <article class="knowledge-card">
           <h3>3.2 AIP Logic：把 LLM 能力封装成可复用业务函数</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>AIP Logic 可以理解为面向业务构建者的 AI 函数开发环境。它支持围绕 Ontology 数据、结构化输入、非结构化文本和提示词逻辑构建函数，并进行测试、部署和自动化集成。适合做“可解释、可复用、可评估”的 AI 逻辑，而不是一次性聊天。</p>
           </div>
           <div class="card-block block-deliverable">
@@ -382,7 +382,7 @@
         <article class="knowledge-card">
           <h3>3.3 AIP Chatbot Studio：可带工具和企业上下文的 Chatbot</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>AIP Chatbot Studio 原名 AIP Agent Studio。它允许构建交互式助手，并把助手部署到平台内部、Workshop 应用、外部应用或通过 OSDK/API 集成。Chatbot 可以使用 LLM、Ontology、文档和自定义工具，完成上下文问答、工作流辅助、Ontology 编辑和任务自动化。</p>
           </div>
           <div class="card-block block-tips">
@@ -400,7 +400,7 @@
         <article class="knowledge-card">
           <h3>3.4 AIP Evals：生产级 AI 的发布门禁</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>AIP Evals 用于测试和评估 LLM 函数、提示词和 Agent 工作流。它的价值不只是“看模型答得好不好”，而是把 AI 能力纳入工程发布体系：每次改提示词、换模型、改工具或调整上下文，都可以用同一批测试用例比较稳定性、准确率、风险和方差。</p>
           </div>
           <div class="card-block block-example">
@@ -450,7 +450,7 @@
         <article class="knowledge-card">
           <h3>4.1 Agentic Workflow 的基本闭环</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>AIP 的 Agent 不是“模型自由发挥”。更准确地说，它是一个受平台治理的控制循环：观察 Ontology 上下文，调用逻辑和工具，提出或提交 Action，等待审批或自动执行，然后把结果写回平台并进入下一轮学习。</p>
           </div>
           <div class="diagram-block">
@@ -551,7 +551,7 @@
         <article class="knowledge-card">
           <h3>5.1 AIP 安全不是简单 RBAC</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>生产级 Agent 的风险来自两方面：它能读到什么，以及它能做什么。AIP 的安全模型不应只理解为角色权限，还要包括数据标记、用途约束、对象级权限、动作权限、动态血缘、审批流、变更管理和运行审计。</p>
           </div>
           <div class="card-block block-deliverable">
@@ -571,7 +571,7 @@
         <article class="knowledge-card">
           <h3>5.2 Agentic Runtime 的工程要求</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>当 Agent 从“人在聊天框里点一下”走向“按事件、计划或外部触发自动运行”，运行时要求会显著提高。平台必须处理并发编排、失败重试、降级策略、审批超时、状态恢复、密钥隔离和可观测性。</p>
           </div>
           <div class="card-block block-example">
@@ -618,7 +618,7 @@
         <article class="knowledge-card">
           <h3>5.3 Prompt Injection 与工具滥用防护</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>在 AIP 里，Prompt Injection 的风险不只是“回答错了”，而是模型可能被诱导调用错误工具或泄露受限对象。防护原则是：不把权限写在 Prompt 里，不让模型决定自己的权限，不让模型自由拼接动作，不让模型绕过 Action Type。</p>
           </div>
           <div class="card-block block-pitfalls">
@@ -639,7 +639,7 @@
         <article class="knowledge-card">
           <h3>6.1 OSDK：把 Ontology 当成业务 SDK 使用</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>Ontology SDK 的价值在于：开发者不是直接面对一堆底层表、临时 API 和文档约定，而是使用由 Ontology 生成或暴露的业务语言。一个“订单 SDK”应该让代码表达 Order、Customer、Shipment、Action 和 Function，而不是表达 erp_order_header、mes_job_detail 这类底层结构。</p>
           </div>
           <div class="card-block block-example">
@@ -701,7 +701,7 @@
         <article class="knowledge-card">
           <h3>6.3 Spring Boot 防腐层示意</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>即使使用 OSDK，也建议在企业 Java 服务里保留防腐层。防腐层负责身份透传、异常转换、幂等、重试、审计和模型演进隔离。这样 Ontology 调整字段或 Action Type 升级时，不会把变更扩散到所有业务代码。</p>
           </div>
           <div class="card-block block-example">
@@ -745,7 +745,7 @@ public class AipOrderFacade {
         <article class="knowledge-card">
           <h3>7.1 不要从“做一个企业大脑”开始</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>AIP 项目最好的切入点不是宏大的“全公司智能化平台”，而是一个高频、高价值、数据可得、动作明确、风险可控的运营流程。Palantir Bootcamp/AgentCamp 这类打法强调快速把人带到键盘前，用真实业务流程证明价值，再扩大 Ontology 和自动化范围。</p>
           </div>
           <div class="card-block block-deliverable">

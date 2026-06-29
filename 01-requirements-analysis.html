@@ -72,7 +72,7 @@
         <article class="knowledge-card">
           <h3>从“业务问题”到“可验收基线”的阅读路径</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>本章按<strong>需求工程生命周期</strong>组织，而非按文档模板堆叠：先看清价值与范围、再选获取与建模方法、再做优先级与质量取舍，最后形成可文档化、可评审、可追溯的<strong>基线</strong>并向架构/迭代/测试交付。业务 LLM 能力需求已独立为<a href="23-business-intelligence.html">第 22 章</a>，与本章共用同一治理框架——基线、CR、RTM、NFR 一套口径。</p>
           </div>
           <div class="card-block block-deliverable">
@@ -102,7 +102,7 @@
         <article class="knowledge-card">
           <h3>从“写得清”到“赌得对”：业务目标、范围与价值假设</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>软件工程的根本不确定性来源于<strong>问题空间</strong>而非<strong>解决方案空间</strong>。需求分析回答“<strong>为谁、为什么、做什么、做到何种程度</strong>”四问，并把它们转成可验证、可裁减、可演进的契约。对软件工程师/架构师，本阶段决定后续约 80% 的方案成本与机会成本；需求本质是<strong>可验证的价值假设</strong>——必须可量化验收、可追踪，并约定变更/取消（止损）机制。</p>
             <p>启动期应在 1–2 周内产出<strong>业务目标 → 项目章程 → 范围说明 → 关键干系人 → 风险与假设</strong>，每项都有所有权与时间戳。架构师/Tech Lead 同步识别：<strong>核心域</strong>（竞争力相关）、<strong>支撑域</strong>（通用业务）、<strong>通用域</strong>（可外购），并提前暴露集成 SLA、合规口径、数据主权等强约束。</p>
             <div class="diagram-block">
@@ -166,7 +166,7 @@ In: 订单/库存/履约/对账;  Out: ERP 全量替代、海外站、自有物�
         <article class="knowledge-card">
           <h3>RACI、Power-Interest 与多源证据链</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>干系人</strong>（Stakeholder）指对项目结果有影响或受其影响的角色。识别完整性直接决定基线的可信度——少一个合规干系人，可能在 UAT 前一周才暴露合规问题。建议矩阵化识别：</p>
             <ul>
               <li><strong>RACI</strong>：Responsible（执行）/ Accountable（最终负责，唯一）/ Consulted（咨询）/ Informed（知会）。</li>
@@ -241,7 +241,7 @@ In: 订单/库存/履约/对账;  Out: ERP 全量替代、海外站、自有物�
         <article class="knowledge-card">
           <h3>功能 / 非功能 / 约束 / 合规 / 业务规则</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>不区分需求类型，会让一个 PRD 同时混入“能做什么 / 该多快 / 不能违反什么 / 业界标准是什么”——评审无法收敛。建议至少分五类：</p>
             <ul>
               <li><strong>功能需求 FR</strong>（Functional Requirement）：系统行为，<em>what it does</em>。</li>
@@ -300,7 +300,7 @@ In: 订单/库存/履约/对账;  Out: ERP 全量替代、海外站、自有物�
         <article class="knowledge-card">
           <h3>访谈 / 观察 / 问卷 / 原型 / 工作坊 / 故事地图</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>需求获取方法选型应匹配“<strong>不确定性来源</strong>”与“<strong>调研成本</strong>”：早期高不确定 → 访谈/观察/工作坊；规模化验证 → 问卷/数据分析；交互细节 → 原型/可点击 Demo；跨域协同 → Event Storming / 用户故事地图。</p>
             <p>每条记录都应包含“<strong>谁说的 / 什么场景 / 期望结果 / 是事实还是假设</strong>”，区分 evidence 与 belief。Walking Skeleton（端到端最小骨架）可验证技术可行性，但不替代需求文档。</p>
           </div>
@@ -370,7 +370,7 @@ In: 订单/库存/履约/对账;  Out: ERP 全量替代、海外站、自有物�
         <article class="knowledge-card">
           <h3>用例、用户故事地图、Event Storming、领域故事、影响地图</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>建模是把零散需求转成<strong>结构化、可推演、可评审</strong>表达的关键步骤。不同建模工具适用于不同抽象层级，应像“工具箱”一样按需取用：</p>
             <ul>
               <li><strong>用例图 Use Case</strong>：参与者 × 系统能力总览，适合界定<strong>系统边界</strong>与外部交互。</li>
@@ -433,7 +433,7 @@ In: 订单/库存/履约/对账;  Out: ERP 全量替代、海外站、自有物�
         <article class="knowledge-card">
           <h3>INVEST 原则与 Given-When-Then</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>用户故事格式：<em>As a … I want … So that …</em>。遵循 <strong>INVEST</strong>（Independent、Negotiable、Valuable、Estimable、Small、Testable）。验收标准用 <strong>Given-When-Then</strong>（BDD）写成可测试场景，直接驱动自动化测试与 Demo——与<a href="18-test-driven-development.html">第 18 章 TDD</a>形成<strong>规格即测试</strong>闭环。精化后的条目进入 Product Backlog，按优先级（见<a href="#prioritization-value">优先级与价值评估</a>）排序。</p>
             <p>故事是<strong>意图载体</strong>，AC 是<strong>契约</strong>：故事用产品语言写，AC 用工程语言写；任何分歧以 AC 为准。建议每个 Story 至少 3 个 Scenario：正常、异常、边界。</p>
           </div>
@@ -493,7 +493,7 @@ Scenario: 支付渠道超时
         <article class="knowledge-card">
           <h3>MoSCoW / Kano / RICE / WSJF / ROI / Cost of Delay</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>排序需求本质是<strong>在有限资源下做下注</strong>。每条需求都有“<strong>价值、成本、风险、时间窗口</strong>”四维属性。常见方法：</p>
             <ul>
               <li><strong>MoSCoW</strong>：Must / Should / Could / Won't——快速分级，缺量化。</li>
@@ -576,7 +576,7 @@ WSJF 高 → 优先做; 同口径下"履约 SLA 监控"应最早交付,验证最
         <article class="knowledge-card">
           <h3>性能 / 可用性 / 安全 / 合规 / 可观测 / 可维护</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>NFR</strong>（非功能需求）/ <strong>Quality Attribute</strong> 决定架构形态；含 LLM 场景时须额外定义 Token 预算、推理延迟 p99、Faithfulness/转人工率等（见<a href="23-business-intelligence.html#ai-cost-latency-slo">第 22 章成本与 SLO</a>、<a href="23-business-intelligence.html#ai-evaluation">Eval</a>）。建议参考 <strong>ISO/IEC 25010</strong> 八大特性 + 业务专属补充：</p>
             <ul>
               <li><strong>性能效率</strong>：吞吐、延迟（P50/P99/P999）、资源利用。</li>
@@ -654,7 +654,7 @@ WSJF 高 → 优先做; 同口径下"履约 SLA 监控"应最早交付,验证最
         <article class="knowledge-card">
           <h3>GDPR / PIPL 可验收需求</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>DSR（Data Subject Request）</strong>：用户导出、更正、删除、被遗忘权。须在需求基线写清：<strong>响应时限</strong>（如 15 工作日）、<strong>匿名化 vs 硬删</strong>（订单留存法规 vs profile 删除）、<strong>审计留痕</strong>（谁何时处理了哪条 DSR）。与<a href="17-security-development.html">第 17 章 PII</a>、<a href="23-business-intelligence.html#ai-data-governance">AI 数据治理</a>联动。</p>
           </div>
           <div class="card-block block-example">
@@ -671,7 +671,7 @@ AC: Given 注销申请 When 审核通过 Then profile 匿名化 And 订单保留
         <article class="knowledge-card">
           <h3>North Star · 漏斗 · 业务 KPI vs 技术 SLI</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>需求阶段定义<strong>业务 KPI</strong>（注册转化、下单成功率、留存），与<a href="20-performance-tuning.html">第 20 章 SLI/SLO</a>的<strong>技术 SLI</strong>（延迟、错误率）区分。North Star 指标驱动优先级；漏斗指标定位流失环节。埋点需求写入 PRD：事件名、属性、触发时机、隐私合规。</p>
           </div>
         </article>
@@ -682,7 +682,7 @@ AC: Given 注销申请 When 审核通过 Then profile 匿名化 And 订单保留
         <article class="knowledge-card">
           <h3>PRD / SRS / 用户故事 / AC / Specification by Example</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>不同组织/项目阶段有不同的文档形态，但底层目标相同：<strong>让任何接手者无需口头交接也能理解决策</strong>。常见载体：</p>
             <ul>
               <li><strong>PRD</strong>（Product Requirements Document）：偏产品视角，what + why + 目标用户 + 关键流程；适合互联网/敏捷。</li>
@@ -748,7 +748,7 @@ AC: Given 注销申请 When 审核通过 Then profile 匿名化 And 订单保留
         <article class="knowledge-card">
           <h3>DoR / DoD / 基线 / CR / RTM</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>需求<strong>澄清</strong>与<strong>评审</strong>是把“以为”变成“白纸黑字共识”的关键活动。建议建立：</p>
             <ul>
               <li><strong>DoR</strong>（Definition of Ready）：故事进入开发的最低门槛——描述清、AC 齐、依赖明、估算完。</li>
@@ -839,7 +839,7 @@ AC: Given 注销申请 When 审核通过 Then profile 匿名化 And 订单保留
         <article class="knowledge-card">
           <h3>单一基线、单一 ID、多向交付</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>需求基线不是“终点”而是“交接点”。若需求文档不能直接驱动架构图、迭代任务、测试用例，则需求工程失败。建议建立显式衔接：</p>
             <ul>
               <li><strong>→ 原型设计（<a href="02-prototype-design.html">第 02 章</a>）</strong>：用户故事/AC 直接转线框关键页面、交互态、Mock API。</li>
@@ -914,7 +914,7 @@ AC: Given 注销申请 When 审核通过 Then profile 匿名化 And 订单保留
         <article class="knowledge-card">
           <h3>需求工程的高频翻车现场</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>软件工程师/架构师的核心价值之一，是<strong>识别常见反模式并提前阻断</strong>。汇总跨多个项目复盘的高频陷阱，按阶段归类：</p>
           </div>
           <div class="card-block block-pitfalls">
@@ -994,7 +994,7 @@ AC: Given 注销申请 When 审核通过 Then profile 匿名化 And 订单保留
         <article class="knowledge-card">
           <h3>团队级模板、工具栈与阅读地图</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>方法落地依赖<strong>统一的工具栈与最小模板集</strong>。建议团队按角色固化工具，按项目规模量化裁减模板——小项目跑半套、大项目全套，杜绝“每人一套工具 / 每月换一次模板”。</p>
           </div>
           <div class="card-block block-deliverable">

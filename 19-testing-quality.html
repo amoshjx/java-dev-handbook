@@ -57,7 +57,7 @@
         <article class="knowledge-card">
           <h3>单元测试结构与参数化</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>JUnit 5 由 Jupiter（测试 API）、Platform（测试平台）、Vintage（JUnit 4 兼容层，可选）组成。测试命名应表达行为：<code>shouldRejectWhenBalanceInsufficient</code>。AAA 模式：Arrange-Act-Assert。参数化测试 <code>@ParameterizedTest</code> 用于覆盖边界与等价类组合。避免依赖测试执行顺序与共享可变状态。</p>
             <div class="diagram-block">
               <code class="language-xml">
@@ -105,7 +105,7 @@ class TransferServiceTest {
         <article class="knowledge-card">
           <h3>Mock、Spy 与验证交互</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>Mock 用于隔离被测单元的外部依赖；Spy 用于包装真实对象并按需替换部分行为。只 mock 跨边界协作者（Repository、HTTP Client），不 mock 值对象。验证行为 <code>verify(mock, times(1)).save(...)</code>；避免过度约束（over-specification，绑死实现细节）。</p>
             <div class="diagram-block">
               <pre class="mermaid">flowchart LR
@@ -151,7 +151,7 @@ class CreateOrderHandlerTest {
         <article class="knowledge-card">
           <h3>集成测试与真实依赖</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>Testcontainers 在 Docker 中启动 PostgreSQL、Redis、Kafka 等依赖，使集成测试更贴近生产。Spring Boot 3.1+ 原生支持 <code>@ServiceConnection</code>。测试数据可用 <code>@Sql</code> 或 fixture builder 管理；测试之间需保证数据隔离（事务回滚或显式清理）。容器复用适合本地提速，CI 通常应关闭复用以避免状态污染。</p>
           </div>
           <div class="card-block block-example">
@@ -187,7 +187,7 @@ class OrderIntegrationTest {
         <article class="knowledge-card">
           <h3>业务验收环境与上线前 Gate</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>UAT 定位</strong>：User Acceptance Testing 环境是<strong>上线前最后一道业务验收关</strong>——PO、业务方、QA 在接近生产的拓扑上验证需求是否「做对」。与 dev/test/staging/prod 分工：dev 本地联调；test（CI）跑自动化；staging 常作技术预发/性能；<strong>UAT 强调业务场景与签字</strong>；prod 承载真实流量。与<a href="18-test-driven-development.html#test-pyramid-tdd">第 18 章 TDD/测试金字塔</a>分工：TDD 在开发环验证「写对代码」；<a href="#testcontainers">Testcontainers 集成测试</a>在 CI 验证组件协作；UAT 验证<strong>端到端业务价值</strong>与验收标准，不替代单元/集成自动化。</p>
             <p><strong>环境拓扑</strong>：UAT 须<strong>独立实例</strong>（不与 dev 共享 DB/Redis），Spring profile <code>uat</code>，中间件版本与 prod 对齐（PostgreSQL 16、Redis 7、Kafka 同 minor）。K8s 用独立 namespace（如 <code>uat-order</code>），ConfigMap/Secret 与 prod 结构同构、值不同。禁止 UAT 直连 prod 库——验收失败可 wipe 重建，不影响生产。</p>
             <p><strong>数据策略</strong>：① <strong>脱敏生产副本</strong>（定时从 prod 快照 restore + 掩码手机号/身份证/卡号，见<a href="17-security-development.html#sensitive-data-deserialization">第 17 章日志脱敏</a>）；② <strong>合成数据</strong>（Faker/工厂类生成边界场景）；③ <strong>刷新周期</strong>（每周或每迭代首日 reset，避免脏数据累积）。<strong>禁止真实 PII</strong>进入 UAT——违规即安全事件。</p>
@@ -297,7 +297,7 @@ spec:
         <article class="knowledge-card">
           <h3>SpotBugs、PMD、Checkstyle 与 SonarQube</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>静态分析在编码与构建阶段发现空指针、资源泄漏、安全缺陷等问题。Checkstyle 管代码风格；SpotBugs/PMD 侧重缺陷模式；SonarQube 聚合覆盖率、重复率与安全热点。CI 中设置 Quality Gate（质量门禁）：例如新代码覆盖率 ≥ 80%、零 blocker issue（阻断问题）。</p>
             <div class="diagram-block">
               <pre class="mermaid">flowchart TD
@@ -339,7 +339,7 @@ spec:
         <article class="knowledge-card">
           <h3>Pact · Spring Cloud Contract · CI 门禁</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>契约测试填补单元测试与 E2E 之间的鸿沟：独立验证服务双方对 API/消息的理解一致。架构层规范见<a href="03-architecture-design.html#api-design">第 03 章契约测试</a>。<strong>Pact</strong>（Consumer-Driven）消费方发布期望，提供方验证；<strong>Spring Cloud Contract</strong> 适合 JVM 生态，契约即 Groovy/YAML，CI 生成 Stub。</p>
           </div>
           <div class="card-block block-example">
@@ -380,7 +380,7 @@ class OrderClientTest {
         <article class="knowledge-card">
           <h3>分层依赖规则与架构腐化防护</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>ArchUnit</strong> 在测试中断言包依赖、命名、注解规则，防止 Domain 依赖 Infrastructure、Controller 绕过 Service 等架构违规。与<a href="12-spring-framework.html#project-structure">第 12 章分层</a>对齐，纳入 CI。</p>
           </div>
           <div class="card-block block-example">
@@ -406,7 +406,7 @@ class ArchitectureTest {
         <article class="knowledge-card">
           <h3>Playwright · 数据工厂 · Flaky 治理</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>E2E 验证端到端业务价值，数量应少（测试金字塔顶层）。<strong>Playwright</strong> 支持多浏览器、自动等待、trace 回放。与<a href="18-test-driven-development.html">第 18 章 TDD</a>、<a href="#uat">UAT</a>分工：E2E 在 CI 跑主路径 Smoke；UAT 由业务方签字。</p>
           </div>
           <div class="card-block block-example">
@@ -434,7 +434,7 @@ class ArchitectureTest {
         <article class="knowledge-card">
           <h3>Review 清单与可维护性</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>Review 关注：正确性（边界/并发/事务）、安全性（注入/鉴权/敏感数据）、可观测性（日志/traceId）、可测试性、性能（N+1/无界查询）。小 PR（&lt;400 行）通常更快完成评审与合并。评论对事不对人，区分 nit / suggestion / blocker（阻断项）。与重构结合：发现重复/过长方法时，在 PR 内或跟进 PR 做「行为不变的小步重构」（<em>重构</em> 原则：测试绿灯 → 重构 → 再绿）。</p>
           </div>
           <div class="card-block block-memory">

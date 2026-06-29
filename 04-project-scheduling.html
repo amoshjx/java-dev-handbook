@@ -57,7 +57,7 @@
         <article class="knowledge-card">
           <h3>从需求基线到上线的排期框架</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>项目排期</strong>把已澄清的需求（<a href="01-requirements-analysis.html">第 01 章</a>）与架构/选型（03–05）转化为<strong>可执行的时间表</strong>：谁、何时、交付什么。企业 Java 项目典型阶段：<strong>启动</strong>（章程、干系人）→ <strong>计划</strong>（WBS、里程碑、资源）→ <strong>执行</strong>（开发迭代、联调）→ <strong>监控</strong>（燃尽、偏差、RAID）→ <strong>收尾</strong>（上线、Hypercare、复盘）。排期产出不是 Gantt 图本身，而是<strong>共识</strong>：业务、产品、研发、测试、运维对「什么时候能用什么」签字确认。Windows 企业环境常见约束：内网审批慢、UAT 窗口固定（如每月第二个周六）、节假日封网、第三方接口联调需提前预约。</p>
             <div class="diagram-block">
               <pre class="mermaid">flowchart LR
@@ -109,7 +109,7 @@
         <article class="knowledge-card">
           <h3>工作分解与关键 Gate</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>WBS</strong>（Work Breakdown Structure）应按<strong>交付物</strong>而非活动拆分，可映射到 Epic → Feature → Story → Task。企业 Java 项目常用里程碑：<strong>M1 需求冻结</strong>（基线签字，变更走 CR）→ <strong>M2 架构评审</strong>（ADR 通过，见<a href="03-architecture-design.html">第 03 章</a>）→ <strong>M3 开发完成</strong>（Code Freeze，功能完备、P0 缺陷清零）→ <strong>M4 测试完成</strong>（SIT/UAT Pass，测试报告签字）→ <strong>M5 上线</strong>（生产验证、监控正常）。每个 Gate 设<strong>入口/出口标准</strong>：例如 M3 入口 = 测试环境可用；出口 = 集成测试通过率 ≥ 95%、无 Blocker。WBS 叶子任务粒度建议 0.5–2 人日，便于跟踪。</p>
             <div class="diagram-block diagram-milestone-timeline">
               <pre class="mermaid">gantt
@@ -163,7 +163,7 @@
         <article class="knowledge-card">
           <h3>Story Point · Velocity · Backlog 排序</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>Sprint</strong> 通常 2 周：Planning → Daily → Review → Retro。Backlog 按<strong>价值 × 风险 × 依赖</strong>排序：先打通主链路（登录→核心业务→报表），再 polish。估算用 <strong>Story Point</strong>（相对复杂度，斐波那契 1/2/3/5/8/13）；团队 <strong>Velocity</strong> = 近 3–6 Sprint 完成点数均值，用于预测「还需几个 Sprint」。Java 团队注意：Spike（调研 POC）应作为独立 Story/Task 管理，可不计入业务功能点，但必须占用 Sprint 容量；技术债 Story 每 Sprint 留 10–20% 容量。Sprint Goal 一句话对齐业务目标，避免「做完一堆 Story 但业务目标未达成」。</p>
           </div>
           <div class="card-block block-deliverable">
@@ -201,7 +201,7 @@
         <article class="knowledge-card">
           <h3>纯瀑布 · 纯敏捷 · 企业混合模式</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>瀑布</strong>：阶段串行、文档重、适合需求稳定、合规强、外包固定总价（政企、金融核心改造）。<strong>敏捷</strong>：短迭代、拥抱变更、适合产品型互联网业务。<strong>Java 企业最常见：混合</strong>——外层瀑布里程碑（需求冻结、UAT、上线窗口固定），内层 Scrum Sprint 开发；或「增量交付」：每 2 周 demo 可运行增量，但生产发布仍按季度/月度窗口。选型依据：监管审计要求、合同类型、需求变更频率、团队成熟度。切忌「挂牌敏捷」——无 Product Owner、无 Retro、Sprint 只是两周日历。</p>
           </div>
           <div class="card-block block-deliverable">
@@ -239,7 +239,7 @@
         <article class="knowledge-card">
           <h3>模块并行 · 依赖 · Code Freeze</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>开发排期按<strong>模块依赖图</strong>编排：基础模块（用户/RBAC、字典）→ 领域服务 → 集成层 → 前端页面。可并行的模块分配不同小组，但共享<strong>接口契约</strong>（OpenAPI，见<a href="03-architecture-design.html#api-design">第 03 章联调</a>）须先冻结。Spring Boot 多模块工程（<a href="12-spring-framework.html">第 12 章</a>）按 Maven 模块排期：api → domain → infrastructure → boot。关键路径上的任务优先投入资深人力。<strong>Code Freeze</strong>：M3 前 N 天（通常 5–10 工作日）仅允许 P0/P1 缺陷修复与发布分支 cherry-pick，新 Feature 进下一版本。环境：<code>dev</code> 每日集成，<code>test</code> 供 QA 稳定回归。</p>
           </div>
           <div class="card-block block-deliverable">
@@ -277,7 +277,7 @@
         <article class="knowledge-card">
           <h3>单元 · 集成 · UAT 时间窗</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>测试排期与<strong>测试金字塔</strong>对应（详见<a href="18-test-driven-development.html">第 18 章 TDD</a>）：单元/组件测试<strong>左移</strong>在开发 Sprint 内完成；<strong>SIT</strong>（系统集成测试）在 test 环境，预留总工期 15–25%（视集成复杂度）；<strong>UAT</strong> 在预发/UAT 环境，业务方执行验收清单（<a href="19-testing-quality.html#uat-environment">第 19 章 UAT 环境</a>）。排期要点：<strong>测试环境就绪</strong>是 M3→M4 的前置条件——数据脱敏、账号权限、第三方沙箱、Flyway 脚本与 prod 一致。预留<strong>回归轮次</strong>（至少 2 轮）与<strong>缺陷修复缓冲</strong>（SIT 后期每天留 30% 开发容量修 Bug）。Windows 企业项目 UAT 常限工作日晚间或指定周末，排期必须写进日历并提前预约业务资源。</p>
           </div>
           <div class="card-block block-deliverable">
@@ -315,7 +315,7 @@
         <article class="knowledge-card">
           <h3>变更委员会 · 回滚 · 蓝绿/金丝雀</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>上线窗口</strong>：金融/政企常限<strong>非交易时段</strong>（如周六 02:00–06:00）或<strong>变更日</strong>（每月固定一天）；需提前向<strong>变更委员会（CAB）</strong>提交变更单：影响范围、回滚步骤、验证清单、值班人。<strong>回滚预案</strong>：数据库 Flyway 反向脚本或备份恢复、上一版本镜像 tag、配置快照；RTO/RPO 写清。<strong>发布策略</strong>（<a href="21-devops-cloud-native.html#cicd">第 21 章 CI/CD</a>）：蓝绿（两套环境切换）、金丝雀（5%→20%→100% 流量）；Java 服务注意 session 粘性与 MQ 消费位点。上线 checklist：监控大盘、告警静默解除、Smoke Test、业务方确认。</p>
             <div class="diagram-block">
               <pre class="mermaid">flowchart TB
@@ -368,7 +368,7 @@
         <article class="knowledge-card">
           <h3>人力 · 环境 · 第三方 · 节假日缓冲</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>人力容量</strong>：每人有效开发时间 ≈ 日历天 × 0.6–0.7（会议、Support、请假）；并行项目须扣减。角色覆盖：Backend、Frontend、QA、DBA、运维、安全评审——缺角色要在排期显式标注风险。<strong>环境</strong>：dev/test/UAT/prod 申请周期（内网常 1–2 周）、License（Oracle、中间件）。<strong>第三方依赖</strong>：支付、短信、政企接口联调需对方排期，提前 4–8 周预约。<strong>节假日缓冲</strong>：春节/国庆前冻结大变更；年假集中期（7–8 月）减 Velocity；排期加 <strong>10–20% 管理储备</strong>（PMI 推荐）或关键路径单独 contingency。</p>
           </div>
           <div class="card-block block-deliverable">
@@ -406,7 +406,7 @@
         <article class="knowledge-card">
           <h3>风险登记 · Contingency · 关键路径</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>风险登记册</strong>：风险描述、概率、影响、应对（规避/减轻/转移/接受）、Owner、状态。技术类常见：性能不达标、数据迁移失败、中间件版本不兼容；管理类：需求变更、人员流失、环境延迟。<strong>Contingency buffer</strong> 加在<strong>关键路径</strong>末尾（非每任务都加——否则总工期膨胀）。关键路径 = 最长依赖链（如：DB 设计 → 核心 API → 前端主流程 → SIT → UAT → 上线）；缩短非关键路径任务不能缩短总工期。定量：关键路径加 15–25% 时间缓冲，或预留「应急 Sprint」。风险触发时走<strong>escalation</strong>：Tech Lead → PM → Sponsor，并更新里程碑对外沟通。</p>
           </div>
           <div class="card-block block-deliverable">
@@ -444,7 +444,7 @@
         <article class="knowledge-card">
           <h3>前后端 · DB · 运维联调节奏</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>企业 Java 项目典型协同：<strong>后端</strong>（Spring Boot）? <strong>前端</strong>（Vue/React，<a href="03-architecture-design.html#api-design">第 03 章 API 设计</a>）通过 OpenAPI 契约；<strong>DBA</strong> 评审 DDL/索引与 migration 窗口；<strong>运维</strong> 准备 K8s/VM、监控、证书。节奏建议：<strong>接口冻结日</strong>（每 Sprint 中点）——此后改契约走 CR；<strong>联调周</strong>（Sprint 最后 2 天）前后端 + QA 同屏过主流程；<strong>运维预审</strong>（上线前 2 周）资源、告警、日志采集。沟通机制：Slack/Teams 频道 + 周会 30min + 阻塞项日报。依赖团队用 RACI 矩阵明确谁 Responsible/Accountable/Consulted/Informed。</p>
           </div>
           <div class="card-block block-deliverable">
@@ -482,7 +482,7 @@
         <article class="knowledge-card">
           <h3>燃尽图 · 周报 · 里程碑偏差 · RAID</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>燃尽图</strong>（Burndown）：Sprint 剩余点数/任务随日递减，平线或上升说明阻塞或范围蔓延。<strong>周报</strong>：完成项、计划项、风险/阻塞、里程碑 RAG（红/黄/绿）、需决策项——一页纸给 Sponsor。<strong>里程碑偏差</strong>：实际 vs 基线，偏差 &gt; 5% 需根因与纠正措施（赶工、减范围、加人——加人有 Brooks 定律限制）。<strong>RAID</strong>：Risks、Assumptions、Issues、Dependencies 四表合一，周会更新。工具：Jira/Azure DevOps/禅道 + Excel 里程碑；避免「工具很全、数据没人填」。</p>
           </div>
           <div class="card-block block-deliverable">
@@ -520,7 +520,7 @@
         <article class="knowledge-card">
           <h3>值守 · 监控 · 复盘</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>Hypercare</strong>（上线后强化支持期，通常 1–4 周）：研发+运维<strong>联合值班</strong>，快速响应 P0/P1；告警阈值临时调敏感，每日 standup 过 incident。<strong>监控</strong>：对接<a href="21-devops-cloud-native.html#observability">第 21 章可观测性</a>——Error Rate、Latency p99、核心业务 KPI（订单量、成功率）；与压测基线对比。<strong>复盘</strong>（Blameless Postmortem）：时间线、根因（5 Whys）、行动项（Owner+Due）；区分「排期估算偏差」与「执行偏差」。经验沉淀进 ADR、Runbook、下版排期假设——形成组织记忆。</p>
           </div>
           <div class="card-block block-deliverable">
@@ -558,7 +558,7 @@
         <article class="knowledge-card">
           <h3>Tech Debt Register 与偿还规则</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>每 Sprint 留 10–20% 容量偿还技术债。登记字段：<strong>描述、影响、修复成本、风险、Owner、优先级</strong>。偿还规则：P0 安全/合规债下一 Sprint 必排；架构腐化类与 Feature 同优先级比较 WSJF。</p>
           </div>
         </article>
@@ -569,7 +569,7 @@
         <article class="knowledge-card">
           <h3>Severity 分级 · Escalation · Status Page</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <pre><code>| 级别 | 定义              | 响应目标    | 动作                    |
 |------|-------------------|-------------|-------------------------|
 | P0   | 核心链路全不可用  | 15 min      | War Room + Status Page  |

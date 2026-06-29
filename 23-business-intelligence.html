@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>22 业务智能化 — Java项目手册</title>
+  <title>23 业务智能化 — Java项目手册</title>
   <link rel="stylesheet" href="assets/style.css">
   <script src="assets/sidebar.js" defer></script>
 </head>
@@ -48,7 +48,7 @@
 
     <main class="main">
       <header class="page-header">
-        <h1>22 业务智能化与 LLM 能力需求</h1>
+        <h1>23 业务智能化与 LLM 能力需求</h1>
         <p>在<strong>需求基线</strong>（<a href="01-requirements-analysis.html">第 01 章</a>）之上，明确业务侧 LLM 能力的 What/Why：哪些场景引入、RAG/Agent 边界、Prompt 规格、数据合规、Token 预算、Eval 门禁与 Java 集成路线。与<a href="22-ai-development.html">第 22 章 AI 辅助开发</a>（开发者 How）分工；架构落地见<a href="03-architecture-design.html">第 03 章</a>，横切模块见<a href="16-common-modules.html">第 16 章</a>。</p>
         <div class="diagram-block">
           <pre class="mermaid">flowchart LR
@@ -68,14 +68,14 @@
         <article class="knowledge-card">
           <h3>从「场景识别」到「生产交付」的阅读路径</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>本章按<strong>业务 LLM 能力需求生命周期</strong>组织：先判断何时引入 LLM、再定义用例与 RAG/Agent 边界、同步数据治理与成本 SLO、建立 Eval 门禁，最后规划 Java 集成与交付路线图。与<a href="01-requirements-analysis.html">第 01 章需求基线</a>共用治理口径（基线、CR、RTM、NFR）；与<a href="22-ai-development.html">第 22 章 AI 辅助开发</a>分工——本章回答 What/Why，第 22 章回答开发者 How。</p>
           </div>
           <div class="card-block block-deliverable">
             <h4>模块划分</h4>
             <ul>
               <li><strong>模块 A（场景与可行性）</strong>：<a href="#ai-business-overview">LLM 引入总览</a>、<a href="#ai-use-cases">用例矩阵</a></li>
-              <li><strong>模块 B（架构与编排）</strong>：<a href="#rag-architecture">RAG 架构</a>、<a href="#prompt-business-design">业务 Prompt</a>、<a href="#function-calling-tools">Function/Tool</a>、<a href="#agent-workflow-design">Agent 工作流</a></li>
+              <li><strong>模块 B（架构与编排）</strong>：<a href="#agent-workflow-design">Agent 工作流</a>、<a href="#rag-architecture">RAG 架构</a>、<a href="#prompt-business-design">业务 Prompt</a>、<a href="#function-calling-tools">Function/Tool</a></li>
               <li><strong>模块 C（治理与质量）</strong>：<a href="#ai-data-governance">数据治理</a>、<a href="#ai-cost-latency-slo">成本与 SLO</a>、<a href="#ai-evaluation">Eval</a></li>
               <li><strong>模块 D（集成与交付）</strong>：<a href="#java-llm-integration">Java 集成</a>、<a href="#ai-in-common-modules">与业务模块集成</a>、<a href="#ai-delivery-roadmap">交付路线图</a></li>
             </ul>
@@ -97,7 +97,7 @@
         <article class="knowledge-card">
           <h3>何时引入 LLM、与规则引擎/传统 ML 的边界</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>LLM 适合</strong>：开放域语言理解/生成、非结构化文档问答、多步推理编排、自然语言接口（NL→API）。<strong>规则引擎</strong>（Drools、Easy Rules）适合确定性业务规则、可审计的 if-then、监管口径固定场景——成本低、可解释。<strong>传统 ML</strong>（分类、排序、风控模型）适合标注数据充足、指标可量化、延迟/成本需可控的预测任务。决策原则：① 能否用 SQL + 规则 + 检索解决？能则不上 LLM；② 错误代价是否可接受（客服草稿 vs 自动放款）？③ 是否有 Golden Set 可 Eval？无则先 PoC。架构师在需求基线后输出<strong>AI 可行性评估</strong>，避免“为 AI 而 AI”。</p>
             <div class="diagram-block">
               <pre class="mermaid">flowchart TD
@@ -144,8 +144,14 @@
         <article class="knowledge-card">
           <h3>客服、RAG、文档问答、抽取、Agent 工作流</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
-            <p>常见模式：<strong>智能客服</strong>（意图识别 + 知识库 RAG + 工单升级）；<strong>企业文档问答</strong>（制度/手册/合同）；<strong>代码/运维助手</strong>（内部 Wiki + 日志，开发侧见第 21 章）；<strong>结构化抽取</strong>（发票/简历/合同字段 → JSON Schema）；<strong>Agent 工作流</strong>（查库存 → 算价 → 生成报价 → 发邮件）。用<strong>价值 × 可行性 × 风险</strong>三维排优先级：MVP 选 1–2 个闭环场景，ROI 可度量（节省人力小时、转化率、首响时间）。</p>
+            <h4>概要</h4>
+            <p>常见模式：<br/>
+              <strong>智能客服</strong>（意图识别 + 知识库 RAG + 工单升级）；<br/>
+              <strong>企业文档问答</strong>（制度/手册/合同）；<br/>
+              <strong>代码/运维助手</strong>（内部 Wiki + 日志，开发侧见第 21 章）；<br/>
+              <strong>结构化抽取</strong>（发票/简历/合同字段 → JSON Schema）；<br/>
+              <strong>Agent 工作流</strong>（查库存 → 算价 → 生成报价 → 发邮件）。<br/>
+              用<strong>价值 × 可行性 × 风险</strong>三维排优先级：MVP 选 1–2 个闭环场景，ROI 可度量（节省人力小时、转化率、首响时间）。</p>
           </div>
           <div class="card-block block-deliverable">
             <h4>阶段成果</h4>
@@ -170,13 +176,69 @@ UC-03 运维 Runbook 问答 | P2 | 告警描述 | 处置步骤 | RAG+Tool(查监
         </article>
       </section>
 
+<section class="section" id="agent-workflow-design">
+        <h2>Agent 与工作流设计</h2>
+        <article class="knowledge-card">
+          <h3>单 Agent、多 Agent、Human-in-the-loop</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p>
+              <strong>Agent（智能体）</strong>：“会思考 + 会行动 + 会反思”,能自主完成任务的 AI 执行体。
+              <strong>Agent核心结构</strong>：LLM + Skill/Tool + Planner + Memory + ReAct。
+              <strong>ReAct</strong>：Reason + Action，推理与行动。是一种让大语言模型在解决问题时边思考、边调用工具、边根据结果继续思考的框架。
+              <strong>单 Agent + ReAct</strong>：适合工具数 &lt;10 的垂直场景。
+              <strong>多 Agent</strong>：Planner 分派专员 Agent，跨域但增延迟——架构上仅在<strong>上下文边界清晰</strong>时采用。
+              <strong>Human-in-the-loop</strong>：高风险动作（退款、权限变更）插入审批节点，与工作流引擎（Flowable/Camunda，见<a href="16-common-modules.html#workflow">第 16 章工作流</a>）结合：LLM 填表单 → 人审 → 执行 Tool。决策：能单不双，能审不自动；状态机记录每步 I/O 便于审计与 Eval。</p>
+            <div class="diagram-block diagram-image">
+              <img src="1-agent-arch.png" alt="Agent Runtime 架构——Orchestration（Profile/Goals、Memory、Reasoning/Planning）、Model 与 Tools" loading="lazy" />
+              <p class="diagram-caption">图：Agent Runtime 架构——Orchestration、Model 与 Tools</p>
+            </div>
+            <div class="diagram-block">
+              <pre class="mermaid">stateDiagram-v2
+    [*] --> Understand
+    Understand --> Retrieve: "需知识"
+    Retrieve --> Plan
+    Plan --> Act: "自动 Tool"
+    Plan --> Approve: "高风险"
+    Approve --> Act: "人通过"
+    Approve --> Reject: "人驳回"
+    Act --> Respond
+    Respond --> [*]
+    Reject --> [*]</pre>
+              <p class="diagram-caption">图：Agent 状态与人工审批</p>
+            </div>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阶段成果</h4>
+            <ul>
+              <li><strong>Agent 工作流需求说明</strong>：状态机、人工审批节点、最大步数/超时</li>
+              <li><strong>Human-in-the-loop 清单</strong>：高风险动作与审批 SLA</li>
+            </ul>
+          </div>
+          <div class="card-block block-tips">
+            <h4>关键/技巧</h4>
+            <ul>
+              <li>最大步数/超时硬限制，防 Agent 死循环烧 Token。</li>
+              <li>高风险 Tool 默认 <code>dryRun=true</code> 先展示计划。</li>
+            </ul>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>「能单不双，能审不自动，状态可回放。」</p>
+          </div>
+        </article>
+      </section>
+
 <section class="section" id="rag-architecture">
         <h2>RAG 架构设计</h2>
         <article class="knowledge-card">
           <h3>知识库、Embedding、向量库、检索与生成</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
-            <p><strong>RAG 链路</strong>：文档 ingest → 分块 → Embedding → 向量库 → 检索（+ rerank）→ Prompt Context → LLM 生成并<strong>强制引用来源</strong>。架构上 RAG 应作为<strong>独立能力层</strong>（RAG Platform / Knowledge Service），与业务域服务解耦：业务服务只调「问答 API」，不内嵌向量库逻辑。边界：ingest/索引归 RAG 平台；权限过滤在<strong>检索前</strong>按 tenant/role 过滤 metadata；生成层不直连业务 DB。Java 生态：Spring AI（<code>VectorStore</code>、<code>DocumentReader</code>、<code>ChatClient</code>）；LangChain4j。存储选型见<a href="03-architecture-design.html#data-architecture">第 03 章存储选型</a>；与<a href="16-common-modules.html#rbac">第 16 章 RBAC</a>联动做知识库 ACL。</p>
+            <h4>概要</h4>
+            <p><strong>RAG</strong>（Retrieval-Augmented Generation，检索增强生成） 是目前大语言模型（LLM）落地企业级应用的核心技术。
+简单来说，LLM 就像一个参加闭卷考试的学霸，虽然知识面广，但总有记错（幻觉）或者不知道最新消息的时候。而 RAG 就是给这个学霸一本开卷考试的参考书——先去资料库里查出相关的准确数据，再让大模型提炼、组织语言，给出回答。
+              <br/>
+              <strong>RAG 链路</strong>：文档 ingest → 分块 → Embedding → 向量库 → 检索（+ rerank）→ Prompt Context → LLM 生成并<strong>强制引用来源</strong>。架构上 RAG 应作为<strong>独立能力层</strong>（RAG Platform / Knowledge Service），与业务域服务解耦：业务服务只调「问答 API」，不内嵌向量库逻辑。边界：ingest/索引归 RAG 平台；权限过滤在<strong>检索前</strong>按 tenant/role 过滤 metadata；生成层不直连业务 DB。Java 生态：Spring AI（<code>VectorStore</code>、<code>DocumentReader</code>、<code>ChatClient</code>）；LangChain4j。存储选型见<a href="03-architecture-design.html#data-architecture">第 03 章存储选型</a>；与<a href="16-common-modules.html#rbac">第 16 章 RBAC</a>联动做知识库 ACL。</p>
             <div class="diagram-block">
               <pre class="mermaid">flowchart LR
     DOC[文档源] --> PARSE[解析分块]
@@ -236,8 +298,20 @@ ChatResponse response = chatClient.prompt()
         <article class="knowledge-card">
           <h3>System Prompt、Few-shot、输出 Schema</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
-            <p>业务 Prompt 是<strong>产品规格的可执行版</strong>：System 层定义角色、边界（「仅依据提供的 Context 回答，不知道则说不知道」）、语气与合规禁则；User 层传业务变量；Few-shot 示例对齐输出格式与拒答行为。结构化输出用 <strong>JSON Mode / Response Schema</strong>（OpenAI structured outputs、Spring AI <code>BeanOutputConverter</code>）约束字段，便于 Java 反序列化进 DTO 落库。Prompt 版本化存 Git 或配置中心，与 Eval 集绑定——改 Prompt 必跑回归。开发侧 Prompt 技巧见<a href="22-ai-development.html#prompt">第 22 章</a>，本章强调<strong>业务语义与验收口径</strong>。</p>
+            <h4>概要</h4>
+            <p>
+              <strong>业务Prompt设计</strong>本质不是写提示词，而是在设计一套可执行的“业务控制语言 + 决策协议 + 工具使用规范”。它决定了 Agent 是“聊天模型”，还是“能跑业务的数字员工”。
+              <strong>业务 Prompt 的四大核心模块</strong>:[角色层] [目标层] [规则层] [工具层]
+              <strong>角色层</strong>：定义 Agent 在业务中的身份和职责。
+              <strong>目标层</strong>：明确 Agent 要达到的业务目标。
+              <strong>规则层</strong>：定义 Agent 在执行任务时应遵循的规则和约束。
+              <strong>工具层</strong>：定义 Agent 可以使用的工具和资源。
+              
+              <strong>业务Prompt定义</strong>：
+              System 定义角色、边界（如：「仅依据提供的 Context 回答，不知道则说不知道」）、语气与合规禁则；<br/>
+              User 传业务变量 + 用户问题；<br/>
+              Few-shot 示例对齐输出格式与拒答行为。结构化输出用JSON Mode / Response Schema（OpenAI structured outputs、Spring AI <code>BeanOutputConverter</code>）约束字段，便于 Java 反序列化进 DTO 落库。<br>
+              <strong>Prompt版本化</strong>: 存 Git 或配置中心，与 Eval 集绑定——改 Prompt 必跑回归。开发侧 Prompt 技巧见<a href="22-ai-development.html#prompt">第 22 章</a>，本章强调<strong>业务语义与验收口径</strong>。</p>
           </div>
           <div class="card-block block-deliverable">
             <h4>阶段成果</h4>
@@ -248,12 +322,69 @@ ChatResponse response = chatClient.prompt()
           </div>
           <div class="card-block block-example">
             <h4>JSON Schema 输出示例</h4>
-            <pre><code>System: 你是企业报销助手。仅根据 CONTEXT 回答。禁止编造政策条款。
+            <pre><code>System:
+    你是一个 MES 执行 Agent，用于半导体制造系统中的 Lot / Step / Tool 操作执行。
+    你的职责是：通过 MES 工具安全执行制造操作，确保所有操作符合工厂规则，不允许任何猜测或虚构数据。
+    ---
+    # 🎯 目标
+    - 执行 Lot 的工艺流程操作（step start / hold 等）
+    - 确保严格遵循 Route / Step / Tool / Recipe 规则
+    - 所有事实数据必须来自工具查询
+    - 防止任何非法或不合规操作
+    ---
+    # ⚠️ 基本规则（必须遵守）
+    1. 不允许编造任何 MES 数据（Lot 状态、设备状态等）
+    2. 所有关键决策必须先调用工具获取数据
+    3. 未验证前禁止执行任何生产操作
+    4. 必须严格按照 Route 顺序执行 Step
+    5. 信息不足必须先查询工具或向用户确认
+    6. 工具失败必须停止执行并报告错误
+    ---
+    # 🧩 核心业务对象
+    - Lot：生产批次
+    - Route：工艺路径（Step 顺序）
+    - Step：工艺步骤（绑定设备和 Recipe）
+    - Tool：设备
+    - Recipe：工艺配方
+    ---
+    # 🔧 可用工具
+    - get_lot_info(lot_id)：获取 Lot 信息
+    - get_current_step(lot_id)：获取当前 Step
+    - get_route(lot_id)：获取工艺路径
+    - check_tool_availability(step_id)：检查设备可用性
+    - validate_recipe(tool_id, recipe_id)：验证配方
+    - reserve_tool(tool_id, lot_id)：预约设备
+    - start_step(lot_id, step_id, tool_id, recipe_id)：开始工艺步骤
+    - hold_lot(lot_id, reason)：Hold Lot
+    ---
+    # 🔄 执行模式（必须遵循）
+    所有任务必须按以下循环执行：
+    思考 → 调用工具 → 获取结果 → 再思考 → 再执行 → 最终输出
+    ---
+    # 🧠 决策规则
+    - Lot 状态不是 READY → 不能执行
+    - Step 不属于当前 Route → 停止
+    - 设备不可用 → 等待或停止
+    - Recipe 不匹配 → 禁止执行
+    - 所有条件满足才允许 start_step
+    ---
+    # 🚨 异常处理
+    如果工具调用失败：
+    - 先重试一次
+    - 仍失败 → hold lot 并报告原因
+    ---
+    # 📤 输出要求
+    最终必须输出：
+    - 当前状态总结
+    - 执行了哪些工具调用
+    - 最终结果（成功 / 失败原因）
 输出 JSON: {"answer":"...","citations":["docId:chunkId"],"confidence":"high|medium|low","needHuman":boolean}
 
 User CONTEXT:
-{{retrieved_chunks}}
-问题: {{user_question}}</code></pre>
+    {{retrieved_chunks}}
+    问题: {{user_question}}
+      </code>
+</pre>
           </div>
           <div class="card-block block-tips">
             <h4>关键/技巧</h4>
@@ -273,12 +404,25 @@ User CONTEXT:
       </section>
 
 <section class="section" id="function-calling-tools">
-        <h2>Function Calling 与 Tool 设计</h2>
+        <h2>Agent Tool 设计</h2>
         <article class="knowledge-card">
           <h3>与 Java 业务 API 对接、MCP 概念</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
-            <p><strong>Function Calling</strong>：模型输出结构化 tool call，应用层执行 Java 方法/API 后回传结果。架构边界：Tool 层是<strong>业务 API 的受控门面</strong>——粒度=业务原子操作，执行前鉴权与 RBAC（见<a href="16-common-modules.html#rbac">第 16 章 RBAC</a>）；Agent 编排层不绕过 Tool 直连 Repository。<strong>MCP</strong>：Model Context Protocol（模型上下文协议），可标准化工具暴露与调用，企业内可封装「订单 MCP Server」供多 Agent 发现。与业务模块集成：AI 能力应嵌入现有 BFF/领域服务，避免孤立「AI 微服务」缺统一鉴权。防注入：Tool 参数不信任模型自由文本拼 SQL。</p>
+            <h4>概要</h4>
+            <p>
+              <strong>Agent Tool</strong>：	Agent的“手脚”，是Agent可以调用的外部函数、API或脚本。	负责动作具体“怎么做”。可被模型安全调用的能力单元
+              <strong>Tool 分类</strong>：
+              Retrieval Tools（检索类）只读<br>
+              Action Tools（执行类）需要权限控制<br>
+              Verification Tools（验证类）决策前必须调用<br>
+              Planning Tools（规划类）辅助决策
+              <strong>Tool 结构</strong>：
+              1. Intent（语义）:Tool 必须“语义清晰”:Tool 名字必须表达业务意图： Tool = 动词 + 业务对象。<br>
+              2. Input schema（输入结构）<br>
+              3. Output schema（输出结构）<br>
+              4. Preconditions（前置条件）<br>
+              5. Side effects（副作用）<br>
+              6. Failure modes（失败语义）
             <div class="diagram-block">
               <pre class="mermaid">sequenceDiagram
     participant U as 用户
@@ -306,6 +450,33 @@ public OrderSummary getOrderStatus(
   return orderService.getSummary(orderId);
 }</code></pre>
           </div>
+          <div class="card-block block-example">
+            <h4>Tool 定义示例（start_step）</h4>
+            <pre><code>Tool: start_step
+
+Purpose:
+  Start a manufacturing step for a lot
+
+Input:
+  - lot_id
+  - step_id
+  - tool_id
+  - recipe_id
+
+Preconditions:
+  - lot_state = READY
+  - tool_state = IDLE
+  - recipe validated
+
+Output:
+  - execution_id
+  - status
+
+Failure:
+  - tool_busy
+  - invalid_route
+  - recipe_mismatch</code></pre>
+          </div>
           <div class="card-block block-pitfalls">
             <h4>易错点</h4>
             <ul>
@@ -316,55 +487,12 @@ public OrderSummary getOrderStatus(
         </article>
       </section>
 
-<section class="section" id="agent-workflow-design">
-        <h2>Agent 与工作流设计</h2>
-        <article class="knowledge-card">
-          <h3>单 Agent、多 Agent、Human-in-the-loop</h3>
-          <div class="card-block block-explain">
-            <h4>讲解</h4>
-            <p><strong>单 Agent + ReAct</strong>：适合工具数 &lt;10 的垂直场景。<strong>多 Agent</strong>：Planner 分派专员 Agent，跨域但增延迟——架构上仅在<strong>上下文边界清晰</strong>时采用。<strong>Human-in-the-loop</strong>：高风险动作（退款、权限变更）插入审批节点，与工作流引擎（Flowable/Camunda，见<a href="16-common-modules.html#workflow">第 16 章工作流</a>）结合：LLM 填表单 → 人审 → 执行 Tool。决策：能单不双，能审不自动；状态机记录每步 I/O 便于审计与 Eval。</p>
-            <div class="diagram-block">
-              <pre class="mermaid">stateDiagram-v2
-    [*] --> Understand
-    Understand --> Retrieve: "需知识"
-    Retrieve --> Plan
-    Plan --> Act: "自动 Tool"
-    Plan --> Approve: "高风险"
-    Approve --> Act: "人通过"
-    Approve --> Reject: "人驳回"
-    Act --> Respond
-    Respond --> [*]
-    Reject --> [*]</pre>
-              <p class="diagram-caption">图：Agent 状态与人工审批</p>
-            </div>
-          </div>
-          <div class="card-block block-deliverable">
-            <h4>阶段成果</h4>
-            <ul>
-              <li><strong>Agent 工作流需求说明</strong>：状态机、人工审批节点、最大步数/超时</li>
-              <li><strong>Human-in-the-loop 清单</strong>：高风险动作与审批 SLA</li>
-            </ul>
-          </div>
-          <div class="card-block block-tips">
-            <h4>关键/技巧</h4>
-            <ul>
-              <li>最大步数/超时硬限制，防 Agent 死循环烧 Token。</li>
-              <li>高风险 Tool 默认 <code>dryRun=true</code> 先展示计划。</li>
-            </ul>
-          </div>
-          <div class="card-block block-memory">
-            <h4>速记</h4>
-            <p>「能单不双，能审不自动，状态可回放。」</p>
-          </div>
-        </article>
-      </section>
-
 <section class="section" id="ai-data-governance">
         <h2>AI 数据治理</h2>
         <article class="knowledge-card">
           <h3>隐私、脱敏、出境与训练/推理边界</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>数据分级</strong>：公开 / 内部 / 敏感 / 机密——决定是否可进 Prompt、是否需脱敏（手机号、身份证、薪资）。<strong>推理 vs 训练</strong>：企业 API 默认关闭「用对话改进模型」；私有化部署数据不出 VPC。<strong>出境</strong>：调用境外 API 需法务评估（个人信息保护法、行业监管）。日志：记录 Prompt/Response 摘要时<strong>脱敏</strong>，全量仅存加密审计库、短 TTL。与<a href="17-security-development.html">第 17 章安全开发</a>联动：Prompt Injection 防护、输出过滤、租户隔离。RAG 知识库 ACL 与业务 RBAC 一致。</p>
           </div>
           <div class="card-block block-deliverable">
@@ -389,7 +517,7 @@ public OrderSummary getOrderStatus(
         <article class="knowledge-card">
           <h3>Token 预算、缓存、流式与降级</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>成本治理</strong>：Token 预算是<a href="03-architecture-design.html#finops-cloud-cost">第 03 章 FinOps TCO</a>的子项，架构评审须纳入总成本表。按场景估算 QPS × 平均 Token × 单价；设 dev/staging/prod 配额与告警阈值（90% 预警、100% 熔断非 P0）。<strong>优化</strong>：意图路由（简单走 mini 模型）、Prompt 压缩、Embedding/语义缓存。<strong>延迟 SLO</strong>：流式 SSE 改善首 token 体验；同步 API 设 p99 上限。<strong>降级</strong>：模型超时 → 模板/转人工；向量库不可用 → BM25 兜底；预算熔断 → 限流。监控对接<a href="21-devops-cloud-native.html#observability">第 21 章可观测性</a>。演进：PoC 不限预算 → 试点设软上限 → 生产硬配额 + FinOps 月报。</p>
           </div>
           <div class="card-block block-deliverable">
@@ -422,23 +550,12 @@ public OrderSummary getOrderStatus(
         </article>
       </section>
 
-      <section class="section" id="prompt-version-governance">
-        <h2>Prompt 与模型版本治理</h2>
-        <article class="knowledge-card">
-          <h3>Prompt Registry · A/B · 回滚</h3>
-          <div class="card-block block-explain">
-            <h4>讲解</h4>
-            <p>Prompt 与模型版本应与代码同等治理：<strong>Prompt Registry</strong>（Git 或专用库）版本化、变更审计、CI 跑 Eval 门禁。生产变更有 A/B 分桶与一键回滚；禁止「改 Prompt 无记录」。与<a href="#ai-evaluation">Eval 章节</a>、<a href="22-ai-development.html">第 22 章</a>衔接。</p>
-          </div>
-        </article>
-      </section>
-
 <section class="section" id="ai-evaluation">
         <h2>AI 效果评估</h2>
         <article class="knowledge-card">
           <h3>离线 Eval、Golden Set、幻觉检测、A/B</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>Eval 体系</strong>是 AI 能力的<strong>质量门禁</strong>，架构上与 CI/CD 同级：
               Golden Set（50–200 条）+ 离线指标（Faithfulness、Citation 命中率）+ 业务 KPI（转人工率）构成三层评估。
               <strong>架构产出</strong>：Eval 平台/流水线（Prompt 版本 tag → 自动跑分 → 门禁阈值 → 阻断发布）；与<a href="22-ai-development.html#harness-engineering">第 22 章 Harness Engineering</a>衔接。无 Golden Set 不上生产；模型/Prompt/检索策略变更必跑回归。A/B 分桶看业务 KPI，非仅 ROUGE/BLEU。</p>
@@ -473,7 +590,7 @@ public OrderSummary getOrderStatus(
         <article class="knowledge-card">
           <h3>Spring AI、Ollama/OpenAI、异步与幂等</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>Spring AI</strong>：统一 <code>ChatModel</code>、<code>EmbeddingModel</code>、<code>VectorStore</code>，配置 <code>spring.ai.openai</code> / <code>spring.ai.ollama</code> 切换供应商。<strong>Ollama</strong>：本地 dev/test；生产多选云 API 或私有化 vLLM。<strong>异步</strong>：长生成走 MQ（用户提交 → jobId → WebSocket/SSE 推送），避免阻塞 Tomcat 线程。<strong>幂等</strong>：同一 <code>conversationId + messageId</code> 重试返回缓存结果；写操作 Tool 带 idempotencyKey。超时、重试、熔断用 Resilience4j；密钥走<a href="21-devops-cloud-native.html">第 21 章</a>配置管理。</p>
           </div>
           <div class="card-block block-deliverable">
@@ -508,7 +625,7 @@ public ResponseEntity&lt;JobAccepted&gt; submit(@RequestBody ChatRequest req) {
         <article class="knowledge-card">
           <h3>RBAC、审计、日志、工作流</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>AI 能力嵌入企业<strong>横切模块层</strong>，非孤岛：<strong>RBAC</strong>——Tool 与知识库按角色过滤；<strong>审计</strong>——model、prompt 版本、docId、tool 参数（脱敏）；<strong>日志</strong>——traceId 串联（见<a href="16-common-modules.html#system-logging">第 16 章日志体系</a>）；<strong>工作流</strong>——AI 节点 + 人工节点；<strong>通知</strong>——完成发站内信。架构原则：优先在现有 BFF/领域服务加 AI Advisor，避免单独「AI 微服务」缺统一鉴权与数据权限。</p>
           </div>
           <div class="card-block block-example">
@@ -540,7 +657,7 @@ public ResponseEntity&lt;JobAccepted&gt; submit(@RequestBody ChatRequest req) {
         <article class="knowledge-card">
           <h3>PoC → 灰度 → 生产监控</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>阶段 0 PoC</strong>（2–4 周）：单场景 + 小 Golden Set + 人工全审，验证技术可行。<strong>阶段 1 试点</strong>：部门灰度，Human-in-the-loop 抽检 20%。<strong>阶段 2 生产</strong>：自动化 Eval 门禁、预算告警、on-call runbook。<strong>阶段 3 扩展</strong>：复用 RAG 平台、Tool 目录、Prompt 仓库。每阶段明确 Go/No-Go：Faithfulness ≥ 阈值、转人工率下降、无 P0 合规事件。与<a href="03-architecture-design.html#requirements-to-architecture">第 03 章追溯</a>对齐——AI 场景挂需求 ID。</p>
             <div class="diagram-block">
               <pre class="mermaid">flowchart LR

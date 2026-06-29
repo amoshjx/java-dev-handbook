@@ -160,7 +160,7 @@ class AliPay extends BasePayment implements Refundable {
       <section class="section" id="design-patterns">
         <h2>常用设计模式</h2>
         <p>在 Java 开发中，设计模式（Design Patterns）是解决特定软件设计问题的经典方案。它们能让你的代码更具可复用性、可扩展性和可维护性。</p>
-        <p>GoF（Gang of Four）将设计模式分为三大类：<strong>创建型</strong>、<strong>结构型</strong>和<strong>行为型</strong>。下面为你精选每类中最常用、面试必问的几种设计模式进行深度讲解和代码演练。</p>
+        <p>GoF（Gang of Four）将设计模式分为三大类：<strong>创建型</strong>、<strong>结构型</strong>和<strong>行为型</strong>。下面为你精选每类中最常用、面试必问的几种设计模式进行深度概要和代码演练。</p>
 
         <h3>一、创建型模式（Creational Patterns）</h3>
         <blockquote>
@@ -413,7 +413,7 @@ class Subject {
         <article class="knowledge-card">
           <h3>对象相等契约</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>重写 <code>equals</code> 必须重写 <code>hashCode</code>，保证相等对象 hash 相同。契约：自反、对称、传递、一致；与 <code>null</code> 比较返回 false。实体 ID 相等通常按业务主键；值对象按所有字段。若字段存在多种等价表示（如 <code>BigDecimal</code> 的 scale），请在 <code>equals/hashCode</code> 中采用一致的归一化策略。放入 <code>HashMap/HashSet</code> 的 key 字段应保持不可变。</p>
           </div>
           <div class="card-block block-example">
@@ -451,7 +451,7 @@ private BigDecimal normalizedAmount() {
         <article class="knowledge-card">
           <h3>线程安全与防御性拷贝</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>不可变对象天然线程安全、可安全共享、适合作为 Map key 和值对象。实现要点：<code>final</code> 字段、无 setter、可变组件防御性拷贝（<code>List.copyOf</code>）、不暴露内部可变引用。Java 17+ 值对象优先 <code>record</code>；需行为方法时用 <code>final class</code> + 私有构造。标准库典范：<code>String</code>、<code>LocalDate</code>、<code>Instant</code>。</p>
             <div class="diagram-block">
               <pre class="mermaid">flowchart LR

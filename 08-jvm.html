@@ -145,36 +145,30 @@ jcmd &lt;pid&gt; VM.native_memory summary
       <section class="section" id="object-layout">
         <h2>对象在堆中的内存布局</h2>
         <article class="knowledge-card">
-
+          <h3>对象头、实例数据与对齐填充</h3>
           <div class="card-block block-explain">
             <h4>是什么</h4>
-            <p>HotSpot 对象通常由 <strong>对象头</strong>、<strong>实例数据</strong>、<strong>对齐填充</strong>组成。对象头包含 Mark Word（哈希、GC 年龄、锁状态等）和 Klass Pointer（指向类元数据）；数组对象还包含数组长度。实例数据是字段内容，字段会按布局规则重排以减少填充。对象大小通常按 8 字节对齐；启用压缩普通对象指针和压缩类指针时，64 位 JVM 可以用 4 字节引用降低内存占用。
-              <br>
-      
+            <p>HotSpot 对象通常由 <strong>对象头</strong>、<strong>实例数据</strong>、<strong>对齐填充</strong>组成。对象头包含 Mark Word（哈希、GC 年龄、锁状态等）和 Klass Pointer（指向类元数据）；数组对象还包含数组长度。实例数据是字段内容，字段会按布局规则重排以减少填充。对象大小通常按 8 字节对齐；启用压缩普通对象指针和压缩类指针时，64 位 JVM 可以用 4 字节引用降低内存占用。</p>
+            <div class="diagram-block">
               <pre class="mermaid">
-              flowchart TB
-              
-              subgraph OBJ["Java Object Layout"]
-                  direction TB
-              
-                  subgraph HEADER["Object Header"]
-                      MW["Mark Word<br/>8 bytes"]
-                      KP["Klass Pointer<br/>4/8 bytes"]
-                      AL["Array Length<br/>(array only)"]
-                  end
-              
-                  subgraph DATA["Instance Data"]
-                      FD["Fields / Instance Variables"]
-                  end
-              
-                  subgraph PAD["Padding"]
-                      PD["8-byte alignment"]
-                  end
-              end
+flowchart TB
+    subgraph OBJ["Java Object Layout"]
+        direction TB
+        subgraph HEADER["Object Header"]
+            MW["Mark Word<br/>8 bytes"]
+            KP["Klass Pointer<br/>4/8 bytes"]
+            AL["Array Length<br/>(array only)"]
+        end
+        subgraph DATA["Instance Data"]
+            FD["Fields / Instance Variables"]
+        end
+        subgraph PAD["Padding"]
+            PD["8-byte alignment"]
+        end
+    end
               </pre>
-            </p>
-          
-          
+              <p class="diagram-caption">图：HotSpot 对象内存布局——对象头 / 实例数据 / 对齐填充</p>
+            </div>
           </div>
          
         </article>
@@ -341,7 +335,7 @@ jcmd &lt;pid&gt; JFR.start name=jit settings=profile duration=120s filename=/tmp
                 </tr>
                 <tr>
                   <td><strong>ZGC</strong></td>
-                  <td>>15  GB ~ 数 TB</td>
+                  <td>&gt; 15 GB ~ 数 TB</td>
                   <td>&lt; 1 ms（亚毫秒）</td>
                   <td>中</td>
                   <td>大堆 + 严格尾延迟，金融撮合、低延迟交易、网关</td>
@@ -349,7 +343,7 @@ jcmd &lt;pid&gt; JFR.start name=jit settings=profile duration=120s filename=/tmp
                 </tr>
                 <tr>
                   <td><strong>Generational ZGC</strong></td>
-                  <td>>15  GB ~ 数 TB</td>
+                  <td>&gt; 15 GB ~ 数 TB</td>
                   <td>&lt; 1 ms（且 CPU/内存开销显著降低）</td>
                   <td>中高</td>
                   <td>同上，分配速率高、对象朝生夕灭明显的场景</td>
@@ -373,7 +367,7 @@ jcmd &lt;pid&gt; JFR.start name=jit settings=profile duration=120s filename=/tmp
                 </tr>
               </tbody>
             </table>
-            <p><strong>选型决策树（一句话版）</strong>：堆 &lt; 8 GB 且对延迟无苛求 → <strong>G1</strong>；堆 ≥ 16 GB 或 P99 暂停要求 &lt; 10 ms → <strong>ZGC（JDK 21 默认开启分代）</strong>；纯吞吐批处理 → <strong>Parallel</strong>；其它非默认选项必须有压测证据兜底。</p>
+            <p><strong>选型决策树（一句话版）</strong>：堆 &lt; 8 GB 且对延迟无苛求 → <strong>G1</strong>；堆 ≥ 16 GB 或 P99 暂停要求 &lt; 10 ms → <strong>ZGC</strong>（JDK 21 需显式 <code>-XX:+ZGenerational</code> 开启分代，JDK 23 起默认分代）；纯吞吐批处理 → <strong>Parallel</strong>；其它非默认选项必须有压测证据兜底。</p>
           </div>
 
           <div class="card-block block-example">
@@ -422,7 +416,7 @@ jcmd  &lt;pid&gt; JFR.start name=gc settings=profile duration=180s filename=/tmp
             一次只改一个参数：否则无法判断哪个参数起了作用<br>
           </div>
           <div class="card-block block-example">
-            <h4> 核心内存调优参数</h4>
+            <h4>核心内存调优参数</h4>
             <p>
               内存大小的配置直接决定了 GC 的频率和耗时。
              <br> 1. 堆内存（Heap）设置-Xms：设置堆的初始内存大小。-Xmx：设置堆的最大内存大小。
@@ -527,33 +521,39 @@ jcmd  &lt;pid&gt; JFR.start name=gc settings=profile duration=180s filename=/tmp
 
            <div class="card-block block-pitfalls">
             <h4>落地调优标准流程</h4>
-            <pre>JVM 调优不推荐盲目修改参数，通常需要遵循以下闭环流程：
-            <br>监控数据 (jstat/Prometheus) ➔ 发现异常 (Full GC频繁/停顿长) ➔ 导出分析 (jstack/jmap/MAT) ➔ 针对性调整参数 ➔ 压测验证
-            <br>1. 收集基准数据：通过压测工具（如 JMeter）模拟真实业务流量。
-            <br>2. 观察监控指标：利用 jstat -gcutil <pid> 1000 观察各内存区的增长速度与 GC 耗时。
-            <br>3. 定位核心矛盾：
-| 现象            | 调优方向              |
-| ------------- | ----------------- |
-| Full GC 频繁    | 增大堆 / 检查内存泄漏 /如果由于大对象直接进入老年代导致，可调整年轻代晋升老年代的阈值 (-XX:PretenureSizeThreshold)     |
-| Minor GC 频繁   | 增大 Young 区        |
-| STW 停顿长       | 换 G1/ZGC          |
-| OOM Heap      | 增大 `-Xmx`         |
-| OOM Metaspace | 增大 MetaSpace      |
-| CPU 高         | GC 线程过多 / Full GC |
-            <br>4. 调整并对比：每次只调整 1~2 个参数，重新压测，对比吞吐率和接口响应时间（RT）的变化，直到达到性能最优平衡点。
-            <br>5.生产灰度：先在一个 pod 上验证再全量
-          </pre>
+            <p>JVM 调优不推荐盲目修改参数，通常需要遵循以下闭环流程：</p>
+            <p><strong>监控数据 (jstat/Prometheus) ➔ 发现异常 (Full GC 频繁/停顿长) ➔ 导出分析 (jstack/jmap/MAT) ➔ 针对性调整参数 ➔ 压测验证</strong></p>
+            <ol>
+              <li>收集基准数据：通过压测工具（如 JMeter）模拟真实业务流量。</li>
+              <li>观察监控指标：利用 <code>jstat -gcutil &lt;pid&gt; 1000</code> 观察各内存区的增长速度与 GC 耗时。</li>
+              <li>定位核心矛盾：
+                <table class="compare-table">
+                  <thead>
+                    <tr><th>现象</th><th>调优方向</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td>Full GC 频繁</td><td>增大堆 / 检查内存泄漏；若因大对象直接进入老年代导致，可调整大对象直接分配到老年代的大小阈值（<code>-XX:PretenureSizeThreshold</code>）</td></tr>
+                    <tr><td>Minor GC 频繁</td><td>增大 Young 区</td></tr>
+                    <tr><td>STW 停顿长</td><td>换 G1/ZGC</td></tr>
+                    <tr><td>OOM Heap</td><td>增大 <code>-Xmx</code></td></tr>
+                    <tr><td>OOM Metaspace</td><td>增大 <code>-XX:MaxMetaspaceSize</code></td></tr>
+                    <tr><td>CPU 高</td><td>GC 线程过多 / Full GC 频繁</td></tr>
+                  </tbody>
+                </table>
+              </li>
+              <li>调整并对比：每次只调整 1~2 个参数，重新压测，对比吞吐率和接口响应时间（RT）的变化，直到达到性能最优平衡点。</li>
+              <li>生产灰度：先在一个 Pod 上验证再全量。</li>
+            </ol>
           </div>
 
           <div class="card-block block-pitfalls">
             <h4>K8s 容器环境的特殊考虑</h4>
-            <pre>
-          JDK 8u191+ 和 JDK 10+ 已经能自动识别容器内存限制，但有几个点要注意：
-          bash-XX:+UseContainerSupport                # JDK 10+ 默认开启
-          -XX:MaxRAMPercentage=75.0               # JVM 最大占容器内存的 75%
-          -XX:InitialRAMPercentage=75.0
-          -XX:MinRAMPercentage=75.0
-          </pre>
+            <p>JDK 8u191+ 和 JDK 10+ 已经能自动识别容器内存限制（cgroup），但有几个点要注意：</p>
+            <pre><code>-XX:+UseContainerSupport                # JDK 10+ 默认开启
+-XX:MaxRAMPercentage=75.0               # JVM 最大占容器内存的 75%
+-XX:InitialRAMPercentage=75.0
+-XX:MinRAMPercentage=75.0</code></pre>
+          </div>
           </article>
       </section>
 
@@ -717,38 +717,97 @@ jcmd &lt;pid&gt; JFR.start name=latency settings=profile duration=180s filename=
 
       <section class="section" id="production-checklist">
         <h2>生产配置建议</h2>
-        <article class="knowledge-card">
-          <h3>上线前 JVM baseline 与 checklist</h3>
-          <div class="card-block block-deliverable">
-            <h4>是什么</h4>
-            <ul>
-              <li>明确 JDK 发行版、Java 21 LTS 小版本、基础镜像和是否保留诊断工具。</li>
-              <li>明确容器 request/limit、堆比例、Direct/Metaspace 上限、线程池上限和 dump 目录容量。</li>
-              <li>默认开启 GC 滚动日志、OOM dump、hs_err、关键 JVM/Micrometer 指标。</li>
-              <li>为每个服务记录 JVM 参数基线、压测报告、SLO、变更历史和回滚方式。</li>
-            </ul>
-          </div>
-          <div class="card-block block-tips">
-            <h4>为什么</h4>
-            <p>好的 JVM 配置不是“永不出问题”，而是资源边界可预测、故障时有证据、变更后能对比、超限时能被告警发现。配置要和应用画像绑定：CPU 密集、IO 密集、大堆低延迟、批处理、网关、消息消费者的参数基线不应相同。</p>
-          </div>
-          <div class="card-block block-example">
-            <h4>怎么用</h4>
-            <ul>
-              <li>压测门禁：记录 QPS、P95/P99、错误率、CPU、RSS、GC pause、GC CPU 占比、分配速率。</li>
-              <li>告警门禁：堆使用率、GC 后老年代占用、Full GC 次数、线程数、Direct/Metaspace、容器 OOMKilled。</li>
-              <li>变更门禁：JDK 升级、GC 切换、堆比例调整必须灰度，并保留至少一个高峰周期对比。</li>
-            </ul>
-          </div>
-          <div class="card-block block-pitfalls">
-            <h4>怎么看问题</h4>
-            <ul>
-              <li>只设 <code>-Xmx</code> 不设非堆预算，是容器 OOM 的常见源头。</li>
-              <li>只看平均延迟会掩盖 GC、锁和下游导致的尾延迟。</li>
-              <li>没有 dump 目录容量和权限，OOM 自动留证会失败。</li>
-            </ul>
-          </div>
-        </article>
+        <p>生产 JVM 配置的目标不是“参数越多越专业”，而是让资源边界、故障证据和变更风险都可控。上线前必须把服务画像、容器资源、GC 策略、诊断留证和告警门禁写成基线，后续每次调整都能和压测结果、线上指标对比。</p>
+
+        <h3>1. 先做内存预算</h3>
+        <p>容器里的 Java 进程不只占用堆。设置 <code>-Xmx</code> 或 <code>MaxRAMPercentage</code> 时，要为堆外内存、元空间、线程栈、Code Cache、JIT、native malloc、mmap、日志缓冲和诊断文件预留空间。</p>
+        <pre><code>容器 memory limit
+  ≥ Java Heap
+  + Direct Memory
+  + Metaspace
+  + Thread Count × Xss
+  + Code Cache / JIT / JVM native
+  + mmap / malloc / glibc arena
+  + 日志、dump、agent 与安全余量</code></pre>
+
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th>资源项</th>
+              <th>建议口径</th>
+              <th>配置 / 观测重点</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Heap</td>
+              <td>在线服务通常不超过容器内存的 60%~75%，给非堆留余量</td>
+              <td><code>-XX:InitialRAMPercentage</code>、<code>-XX:MaxRAMPercentage</code>、GC 后老年代占用</td>
+            </tr>
+            <tr>
+              <td>Direct Memory</td>
+              <td>网关、Netty、文件传输、加密压缩场景必须显式预算</td>
+              <td><code>-XX:MaxDirectMemorySize</code>、Netty allocator、NMT</td>
+            </tr>
+            <tr>
+              <td>Metaspace</td>
+              <td>限制类元数据无限增长，避免吃掉容器剩余内存</td>
+              <td><code>-XX:MaxMetaspaceSize</code>、class count、ClassLoader 数量</td>
+            </tr>
+            <tr>
+              <td>线程栈</td>
+              <td>线程池上限必须纳入内存预算，线程越多栈内存越大</td>
+              <td><code>-Xss</code>、线程数、线程池队列和阻塞时间</td>
+            </tr>
+            <tr>
+              <td>诊断文件</td>
+              <td>dump、GC 日志、JFR 要有目录、权限和容量上限</td>
+              <td><code>HeapDumpPath</code>、GC 日志滚动、磁盘告警</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>2. 推荐基线模板</h3>
+        <p>下面是 Java 21 在线服务的保守起点。真实值要按服务画像和压测结果调整：CPU 密集、IO 密集、大堆低延迟、批处理、网关和消息消费者不应共用一套参数。</p>
+        <pre><code>java \
+  -XX:+UseContainerSupport \
+  -XX:InitialRAMPercentage=60.0 \
+  -XX:MaxRAMPercentage=70.0 \
+  -XX:+UseG1GC \
+  -XX:MaxGCPauseMillis=200 \
+  -Xlog:gc*,safepoint:file=/var/log/app/gc-%t.log:time,uptime,level,tags:filecount=10,filesize=20m \
+  -XX:+HeapDumpOnOutOfMemoryError \
+  -XX:HeapDumpPath=/var/log/app/dumps \
+  -XX:ErrorFile=/var/log/app/hs_err_pid%p.log \
+  -jar app.jar</code></pre>
+
+        <p>大堆、严格尾延迟服务可在压测验证后使用 ZGC；Java 21 使用分代 ZGC 时需要显式开启 <code>-XX:+ZGenerational</code>。</p>
+        <pre><code>java \
+  -XX:+UseContainerSupport \
+  -XX:MaxRAMPercentage=70.0 \
+  -XX:+UseZGC \
+  -XX:+ZGenerational \
+  -Xlog:gc*,safepoint:file=/var/log/app/gc-%t.log:time,uptime,level,tags:filecount=10,filesize=20m \
+  -XX:+HeapDumpOnOutOfMemoryError \
+  -XX:HeapDumpPath=/var/log/app/dumps \
+  -jar app.jar</code></pre>
+
+        <h3>3. 上线门禁清单</h3>
+        <ul>
+          <li><strong>版本基线：</strong>记录 JDK 发行版、Java 21 LTS 小版本、基础镜像、glibc/musl 差异，以及镜像内是否保留 <code>jcmd</code>、<code>jfr</code> 等诊断工具。</li>
+          <li><strong>资源基线：</strong>明确容器 request/limit、Heap 比例、Direct/Metaspace 上限、线程池上限、<code>-Xss</code>、dump 目录容量和日志滚动策略。</li>
+          <li><strong>压测门禁：</strong>记录 QPS、P95/P99、错误率、CPU、RSS、GC pause、GC CPU 占比、分配速率、Full GC 次数和堆使用趋势。</li>
+          <li><strong>告警门禁：</strong>覆盖堆使用率、GC 后老年代占用、Direct/Metaspace、线程数、容器 OOMKilled、磁盘容量、dump 失败和进程重启。</li>
+          <li><strong>变更门禁：</strong>JDK 升级、GC 切换、堆比例调整、线程池上限变化必须灰度发布，并保留至少一个业务高峰周期的对比数据。</li>
+        </ul>
+
+        <h3>4. 常见错误</h3>
+        <ul>
+          <li>只设置 <code>-Xmx</code>，没有给 Direct、Metaspace、线程栈和 native memory 留预算，最终表现为容器 OOMKilled。</li>
+          <li>把 Full GC、OOM 一律理解为“内存小”，没有先确认对象泄漏、缓存无限增长、批任务峰值和线程阻塞。</li>
+          <li>只看平均延迟，不看 P99、GC pause、safepoint、线程池队列和下游耗时。</li>
+          <li>开启了 OOM dump，但目录无权限、磁盘不足或没有滚动清理策略，故障时拿不到证据。</li>
+        </ul>
       </section>
 
       <section class="section" id="interview-myths">

@@ -57,7 +57,7 @@
         <article class="knowledge-card">
           <h3>从“愿景”到“可交付架构包”的阅读路径</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>本章按<strong>决策顺序</strong>组织，而非按技术名词堆叠：先定义边界，再选架构，再落地治理。建议按下列模块顺序阅读，确保每一步都有可评审产物。</p>
           </div>
           <div class="card-block block-deliverable">
@@ -85,7 +85,7 @@
         <article class="knowledge-card">
           <h3>把“经验判断”变成“可评审决策”</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>架构决策建议采用统一方法链：<strong>决策前置清单</strong>（目标、约束、风险）→ <strong>候选方案矩阵</strong>（收益/成本/复杂度）→ <strong>轻量 ATAM 场景评估</strong>（质量属性冲突）→ <strong>ADR 固化</strong>。避免“先定技术、后补理由”。</p>
           </div>
           <div class="card-block block-deliverable">
@@ -112,7 +112,7 @@
         <article class="knowledge-card">
           <h3>性能、可用性、一致性、安全与成本的平衡</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>架构不是“最优解”，而是“约束下可持续解”。建议将每项关键质量属性量化为 SLO，并显式记录冲突取舍：例如<strong>强一致 vs 高可用</strong>、<strong>低时延 vs 成本</strong>、<strong>快速发布 vs 变更风险</strong>。权衡结果必须映射到实现策略与监控指标。</p>
           </div>
           <div class="card-block block-deliverable">
@@ -131,7 +131,7 @@
         <article class="knowledge-card">
           <h3>架构阶段的 TCO 模型：计算 · 存储 · 流量 · MQ · AI</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>成本是质量属性之一，须在 <strong>ADR / 架构评审</strong> 中与性能、可用性并列量化。<strong>TCO = 固定成本 + 可变成本 × 流量系数</strong>。MVP 用数量级估算 + 上限预算；规模化后接云厂商 Cost Explorer / Cost Tag 分账。AI 成本（Token + 向量库）是 TCO 子项，详细治理见<a href="23-business-intelligence.html#ai-cost-latency-slo">第 22 章 AI 成本 SLO</a>。</p>
           </div>
           <div class="card-block block-example">
@@ -175,7 +175,7 @@
         <article class="knowledge-card">
           <h3>从需求到架构</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>架构设计将<strong>已澄清的需求</strong>转化为<strong>结构化的技术方案</strong>：模块边界、通信方式、数据流、质量属性如何落地。好的架构让变更局部化、团队并行化。输出<strong>架构愿景</strong>（一句话 + 关键原则）与<strong>ADR</strong>（Architecture Decision Record）记录重要决策及权衡。</p>
           </div>
           <div class="card-block block-deliverable">
@@ -307,7 +307,7 @@ Transactional Outbox + 事件驱动，Saga 补偿
         <article class="knowledge-card">
           <h3>从业务能力到可演进模块的工程化设计</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>功能模块设计（Functional Module Design）的目标不是“把代码分目录”，而是建立<strong>稳定边界 + 清晰职责 + 可替换协作</strong>。实践中先按业务能力划分模块边界（Bounded Context / Module Boundary），再定义依赖方向与契约，最后落到分层结构与发布边界。若边界划分稳定，系统可随着团队扩张从模块化单体平滑演进到微服务。</p>
           </div>
           <div class="card-block block-deliverable">
@@ -374,7 +374,7 @@ Transactional Outbox + 事件驱动，Saga 补偿
         <article class="knowledge-card">
           <h3>分层、六边形与微服务</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>分层架构</strong>：Interface → Application → Domain ← Infrastructure，依赖由外向内，Domain 不依赖 Spring/JPA。<strong>六边形/整洁架构</strong>强调端口适配器，基础设施可替换。<strong>微服务</strong>按限界上下文拆分，非按技术层；先模块化单体（Maven 多模块），验证边界后再拆。跨上下文一致性在<strong>业务架构层</strong>选型（与<a href="11-persistence.html">第 11 章</a>本地事务分工）：单库/单服务内 → 本地 ACID；跨服务需协调 → <strong>Outbox + 事件</strong>（默认推荐）、<strong>Saga</strong>（长流程补偿）、<strong>2PC/TCC</strong>（一致性强但实现复杂，需谨慎评估）。演进：MVP 模块化单体 → 流量/团队触发再拆服务。</p>
             <div class="diagram-block">
               <pre class="mermaid">flowchart TB
@@ -442,7 +442,7 @@ public void createOrder(Order order) {
         <article class="knowledge-card">
           <h3>同步 vs 响应式选型决策树</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>大多数 B 端 CRUD 后台：<strong>Spring MVC + Servlet + 虚拟线程</strong>（Boot 3.2+ <code>spring.threads.virtual.enabled=true</code>）即可应对高并发阻塞 IO，团队认知成本最低。<strong>WebFlux</strong> 适合全链路非阻塞（网关聚合、SSE 流式、高 fan-out 代理），但调试难、与 JPA/阻塞库混用易「阻塞 EventLoop」。</p>
             <pre><code>决策树（简化）：
 1) 是否 90%+ 阻塞 IO（DB/HTTP/RPC）？ → MVC + 虚拟线程
@@ -626,7 +626,7 @@ public void createOrder(Order order) {
         <article class="knowledge-card">
           <h3>模块定位：API 在架构中的角色（契约 · 边界 · 演进）</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>API（Application Programming Interface，应用编程接口）是系统对外的<strong>稳定契约</strong>，也是服务之间的<strong>显式边界</strong>。在<a href="#domain-modeling">DDD 限界上下文</a>层面，API 是上下文集成的“开放主机服务”（OHS）；在<a href="#microservice-architecture">微服务架构</a>层面，API 是服务自治与组合的基本单元；在产品形态层面，API 是构建生态（开放平台、SaaS）的资产。</p>
             <p>架构师必须把 API 当作<strong>长期资产</strong>而非短期产物：契约一旦发布即承担向后兼容义务，演进遵循“<strong>加法兼容、减法弃用、破坏性升 major</strong>”三原则。API 设计的好坏直接决定团队耦合度、上线节奏与故障爆炸半径。</p>
             <div class="diagram-block">
@@ -663,7 +663,7 @@ public void createOrder(Order order) {
         <article class="knowledge-card">
           <h3>API 风格选型矩阵：REST / GraphQL / gRPC / WebSocket / Webhook / 事件</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>没有“最优风格”，只有“最匹配场景的风格”。选型应从<strong>调用语义、网络条件、客户端类型、演进策略、团队能力</strong>五维出发，避免技术品味驱动。同一系统内允许多风格并存（典型组合：外部 REST + 内部 gRPC + 推送 WebSocket + 跨系统 Webhook/事件）。</p>
           </div>
           <div class="card-block block-example">
@@ -701,7 +701,7 @@ public void createOrder(Order order) {
         <article class="knowledge-card">
           <h3>REST API 设计规范：资源、URI、方法、状态码、版本、分页</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>REST 设计的核心是“<strong>用资源建模业务</strong>”：先识别资源（Resource）与子资源，再把动作映射到 HTTP 方法语义，最后用状态码表达结果。优秀的 REST 设计应满足<strong>可预测（Predictable）、可演进（Evolvable）、可观测（Observable）</strong>三性。HATEOAS（Hypermedia as the Engine of Application State）适合开放平台与高自描述需求，业务系统可选用 Richardson 成熟度等级 L2 即可。</p>
           </div>
           <div class="card-block block-deliverable">
@@ -776,7 +776,7 @@ GET /api/v1/orders?fields=id,status,totalAmount
         <article class="knowledge-card">
           <h3>契约先行（Contract-First）：OpenAPI / AsyncAPI · Mock · SDK 生成</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>Contract-First</strong> 即“先写契约、再写实现”：契约（OpenAPI for REST、AsyncAPI for 事件、Protobuf for gRPC）是单一事实源（Single Source of Truth），实现、Mock、SDK、文档、契约测试均由契约派生。这把前后端/上下游协作从“口头约定 + 文档漂移”升级为“契约即代码、契约即门禁”。</p>
             <p>契约先行直接衔接<a href="02-prototype-design.html#prototype-to-architecture">第 02 章原型回写</a>：原型冻结产出 OpenAPI v1 草案，架构评审后纳入版本化仓库，<a href="12-spring-framework.html#rest">第 12 章 Spring Framework</a> 由契约生成 Controller 骨架与 DTO，前端由契约生成 TypeScript 类型与 Mock Server。</p>
             <div class="diagram-block">
@@ -858,7 +858,7 @@ components:
         <article class="knowledge-card">
           <h3>错误处理与响应规范：Problem Details（RFC 7807/9457）</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>错误响应是 API 最被忽视也最影响 DX 的部分。统一采用 <strong>RFC 7807 / RFC 9457 Problem Details for HTTP APIs</strong>：标准化字段 <code>type / title / status / detail / instance</code>，并以扩展字段承载业务错误码与可观测信息（<code>code</code>、<code>traceId</code>、<code>errors[]</code>）。</p>
             <p>错误码体系采用<strong>分层命名</strong>：<code>{domain}.{category}.{reason}</code>，例如 <code>order.stock.insufficient</code>、<code>auth.token.expired</code>。HTTP 状态码表达<strong>协议层结果</strong>，业务码表达<strong>业务层语义</strong>，二者互补不替代。<a href="12-spring-framework.html#exception">第 12 章 Spring Framework 异常映射</a>给出 <code>@RestControllerAdvice</code> 落地实现。</p>
           </div>
@@ -906,7 +906,7 @@ Content-Type: application/problem+json
         <article class="knowledge-card">
           <h3>鉴权 · 安全 · 限流 · 防重放</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>API 安全是<strong>多层防御</strong>组合，不存在“单一令牌包打天下”。常见层次：传输安全（TLS/mTLS）→ 身份认证（OAuth 2.1 / OIDC / mTLS / API Key）→ 授权（RBAC/ABAC、Scope）→ 防滥用（限流 / 配额 / 防重放 / 签名）→ 审计。详细实现见<a href="17-security-development.html#authentication">第 17 章认证</a>、<a href="17-security-development.html#authorization">授权</a>与<a href="17-security-development.html#jwt-best-practices">JWT 最佳实践</a>。</p>
           </div>
           <div class="card-block block-deliverable">
@@ -966,7 +966,7 @@ X-Nonce: 8f1c-...                 # 服务端 5min 内去重</code></pre>
         <article class="knowledge-card">
           <h3>幂等性 · 一致性 · 重试策略</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>分布式调用的默认假设是“<strong>至少一次</strong>”：网络抖动、超时、网关重试都可能让同一请求被处理多次。幂等性是 API 的<strong>第一可靠性原则</strong>：相同输入多次执行结果一致、副作用一次。<code>GET/PUT/DELETE</code> 天然幂等；<code>POST</code> 通过 <code>Idempotency-Key</code> Header 实现幂等（Stripe 风格事实标准）。</p>
             <p>一致性策略与<a href="#microservice-architecture">微服务数据管理</a>对齐：服务内 ACID，跨服务最终一致（Outbox + 幂等消费 + 对账），长流程 Saga 补偿，2PC/TCC 仅用于强一致核心场景。</p>
           </div>
@@ -1019,7 +1019,7 @@ Retry-After: 30                                  # 秒，429/503 必带
         <article class="knowledge-card">
           <h3>性能与可伸缩：缓存 · 压缩 · 批量 · 流式 · Backpressure</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>API 性能从“响应时间 + 吞吐 + 稳态弹性”三轴度量。设计层可控的杠杆：HTTP 缓存（ETag/Cache-Control）、传输压缩（gzip/br）、批量接口减少往返、流式接口处理长响应、Backpressure 控制客户端速率。优化必须以<strong>SLO 与压测数据</strong>驱动，而非凭直觉。</p>
           </div>
           <div class="card-block block-example">
@@ -1066,7 +1066,7 @@ PUT /api/v1/products/SKU-1
         <article class="knowledge-card">
           <h3>集成模式：同步 vs 异步 · API Gateway · BFF · Service Mesh · Webhook</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>集成模式回答“服务/系统之间<strong>怎么连</strong>”。架构师需要在<strong>同步链路</strong>（请求-响应、强时效）与<strong>异步链路</strong>（事件、消息、Webhook、最终一致）之间作出有意识的取舍，并配合 API Gateway/BFF/Service Mesh 等基础设施落地。详细网关与可观测部署见<a href="21-devops-cloud-native.html#nginx">第 21 章网关</a>与<a href="21-devops-cloud-native.html#observability">可观测</a>。</p>
             <div class="diagram-block">
               <pre class="mermaid">flowchart LR
@@ -1129,7 +1129,7 @@ X-Delivery-Attempt: 3                   # 第 N 次投递
         <article class="knowledge-card">
           <h3>契约测试：Pact · Spring Cloud Contract · CI 门禁</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>契约测试（Contract Test）填补单元测试与端到端测试之间的鸿沟：不启动整个系统，但能<strong>独立验证</strong>服务双方对契约的理解一致。<strong>Consumer-Driven Contracts（CDC）</strong>由消费方发布期望，提供方按期望验证，避免上游单方面变更打破下游。主流工具 <strong>Pact</strong>（多语言、Broker 中介）、<strong>Spring Cloud Contract</strong>（JVM 友好、契约即 Groovy/YAML）。详细测试体系见<a href="19-testing-quality.html">第 19 章测试质量</a>。</p>
             <div class="diagram-block">
               <pre class="mermaid">flowchart LR
@@ -1194,7 +1194,7 @@ response:
         <article class="knowledge-card">
           <h3>API 治理：目录 · 生命周期 · Deprecation · 破坏性变更</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>API 治理（API Governance）回答“<strong>API 资产如何管理与演进</strong>”。核心要素：统一 API 目录、明确生命周期阶段、规范化的弃用流程、显式的破坏性变更管理、跨团队 API Style Guide。没有治理的 API 会出现“同名异义、同义异名、版本爆炸、无主接口”。</p>
             <div class="diagram-block">
               <pre class="mermaid">stateDiagram-v2
@@ -1247,7 +1247,7 @@ response:
         <article class="knowledge-card">
           <h3>开发者体验（DX）：API Portal · SDK · Try-it-out · Changelog</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>DX（Developer Experience）是开放 API 的第一竞争力。优秀 API 的标志不是“功能多”，而是“<strong>新接入方多久能成功调通第一个请求（Time-to-First-Hello-World）</strong>”。DX 关键资产：API Portal、SDK、可交互调试（Try-it-out）、清晰的错误码字典、版本化的 Changelog、可订阅的状态页。</p>
           </div>
           <div class="card-block block-deliverable">
@@ -1289,7 +1289,7 @@ curl -X POST 'https://api.example.com/v1/orders' \
         <article class="knowledge-card">
           <h3>API 可观测性：指标 · 日志 · 追踪</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>API 的可观测性遵循<strong>RED + USE</strong>方法：<strong>Rate</strong>（QPS）、<strong>Errors</strong>（错误率）、<strong>Duration</strong>（延迟分位）+ 资源饱和度。所有 API 指标必须按<code>(service, route, method, status, tenant)</code>多维切片，保证排障可下钻。链路追踪贯穿网关→服务→数据库→消息，<code>traceId</code> 同时回灌错误响应与日志。详见<a href="21-devops-cloud-native.html#observability">第 21 章可观测体系</a>。</p>
           </div>
           <div class="card-block block-example">
@@ -1401,7 +1401,7 @@ http.server.errors{route, code="order.stock.insufficient"}
         <article class="knowledge-card">
           <h3>从交易系统到分析体系的数据架构</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <div class="diagram-block">
               <pre class="mermaid">flowchart LR
     APP["应用服务 Application Service"] --> OLTP[("交易库 OLTP")]
@@ -1533,7 +1533,7 @@ LIMIT 100;</code></pre>
         <article class="knowledge-card" id="graph-database-selection">
           <h3>图数据库（Graph Database）选型与落地</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>属性图（Property Graph）</strong>以<strong>点（Vertex）</strong>、<strong>边（Edge）</strong>、<strong>属性（Property）</strong>建模：适合「谁与谁关联、资金怎么走、设备依赖链、供应链上下游」等<strong>多跳关系查询</strong>。图库通常作为 OLTP 的<strong>读模型（CQRS）</strong>或分析/智能层存储，<strong>不作为核心交易事实源（Source of Truth）</strong>——订单金额、库存扣减仍以 MySQL/PostgreSQL 为准，图库由 CDC/批同步派生。</p>
             <p>与「关系库 + 递归 CTE」的边界：跳数少（≤2）、关系模式固定、数据量百万级内，PostgreSQL 边表 + 递归 CTE 往往够用（企业 Ontology 常见做法，见<a href="24-palantir-aip.html#aip-ontology-schema">第 24 章 Ontology</a>）；当需要<strong>深度遍历、路径算法、实时图分析</strong>或亿级边规模时，再引入专用图数据库。</p>
             <div class="diagram-block">
@@ -1636,7 +1636,7 @@ void upsertOrderNode(OrderEvent e) {
         <article class="knowledge-card">
           <h3>从数据模型到可扩展 DDL 的实战方法</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>表结构设计（Table Schema Design）是把业务语义转成可长期演进的数据骨架。推荐路径为<strong>概念模型（Conceptual Model）→ 逻辑模型（Logical Model）→ 物理模型（Physical Model）</strong>：先定义实体关系与业务约束，再映射键、索引和字段类型，最后结合存储引擎、分区策略与运维约束落地。</p>
             <p>本节与<a href="#data-architecture">数据架构与存储选型</a>配套：前者回答“数据放哪里”，本节回答“表怎么建才可持续”。跨服务事务边界与一致性策略可结合<a href="11-persistence.html">第 11 章持久化</a>一起评审。</p>
           </div>
@@ -1707,7 +1707,7 @@ void upsertOrderNode(OrderEvent e) {
         <article class="knowledge-card">
           <h3>决策记录与评审检查单</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>ADR</strong> 轻量记录架构决策：背景、选项、决策、后果，版本化管理（Proposed → Accepted → Superseded → Deprecated）。每条 ADR 须<strong>可评审</strong>：有量化权衡（如「选 Kafka 因吞吐 10 万/s，接受运维复杂度」）、有<strong>回滚/替代方案</strong>。<strong>架构评审</strong>（ATAM 轻量变体）在里程碑前进行：对照 NFR 矩阵、走查质量属性冲突（性能 vs 安全 vs 成本），检查单逐项过。评审结论写入 ADR 状态或评审纪要，PR 引用 ADR 编号，避免「会议口头通过、文档无留痕」。</p>
           </div>
           <div class="card-block block-deliverable">
@@ -1743,7 +1743,7 @@ void upsertOrderNode(OrderEvent e) {
         <article class="knowledge-card">
           <h3>RTM 映射与里程碑交付包</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>承接<a href="01-requirements-analysis.html#requirements-clarification">第 01 章需求基线与 RTM</a>，将追溯链延伸至架构交付：<strong>每条需求</strong>映射到架构组件、API、数据实体与测试。里程碑<strong>交付包</strong>清单明确每阶段须提交的文档集（章程、Backlog、架构图、ADR、OpenAPI 等），作为 DoD（Definition of Done）的一部分。需求变更时同步更新 RTM 与 ADR，保持双向可追溯。</p>
             <div class="diagram-block">
               <pre class="mermaid">flowchart LR

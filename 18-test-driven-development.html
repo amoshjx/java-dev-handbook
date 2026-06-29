@@ -57,7 +57,7 @@
         <article class="knowledge-card">
           <h3>测试先行 vs 后写测试：节奏与反馈环</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>测试驱动开发（TDD）</strong>不是「多写测试」，而是<strong>用失败测试驱动设计与实现</strong>的短周期开发节奏。经典三步循环：<strong>红（Red）</strong>——写一个描述期望行为、当前必然失败的测试；<strong>绿（Green）</strong>——写<strong>最少</strong>生产代码让测试通过；<strong>重构（Refactor）</strong>——在测试保护下整理结构，消除重复、改善命名，保持全绿。</p>
             <p>与「功能写完再补测试」的本质差异：TDD 把测试当作<strong>设计工具</strong>——先定义对外可观测行为（API/领域方法），再实现；后写测试往往只为覆盖率，容易测实现细节、与生产代码同构耦合。Kent Beck 强调 TDD 粒度是<strong>极短</strong>的（分钟级），而非一个 Story 结束才跑测试。</p>
             <div class="diagram-block">
@@ -116,7 +116,7 @@ public BigDecimal discount(BigDecimal subtotal) {
         <article class="knowledge-card">
           <h3>何时 TDD 回报最高，何时别硬套</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>TDD 价值</strong>：① 可执行规格——测试即文档；② 小步反馈——秒级发现回归；③ 驱动可测试设计——依赖注入、纯函数、小类；④ 重构信心——安全网允许持续改进结构。</p>
             <p><strong>高回报场景</strong>：领域规则（定价、风控、状态机）、纯逻辑 Service、API 契约、Bug 修复（先写复现测试再修）。<strong>低回报或需变通</strong>：探索性原型（需求未稳定，测试会频繁调整）、复杂 UI/动画（测行为成本高，可采用 E2E 或手工探索 + 下层 TDD）、无 seam 的遗留大泥球（先特征测试再局部 TDD，见<a href="#legacy-code-tdd">遗留代码卡片</a>）、强集成依赖且 Mock 失真（用 Testcontainers 或契约测试，见<a href="19-testing-quality.html#testcontainers">第 19 章 Testcontainers</a>）。</p>
           </div>
@@ -146,7 +146,7 @@ public BigDecimal discount(BigDecimal subtotal) {
         <article class="knowledge-card">
           <h3>单元 TDD 为主，集成/E2E 验证边界</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>测试金字塔</strong>（Mike Cohn）：底层大量<strong>快速单元测试</strong>，中层适量<strong>集成测试</strong>，顶层少量<strong>端到端</strong>。TDD 日常节奏主要发生在<strong>单元层</strong>——毫秒级反馈、隔离依赖、精确失败定位。</p>
             <p>TDD 与金字塔的关系：单元 TDD 驱动设计与重构；集成测试在<strong>边界确认</strong>后补充（Repository + DB、HTTP 契约），不必每个小步都起容器；E2E 验证关键用户旅程。反模式「冰淇淋锥」——大量 UI E2E、少量单元——TDD 难以维持，CI 慢且 flaky。</p>
           </div>
@@ -176,7 +176,7 @@ public BigDecimal discount(BigDecimal subtotal) {
         <article class="knowledge-card">
           <h3>Fake vs Mock vs Stub：TDD 中的依赖替身选型</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>单元 TDD 要求被测单元<strong>隔离</strong>。替身类型：<strong>Stub</strong>——预设返回值，不断言交互；<strong>Mock</strong>——验证调用次数/参数（行为验证）；<strong>Fake</strong>——可工作的轻量实现（内存 Repository、FakeClock）。</p>
             <p>TDD 偏好：<strong>优先 Fake 与真实值对象</strong>——测试读作规格；仅在跨进程/慢 IO 边界用 Mock。Over-mock 导致测试绑定调用顺序，重构即红。从失败测试开始时，先问「这个依赖该 Fake 还是 Mock？」——若关心<strong>结果</strong>用 Fake/Stub；若关心<strong>是否调用外部网关一次</strong>才 Mock（详见<a href="#mockito-tdd-boundary">Mockito 边界卡片</a>）。</p>
           </div>
@@ -216,7 +216,7 @@ void shouldDebitAndPersist() {
         <article class="knowledge-card">
           <h3>@Test、AssertJ 与参数化：TDD 日常工具链</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>TDD 工作流依赖<strong>快速、表达力强的断言</strong>。JUnit 5 <code>@Test</code> + AssertJ 流式 API 让失败信息可读；<code>@ParameterizedTest</code> 在绿之后扩展边界用例；<code>@Nested</code> 按规则分组。完整 API 与 Mockito 扩展见<a href="19-testing-quality.html#junit5">第 19 章 JUnit 5</a>，本章聚焦 TDD 节奏下的用法。</p>
           </div>
           <div class="card-block block-example">
@@ -267,7 +267,7 @@ class PasswordValidatorTest {
         <article class="knowledge-card">
           <h3>何时 Mock、何时真实对象 / Testcontainers</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>Mockito 语法与 @Mock/@InjectMocks 见<a href="19-testing-quality.html#mockito">第 19 章 Mockito</a>。TDD 视角的边界：</p>
             <ul>
               <li><strong>适合 Mock</strong>：外部支付网关、邮件 SDK、跨团队 HTTP Client——慢、不可控、需验证「是否调用一次」。</li>
@@ -316,7 +316,7 @@ class NotifyOrderHandlerTest {
         <article class="knowledge-card">
           <h3>测试通过后重构；遗留代码的 Characterization Test</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>TDD 第三步<strong>重构</strong>前提：测试全绿。Martin Fowler 重构清单：提取方法、搬移字段、以多态替条件——每步跑测试。无测试的遗留模块：先写<strong>特征测试（Characterization Test）</strong>——记录当前行为（哪怕疑似 bug），锁定基线再改。</p>
             <div class="diagram-block">
               <pre class="mermaid">flowchart LR
@@ -365,7 +365,7 @@ void legacyDiscount_shouldMatchCurrentProductionBehavior() {
         <article class="knowledge-card">
           <h3>Given-When-Then 与外层/内层 TDD</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>BDD</strong>（行为驱动开发）用<strong>业务可读语言</strong>描述场景；<strong>TDD</strong>用代码测试驱动实现。二者互补：Cucumber <strong>Scenario</strong> 作外层验收规格（Red），Step Definition 内部仍可对域对象做<strong>单元 TDD</strong>（Green/Refactor）。</p>
             <p>衔接模式：Product/QA 写 Gherkin → 开发 Red 场景（可能先 stub Step）→ 域层 TDD 实现 → Step 变绿 → 重构。避免 Step 里堆 200 行业务逻辑——应调用已 TDD 的 Application Service。</p>
             <div class="diagram-block">
@@ -411,7 +411,7 @@ public void transfer(BigDecimal amount, String from, String to) {
         <article class="knowledge-card">
           <h3>Michael Feathers 的 Seam 与 Sprout 技术</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>Michael Feathers 定义 <strong>Seam（接缝）</strong>：不改代码即可插入测试观察点的地方——构造注入、Extract Interface、包可见方法、Subclass 覆写。遗留代码 TDD 路径：① 识别变更点；② 在 Seam 加特征测试；③ 小步提取纯函数/Service；④ 对新类标准 TDD；⑤ 删掉旧路径。</p>
             <p><strong>Sprout</strong>：新功能用新类 + 测试实现，旧类仅委托。<strong>Wrap</strong>：旧 API 外包一层接口。避免「大爆炸重写」。</p>
           </div>
@@ -447,7 +447,7 @@ public class PricingFacade {
         <article class="knowledge-card">
           <h3>@WebMvcTest、@DataJpaTest 驱动分层实现</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>Spring Boot 项目 TDD 仍从<strong>纯 Java 域层</strong>开始（无 Spring 上下文）。进入适配层时用<strong>切片测试</strong>缩短反馈：@WebMvcTest 测 Controller 契约与序列化；@DataJpaTest 测 Entity 映射与 Query；@JsonTest 测 DTO。全量 @SpringBootTest 留集成/E2E 阶段。</p>
             <p>节奏：域 Service TDD → @WebMvcTest MockMvc 验证 HTTP 映射 → @DataJpaTest + Testcontainers 验证 SQL。与<a href="12-spring-framework.html">第 12 章 Spring Framework</a>配置知识配合。</p>
           </div>
@@ -491,7 +491,7 @@ class OrderControllerTest {
         <article class="knowledge-card">
           <h3>AI 生成失败测试、Human 审规格、CI 硬门禁</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>AI 辅助 TDD 的有效姿势：<strong>人写/审行为规格</strong> → AI 生成<strong>失败测试骨架</strong> → 人确认断言语义 → AI 或人写最小实现 → CI 跑全绿 → 人做重构 Review。反模式：AI 直接生成功能代码再补测——会削弱测试先行带来的设计驱动。</p>
             <p>Harness 约束（详见<a href="22-ai-development.html#harness-engineering">第 22 章 Harness Engineering</a>）：Cursor Rules 要求「改生产代码前必须有失败测试」；CI 跑 <code>mvn test</code> + SpotBugs；Eval 集用于回归核心 Scenario。Prompt 示例：「为 PricingService 写 JUnit5+AssertJ 测试，先只写 shouldApplyDiscountWhen...，不要写实现类。」</p>
           </div>
@@ -525,7 +525,7 @@ class OrderControllerTest {
         <article class="knowledge-card">
           <h3>结对 TDD、门禁策略与可测性文化</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>结对 TDD</strong>：Navigator 写测试/spec，Driver 写实现；或定时交换——传播节奏与断言风格。<strong>CI 门禁</strong>：PR 必跑 unit + 关键 integration；main 分支保护；测试失败禁止合并。与<a href="21-devops-cloud-native.html">第 21 章 CI</a>联动。</p>
             <p><strong>覆盖率误用</strong>：80% 行覆盖 ≠ 行为正确；assert 空测试也能刷 coverage。更好指标：突变测试（PIT）、关键路径 Scenario 全绿、生产缺陷率。团队规范：新 Bug 必须带复现测试；Sonar「新代码覆盖」作参考非 KPI。</p>
           </div>

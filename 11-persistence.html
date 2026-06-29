@@ -57,7 +57,7 @@
         <article class="knowledge-card">
           <h3>持久化框架决策矩阵</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <pre><code>| 场景                     | 推荐        | 理由                          |
 |--------------------------|-------------|-------------------------------|
 | 复杂报表/SQL 可控/遗留 SQL | MyBatis     | SQL 显式、优化透明            |
@@ -73,7 +73,7 @@
         <article class="knowledge-card">
           <h3>EXPLAIN 与慢查询治理</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>优化流程：定位慢 SQL（慢日志/pg_stat_statements/AWR/APM）→ <code>EXPLAIN</code> 看 type/key/rows/Extra → 改索引或改写 SQL。避免 <code>SELECT *</code>、隐式类型转换、函数包裹索引列、大 offset 分页。深翻页优先 keyset（seek）分页；同时结合业务排序字段保证翻页稳定性。</p>
           </div>
           <div class="card-block block-example">
@@ -106,7 +106,7 @@ WHERE o.customer_id = ? AND o.status = 'PAID';</code></pre>
         <article class="knowledge-card">
           <h3>联合索引与覆盖索引</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>最左前缀：联合索引 (a,b,c) 通常可加速 a、ab、abc 条件；若缺失前导列，优化器可利用的索引能力会明显下降（个别数据库/版本存在特殊优化，不宜绝对化）。设计顺序一般遵循“等值匹配在前、范围条件靠后、排序分组字段随后”，并以实际 <code>EXPLAIN ANALYZE</code> 结果校验。覆盖索引命中后可减少回表（MySQL 常见 <code>Using index</code>）。软删除场景常用 <code>(deleted, biz_key)</code> 复合索引；大表加索引优先在线 DDL（MySQL 8 视语句可能为 INPLACE/INSTANT）。</p>
             <div class="diagram-block">
               <pre class="mermaid">graph TB
@@ -142,7 +142,7 @@ CREATE INDEX idx_orders_cover ON orders (customer_id, status)
         <article class="knowledge-card">
           <h3>ACID 与 Spring @Transactional</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>隔离级别：RU、RC（Oracle 默认）、RR（MySQL InnoDB 默认）、Serializable（PostgreSQL 默认是 RC）。典型问题：脏读、不可重复读、幻读。InnoDB 在 RR 下结合 MVCC 与 next-key lock，通常可避免常见幻读场景；但在“当前读/锁定读”与“快照读”混用时，仍需按语句语义逐条验证。Spring 默认传播 <code>REQUIRED</code>、隔离随数据库默认；跨库或读写分离时注意<strong>同一业务链路的事务上下文与连接一致性</strong>。<code>readOnly=true</code> 在 Spring 中主要是优化提示（如 Hibernate flush 策略、路由决策），不等同于数据库层面的强制只读。自调用不走代理——事务失效经典坑。</p>
             <div class="diagram-block">
               <pre class="mermaid">flowchart LR
@@ -184,7 +184,7 @@ public class TransferService {
         <article class="knowledge-card">
           <h3>HikariCP 配置与泄漏检测</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>Spring Boot 3 默认 HikariCP。连接数并非越大越好：MySQL <code>max_connections</code> 有限，过多连接会放大数据库线程竞争与上下文切换。实践上以压测反推池大小：可先从每实例 10~30 的 <code>maximum-pool-size</code> 起步，再按吞吐、P99 延迟和数据库负载调优；K8s 多副本时<strong>各 Pod 池大小之和</strong>须控制在 DB <code>max_connections</code> 的安全水位（常见建议不超过 70%~80%）。<code>max-lifetime</code> 应小于 DB/防火墙连接超时（预留 30~60s 余量）。启用 <code>leak-detection-threshold</code>（如 60000）排查未归还连接。</p>
             <div class="diagram-block">
               <pre class="mermaid">flowchart LR
@@ -224,7 +224,7 @@ public class TransferService {
         <article class="knowledge-card">
           <h3>N+1 · 懒加载 · 二级缓存</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p><strong>N+1</strong>：查 1 条主表 + N 次关联懒加载。诊断：开启 <code>hibernate.statistics</code> 或 p6spy，单请求 SQL 数异常。修复：<code>@EntityGraph</code>、JOIN FETCH、DTO 投影（@Query 直接 new DTO）。<strong>懒加载</strong>须在 Session 内访问——Controller 层触 LazyInitializationException 说明边界泄漏。<strong>二级缓存</strong>慎用，优先 Redis；实体缓存与业务缓存混用易不一致。</p>
           </div>
           <div class="card-block block-example">
@@ -243,7 +243,7 @@ List&lt;OrderSummary&gt; summarize(@Param("cid") String customerId);</code></pre
         <article class="knowledge-card">
           <h3>雪花 · ULID · 号段</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>分库分表场景需全局唯一、趋势递增 ID。选型见<a href="03-architecture-design.html#table-schema-design">第 03 章表设计</a>：<strong>雪花</strong>（高性能，须处理时钟回拨）；<strong>ULID</strong>（字典序友好、无中心）；<strong>DB 号段</strong>（Leaf/Hi/Lo，依赖 DB 但简单）。Java 21 可用 <code>UUID.randomUUID()</code> 作非排序主键。</p>
           </div>
           <div class="card-block block-example">
@@ -261,7 +261,7 @@ if (timestamp &lt; lastTimestamp) {
         <article class="knowledge-card">
           <h3>版本化 Schema 变更</h3>
           <div class="card-block block-explain">
-            <h4>讲解</h4>
+            <h4>概要</h4>
             <p>Flyway 按 <code>V{version}__{description}.sql</code> 顺序执行，记录在 flyway_schema_history。变更原则：向前兼容（expand-contract）——先加列/表，双写，再删旧列。禁止修改已发布 migration 文件。</p>
             <h4>零停机大表 DDL</h4>
             <p>MySQL 大表加索引/改列：优先 Online DDL；不支持时用 <strong>gh-ost / pt-osc</strong>。流程：expand（加 nullable 列）→ 双写应用 → backfill → contract（删旧列）。与<a href="04-project-scheduling.html">第 04 章上线窗口</a>协调低峰执行。</p>
