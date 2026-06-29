@@ -75,7 +75,7 @@
             <h4>模块划分</h4>
             <ul>
               <li><strong>模块 A（场景与可行性）</strong>：<a href="#ai-business-overview">LLM 引入总览</a>、<a href="#ai-use-cases">用例矩阵</a></li>
-              <li><strong>模块 B（架构与编排）</strong>：<a href="#agent-workflow-design">Agent 工作流</a>、<a href="#rag-architecture">RAG 架构</a>、<a href="#prompt-business-design">业务 Prompt</a>、<a href="#function-calling-tools">Function/Tool</a></li>
+              <li><strong>模块 B（架构与编排）</strong>：<a href="#agent-workflow-design">Agent 工作流</a>、<a href="#agent-planner-controller">规划器与控制器</a>、<a href="#agent-memory-context">记忆与上下文</a>、<a href="#rag-architecture">RAG 架构</a>、<a href="#prompt-business-design">业务 Prompt</a>、<a href="#function-calling-tools">Function/Tool</a></li>
               <li><strong>模块 C（治理与质量）</strong>：<a href="#ai-data-governance">数据治理</a>、<a href="#ai-cost-latency-slo">成本与 SLO</a>、<a href="#ai-evaluation">Eval</a></li>
               <li><strong>模块 D（集成与交付）</strong>：<a href="#java-llm-integration">Java 集成</a>、<a href="#ai-in-common-modules">与业务模块集成</a>、<a href="#ai-delivery-roadmap">交付路线图</a></li>
             </ul>
@@ -227,6 +227,138 @@ UC-03 运维 Runbook 问答 | P2 | 告警描述 | 处置步骤 | RAG+Tool(查监
             <p>「能单不双，能审不自动，状态可回放。」</p>
           </div>
         </article>
+      </section>
+
+      <section class="section" id="agent-planner-controller">
+        <h2>规划器与控制器 (Planner)</h2>
+        <div class="section-prose">
+          <h3>编排 Agent 的推理与工具使用流程</h3>
+          <p><strong>规划器（Planner）</strong>与<strong>控制器（Controller）</strong>是 Agent Runtime 的「大脑调度层」：前者决定<strong>下一步做什么、调用哪个 Tool、何时结束</strong>；后者负责<strong>执行计划、校验边界、回收结果并驱动下一轮循环</strong>。LLM 本身只产出「意图」与「草案」，真正让 Agent 可落地、可审计的，是 Planner + Controller 对 ReAct 循环的编排。</p>
+
+          <p><strong>1. Planner 的职责：从目标到可执行步骤</strong></p>
+          <ul>
+            <li><strong>任务分解</strong>：将用户自然语言目标拆成有序子步骤（如：查 Lot 状态 → 校验 Route → 预约设备 → 执行 start_step）。</li>
+            <li><strong>Tool 选型</strong>：在已注册 Tool 目录中，按语义与前置条件挑选候选（见<a href="#function-calling-tools">Agent Tool 设计</a>）。</li>
+            <li><strong>停止条件</strong>：定义 maxSteps、超时、置信度阈值——防止无限推理烧 Token。</li>
+            <li><strong>多 Agent 分派</strong>：跨域场景由 Planner 将子任务路由给专员 Agent（客服 / 库存 / 审批），仅在上下文边界清晰时采用。</li>
+          </ul>
+
+          <p><strong>2. Controller 的职责：执行、校验与状态推进</strong></p>
+          <ul>
+            <li><strong>执行 Tool 调用</strong>：解析 LLM 的 <code>tool_call</code>，鉴权后调用 Java 业务 API，将结构化结果回灌模型。</li>
+            <li><strong>护栏校验</strong>：步数/预算/权限/高风险动作（Human-in-the-loop）在 Controller 层硬拦截，不依赖模型「自觉」。</li>
+            <li><strong>状态机推进</strong>：记录每步输入输出，支持回放、审计与 Eval（与<a href="#agent-workflow-design">Agent 工作流</a>状态图一致）。</li>
+            <li><strong>异常与重试</strong>：Tool 失败 → 有限重试 → 降级（hold、转人工、固定话术），避免 Agent 在错误路径上死循环。</li>
+          </ul>
+
+          <div class="diagram-block">
+            <pre class="mermaid">flowchart TD
+    GOAL[用户目标] --> PLAN[Planner 分解与选 Tool]
+    PLAN --> CTRL[Controller 校验护栏]
+    CTRL -->|通过| ACT[执行 Tool / 调 LLM]
+    CTRL -->|高风险| HITL[人工审批]
+    HITL -->|通过| ACT
+    ACT --> OBS[观察 tool_result]
+    OBS --> DONE{目标达成?}
+    DONE -->|否| PLAN
+    DONE -->|是| RESP[生成最终响应]</pre>
+            <p class="diagram-caption">图：Planner 规划、Controller 执行与 ReAct 闭环</p>
+          </div>
+
+          <p><strong>3. 与 ReAct 的关系</strong></p>
+          <p>ReAct（Reason + Act）是 Planner 常用的推理范式：模型先输出 <code>Thought</code>（为何这样做），再输出 <code>Action</code>（调用哪个 Tool），Controller 执行后把 <code>Observation</code> 写回上下文，Planner 据此决定下一轮。业务需求文档应明确：<strong>哪些步骤允许自动执行、哪些必须审批、最大循环次数</strong>。</p>
+
+          <h4>阶段成果</h4>
+          <ul>
+            <li><strong>Planner/Controller 规格</strong>：步数上限、超时、Tool 白名单、审批触发条件</li>
+            <li><strong>状态机与审计字段</strong>：每步 plan / action / observation / 耗时 / tokenUsage</li>
+          </ul>
+
+          <h4>关键/技巧</h4>
+          <ul>
+            <li>Planner 与 Tool 目录解耦——新增 Tool 只扩 schema，不改编排内核。</li>
+            <li>高风险 Tool 默认 <code>dryRun=true</code>，先展示计划再执行。</li>
+            <li>多 Agent 时由顶层 Planner 维护全局 sessionId，子 Agent 只接收裁剪后的子上下文。</li>
+          </ul>
+
+          <p class="section-reading">延伸阅读：<a href="#agent-memory-context">记忆与上下文</a>（Planner 每轮依赖的历史）、<a href="#function-calling-tools">Agent Tool 设计</a>（Controller 调用的能力单元）。</p>
+        </div>
+      </section>
+
+      <section class="section" id="agent-memory-context">
+        <h2>记忆与上下文 (Memory)</h2>
+        <div class="section-prose">
+          <h3>维护会话历史，保障对话连贯性</h3>
+          <p><strong>记忆（Memory）</strong>负责在多次往返中保留「我们刚才聊了什么、做过哪些 Tool 调用、得到了什么结论」，让 Agent 在多轮对话里<strong>不丢线索、不重复提问、能引用前文决策</strong>。它与 RAG 不同：RAG 从企业知识库检索<strong>外部事实</strong>；Memory 维护<strong>当前会话的过程与状态</strong>。二者在 Prompt 组装时合并为 Context，但治理边界应分开设计。</p>
+
+          <p><strong>1. 记忆分层</strong></p>
+          <ul>
+            <li><strong>工作记忆（Working Memory）</strong>：当前轮次送入模型的 messages 列表（system + 历史 user/assistant + tool 结果），受 Context Window 限制。</li>
+            <li><strong>会话记忆（Session Memory）</strong>：同一 <code>conversationId</code> 下的完整往返记录，持久化到 Redis/DB，支持刷新页面后续聊。</li>
+            <li><strong>长期记忆（Long-term Memory）</strong>：跨会话的用户偏好、历史工单摘要、实体画像（可选向量检索），需脱敏与 TTL 策略。</li>
+            <li><strong>程序记忆（Episodic / Tool Trace）</strong>：每步 ReAct 的 Thought-Action-Observation 链，供审计、调试与 Eval 回放。</li>
+          </ul>
+
+          <p><strong>2. 上下文窗口管理</strong></p>
+          <p>模型 Context 有限，不能无界堆叠历史。常见策略：</p>
+          <ul>
+            <li><strong>滑动窗口</strong>：保留最近 N 轮完整对话，更早的丢弃或摘要。</li>
+            <li><strong>摘要压缩</strong>：用较小模型将旧对话压成 <code>session_summary</code>，注入 System 或首条 User 消息。</li>
+            <li><strong>选择性保留</strong>：始终保留 System Prompt、最近 Tool 结果、用户明确约束（「不要换供应商」类指令）。</li>
+            <li><strong>RAG 与 Memory 分工</strong>：事实查知识库；过程靠 Session Memory——避免把整段聊天塞进向量库。</li>
+          </ul>
+
+          <div class="diagram-block">
+            <pre class="mermaid">flowchart LR
+    subgraph MEM[Memory 层]
+      WM[工作记忆 messages]
+      SM[会话记忆 Redis/DB]
+      LM[长期记忆 可选]
+    end
+  subgraph CTX[Context 组装]
+    SYS[System Prompt]
+    RAG_CTX[RAG 检索片段]
+    HIST[会话历史/摘要]
+    TOOL[Tool 轨迹]
+  end
+  SM --> HIST
+  WM --> HIST
+  LM -.-> HIST
+  SYS --> LLM[LLM 推理]
+  RAG_CTX --> LLM
+  HIST --> LLM
+  TOOL --> LLM</pre>
+            <p class="diagram-caption">图：Memory 分层与 Prompt Context 组装</p>
+          </div>
+
+          <p><strong>3. 工程要点</strong></p>
+          <ul>
+            <li><strong>会话标识</strong>：<code>conversationId</code> 绑定 <code>userId</code> + <code>tenantId</code>，与 JWT 一致，防止串会话（见<a href="#ai-in-common-modules">AI 与业务模块集成</a>）。</li>
+            <li><strong>持久化与 TTL</strong>：客服场景 7–30 天；高敏场景更短或仅存摘要；合规要求下 Prompt 全文脱敏入库。</li>
+            <li><strong>并发与幂等</strong>：同一 <code>messageId</code> 重试返回缓存，避免重复写入 Memory。</li>
+            <li><strong>Spring AI</strong>：<code>ChatMemory</code> / <code>MessageChatMemoryAdvisor</code> 抽象会话存储，可接 <code>InMemory</code>、Redis 或 JDBC 实现。</li>
+          </ul>
+
+          <h4>示例：会话记忆接口示意</h4>
+          <pre><code>// 概念示意 — 按 conversationId 读写会话
+public interface SessionMemoryStore {
+  List&lt;Message&gt; load(String conversationId, int maxTurns);
+  void append(String conversationId, Message message);
+  void summarizeIfNeeded(String conversationId, int tokenBudget);
+}
+
+// Planner 每轮组装 Context 时：
+// system + sessionSummary + recentMessages + ragChunks + toolTrace</code></pre>
+
+          <h4>易错点</h4>
+          <ul>
+            <li>把敏感 PII 写入长期记忆且未脱敏——违反<a href="#ai-data-governance">数据治理</a>要求。</li>
+            <li>只存 user/assistant 文本，不存 tool_result——模型下一轮「忘记」已查过的订单状态。</li>
+            <li>无窗口管理，长会话撑爆 Context 导致截断 System Prompt 或最新用户问题。</li>
+          </ul>
+
+          <p class="section-reading">延伸阅读：<a href="#rag-architecture">RAG 架构</a>（外部知识 grounding）、<a href="#agent-planner-controller">规划器与控制器</a>（每轮读写 Memory 的编排方）。</p>
+        </div>
       </section>
 
 <section class="section" id="rag-architecture">
