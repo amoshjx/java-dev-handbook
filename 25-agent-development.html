@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>25 Agent 开发 — Java项目手册</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/sidebar.js" defer></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">Java项目手册</div>
+      <nav>
+        <div class="nav-group">
+          <ul class="nav-list">
+            <li><a href="index.html">目录首页</a></li>
+            <li><a href="01-requirements-analysis.html">01 需求分析</a></li>
+            <li><a href="02-prototype-design.html">02 原型设计</a></li>
+            <li><a href="03-architecture-design.html">03 架构设计</a></li>
+            <li><a href="04-project-scheduling.html">04 项目排期</a></li>
+            <li class="sidebar-group"><span class="sidebar-group-label"><a href="java-development.html">开发实现</a></span></li>
+            <li class="sidebar-subitem"><a href="05-dev-environment.html">05 开发环境搭建</a></li>
+            <li class="sidebar-subitem"><a href="06-java-basics.html">06 Java基础语法</a></li>
+            <li class="sidebar-subitem"><a href="07-oop.html">07 面向对象</a></li>
+            <li class="sidebar-subitem"><a href="08-jvm.html">08 JVM</a></li>
+            <li class="sidebar-subitem"><a href="09-concurrency.html">09 并发编程</a></li>
+            <li class="sidebar-subitem"><a href="10-io-nio-network.html">10 IO·NIO·网络</a></li>
+            <li class="sidebar-subitem"><a href="11-persistence.html">11 持久化</a></li>
+            <li class="sidebar-subitem"><a href="12-spring-framework.html">12 Spring Framework</a></li>
+            <li class="sidebar-subitem"><a href="13-build-packaging-deploy.html">13 构建·打包·部署</a></li>
+            <li class="sidebar-subitem"><a href="14-ruoyi-framework.html">14 RuoYi 框架</a></li>
+            <li class="sidebar-subitem"><a href="15-project-code-generator.html">15 项目代码生成器</a></li>
+            <li class="sidebar-subitem"><a href="16-common-modules.html">16 常见功能模块</a></li>
+            <li class="sidebar-subitem"><a href="17-security-development.html">17 安全开发</a></li>
+            <li class="sidebar-subitem"><a href="18-test-driven-development.html">18 测试驱动开发</a></li>
+            <li><a href="19-testing-quality.html">19 测试·质量</a></li>
+            <li><a href="20-performance-tuning.html">20 性能调优</a></li>
+            <li><a href="21-devops-cloud-native.html">21 工程化·DevOps·CI/CD</a></li>
+            <li><a href="22-ai-development.html">22 AI 辅助开发</a></li>
+            <li><a href="23-business-intelligence.html">23 业务智能化</a></li>
+            <li><a href="24-palantir-aip.html">24 Palantir AIP 架构</a></li>
+            <li><a href="25-agent-development.html">25 Agent 开发</a></li>
+            <li><a href="glossary.html">术语字典</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="page-header">
+        <h1>25 Agent 开发：LLM 与 Agent 实践</h1>
+        <p>从<strong>LLM 认知</strong>到<strong>Agent 行动</strong>——系统梳理 Agent 推理编排、工具协议与企业落地路径。承接<a href="23-business-intelligence.html">第 23 章业务智能化</a>的需求视角；Palantir AIP 平台实践见<a href="24-palantir-aip.html">第 24 章</a>。</p>
+      </header>
+
+      <section class="section" id="agent-learning-map">
+        <h2>学习地图</h2>
+        <article class="knowledge-card">
+          <h3>本章导览</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p>本章按「前言 → LLM 基础 → Agent 技术栈 → MES Demo」组织，与<a href="23-business-intelligence.html">第 23 章业务智能化</a>（需求侧）互补；Palantir AIP 详见<a href="24-palantir-aip.html">第 24 章</a>。</p>
+          </div>
+          <div class="card-block block-deliverable">
+            <h4>阅读顺序</h4>
+            <ol>
+              <li><a href="#agent-preface-trends">前言</a>：趋势、选型与企业级架构</li>
+              <li><a href="#agent-llm">LLM 基础</a>：Transformer、训练与推理</li>
+              <li><a href="#agent-concepts">Agent 详解</a>：概念、<a href="#agent-reasoning-modes">推理模式</a>、Tool、<a href="#agent-mcp">MCP</a>、Skill、<a href="#agent-memory">Memory</a>、<a href="#agent-graph-rag">Graph RAG</a></li>
+              <li><a href="#agent-mes-demo">MES Demo</a>：工业追溯场景演示</li>
+            </ol>
+          </div>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>LLM 负责「回答」，Agent 负责「完成任务」；Tool 是原子接口，Skill 是业务复合能力，Memory 让 Agent 跨越单次对话持续进化。</p>
+          </div>
+        </article>
+      </section>
+      <section class="section" id="agent-preface-trends">
+        <h2>行业趋势与展望</h2>
+        <article class="knowledge-card">
+          <h3>白皮书要点</h3>
+          <div class="card-block block-explain"><h4>概要</h4><p>来源-《AI智能体赋能行业决策：趋势与实践白皮书（2026）》</p></div><div class="ppt-slide-figures">
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-03-2.png" alt="趋势/展望（1/3）" loading="lazy" /><figcaption class="diagram-caption">图：趋势/展望（1/3）</figcaption></figure>
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-03-3.png" alt="趋势/展望（2/3）" loading="lazy" /><figcaption class="diagram-caption">图：趋势/展望（2/3）</figcaption></figure>
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-03-5.png" alt="趋势/展望（3/3）" loading="lazy" /><figcaption class="diagram-caption">图：趋势/展望（3/3）</figcaption></figure>
+</div>
+        </article>
+      </section>
+      <section class="section" id="agent-preface-selection">
+        <h2>技术选型：LLM vs 规则 vs ML</h2>
+        <article class="knowledge-card">
+          <h3>决策框架</h3>
+          <div class="card-block block-explain"><p>在不同场景下，应在 LLM、规则引擎与传统 ML 之间做选型权衡。要点见图示。</p></div><div class="ppt-slide-figures">
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-04-2.png" alt="选型决策" loading="lazy" /><figcaption class="diagram-caption">图：选型决策</figcaption></figure>
+</div>
+        </article>
+      </section>
+      <section class="section" id="agent-preface-architecture">
+        <h2>企业级 Agent 架构</h2>
+        <article class="knowledge-card">
+          <h3>分层与治理</h3>
+          <div class="card-block block-explain"><p>企业级 Agent 通常包含接入层、编排层、工具层、记忆层与治理层。要点见图示。</p></div><div class="ppt-slide-figures">
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-05-3.png" alt="企业级 Agent 架构" loading="lazy" /><figcaption class="diagram-caption">图：企业级 Agent 架构</figcaption></figure>
+</div>
+        </article>
+      </section>
+      <section class="section" id="agent-llm">
+        <h2>LLM 基础认知</h2>
+        <article class="knowledge-card" id="agent-llm-basics">
+          <h3>基础概念：Transformer 与注意力</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p><strong>LLM（Large Language Model）</strong>是在超大文本语料上训练的「概率生成模型」——基于 Transformer，核心任务是预测「给定前文，下一个 token 最可能是什么」。当模型足够大、数据足够多时，这种「接龙」能力会涌现出语言理解、推理、代码生成等复杂行为。</p>
+            <ul>
+              <li><strong>Transformer</strong>：LLM 的核心算法架构</li>
+              <li><strong>Self-Attention（自注意力）</strong>：句中每个词向上下文询问「谁对我最重要」</li>
+              <li><strong>Multi-Head Attention（多头注意力）</strong>：多个子空间并行分析语法、语义、指代、长距离依赖等</li>
+            </ul>
+          </div>
+        </article>
+        <article class="knowledge-card" id="agent-llm-decoder">
+          <h3>Decoder-only 架构</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p>当前主流大模型多采用 <strong>decoder-only</strong> 架构：文字被切分为 token 并转为向量，加上位置编码后，通过自注意力让每个词「回头看」上下文并按权重融合信息，再经多层堆叠加深理解，最终预测下一个 token。</p>
+            <p>Transformer 靠注意力机制理解上下文，靠堆叠层数加深理解，靠预测下一个词完成生成——这是几乎所有大语言模型的核心引擎。</p>
+          </div>
+          <div class="ppt-slide-figures">
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-09-3.png" alt="Decoder-only" loading="lazy" /><figcaption class="diagram-caption">图：Decoder-only</figcaption></figure>
+</div>
+        </article>
+        <article class="knowledge-card" id="agent-llm-training">
+          <h3>训练流程：预训练 / SFT / 对齐</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p>LLM 训练通常分三步：<strong>预训练</strong>（海量语料「猜下一个词」，学习语言与常识）、<strong>SFT 监督微调</strong>（用高质量问答范例教会对话）、<strong>对齐</strong>（用人类偏好排序让回答更安全、有用）。</p>
+            <p>简单总结：预训练教知识和语言能力，SFT 教对话，对齐教「把话说好」。</p>
+          </div>
+          <div class="ppt-slide-figures">
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-10-3.png" alt="LLM 训练" loading="lazy" /><figcaption class="diagram-caption">图：LLM 训练</figcaption></figure>
+</div>
+        </article>
+        <article class="knowledge-card" id="agent-llm-inference">
+          <h3>推理流程：Prefill 与 Decode</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p>推理分两阶段：<strong>Prefill</strong>（并行读入整段输入，建立 KV 缓存）与 <strong>Decode</strong>（逐 token 生成，拼回上下文继续预测）。选词基于概率分布，因此同一问题可能得到不同回答。</p>
+            <p>延伸阅读：<a href="https://github.com/MLNLP-World/LLMs-from-scratch-CN" target="_blank" rel="noopener noreferrer">LLMs-from-scratch-CN</a></p>
+          </div>
+          <div class="ppt-slide-figures">
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-11-3.png" alt="LLM 推理" loading="lazy" /><figcaption class="diagram-caption">图：LLM 推理</figcaption></figure>
+</div>
+        </article>
+        <article class="knowledge-card" id="agent-llm-multimodal">
+          <h3>多模态 LLM：理解与生成</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p><strong>多模态理解</strong>：将图像、音频等非文本信息编码为与文字 token 同体系的向量，送入 Transformer 主干联合处理。</p>
+            <p><strong>多模态生成</strong>：图像/视频多采用扩散模型（从噪声逐步去噪）；也可用 VQ-VAE 将图像离散为「视觉 token」再做自回归生成。音频生成思路类似。</p>
+          </div>
+          <div class="ppt-slide-figures">
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-12-3.png" alt="多模态 LLM（1/2）" loading="lazy" /><figcaption class="diagram-caption">图：多模态 LLM（1/2）</figcaption></figure>
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-12-4.png" alt="多模态 LLM（2/2）" loading="lazy" /><figcaption class="diagram-caption">图：多模态 LLM（2/2）</figcaption></figure>
+</div>
+        </article>
+      </section>
+      <section class="section" id="agent-concepts">
+        <h2>Agent 概念与五大模块</h2>
+        <article class="knowledge-card">
+          <h3>从模型到执行体</h3>
+                    <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p><strong>Agent（智能体）</strong>是「会思考 + 会行动 + 会反思」、能自主完成多步任务的 AI 执行体。LLM 只会「回答」，Agent 能「完成任务」（多步执行 + 调用工具 + 状态管理）。</p>
+            <p><strong>五大模块</strong>：</p>
+            <ol>
+              <li><strong>LLM（大脑）</strong>：推理与语言理解</li>
+              <li><strong>Reasoning &amp; Planning</strong>：拆解任务、生成步骤、推理调度</li>
+              <li><strong>Tools / Skill System</strong>：API、DB、Web、Code、Prompt</li>
+              <li><strong>Memory</strong>：短期上下文 + 长期知识 / 向量库</li>
+              <li><strong>Executor</strong>：调用工具、运行代码、返回结果</li>
+            </ol>
+          </div>
+          <div class="card-block block-deliverable"><h4>模型 vs Agent 对比</h4><div class="table-wrap"><table class="data-table"><thead><tr><th>维度</th><th>模型</th><th>Agent</th></tr></thead><tbody>
+<tr><td>知识范围</td><td>知识仅限于其训练数据。</td><td>通过工具连接外部系统，能够在模型自带的知识之外，实时、动态扩展知识。</td></tr>
+<tr><td>状态与记忆</td><td>无状态，每次推理都跟上一次没关系，除非在外部给模型加上会话历史或上下文管理能力。</td><td>有状态，自动管理会话历史，根据编排自主决策进行多轮推理。</td></tr>
+<tr><td>原生工具</td><td>无。</td><td>有，自带工具和对工具的支持能力。</td></tr>
+<tr><td>原生逻辑层</td><td>无。需要借助提示词工程或使用推理框架（CoT、ReAct 等）来形成复杂提示，指导模型进行预测。</td><td>有，原生认知架构，内置 CoT、ReAct 等推理框架或 LangChain 等编排框架。</td></tr>
+</tbody></table></div></div><div class="ppt-slide-figures">
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-13-4.png" alt="Agent 概念" loading="lazy" /><figcaption class="diagram-caption">图：Agent 概念</figcaption></figure>
+</div>
+        </article>
+      </section>
+      <section class="section" id="agent-execution-flow">
+        <h2>Agent 执行流程</h2>
+        <article class="knowledge-card">
+          <h3>感知—推理—行动闭环</h3>
+          <div class="card-block block-explain"><p>典型闭环：感知输入 → 推理规划 → 工具执行 → 观察反馈 → 迭代直至任务完成。要点见图示。</p></div>
+          <div class="ppt-slide-figures">
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-14-3.png" alt="执行流程" loading="lazy" /><figcaption class="diagram-caption">图：执行流程</figcaption></figure>
+</div>
+        </article>
+      </section>
+      <section class="section" id="agent-reasoning-modes">
+        <h2>Agent 推理模式</h2>
+        <article class="knowledge-card">
+          <h3>模式总览</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p>Agent 推理编排没有唯一最优解，常见四种模式各有适用场景：<strong>ReAct</strong>（边想边做）、<strong>Plan-and-Execute</strong>（先规划后执行）、<strong>CoT</strong>（显式思维链）、<strong>ToT</strong>（多分支探索）。实践中可组合使用，例如 Plan 定框架、ReAct 执行子步骤。</p>
+          </div>
+        </article>
+        <article class="knowledge-card" id="agent-reasoning-react">
+          <h3>ReAct：推理与行动交替</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p><strong>ReAct（Reasoning + Action）</strong>是推理与行动交替的经典循环：模型边思考、边调用工具、边根据 Observation 继续推理，直到得出最终答案。</p>
+          </div>
+          <div class="ppt-slide-figures">
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-15-3.png" alt="ReAct（1/2）" loading="lazy" /><figcaption class="diagram-caption">图：ReAct（1/2）</figcaption></figure>
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-15-4.png" alt="ReAct（2/2）" loading="lazy" /><figcaption class="diagram-caption">图：ReAct（2/2）</figcaption></figure>
+</div>
+        </article>
+        <article class="knowledge-card" id="agent-reasoning-plan">
+          <h3>Plan-and-Execute：先规划后执行</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p><strong>Plan-and-Execute</strong>：Planner 先产出完整任务计划，Controller 再按序执行；仅在子步骤失败或环境变化时局部重规划。适合报表生成、巡检、批量数据处理等步骤可枚举的场景。</p>
+          </div>
+          <div class="ppt-slide-figures">
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-16-3.png" alt="Plan-and-Execute（1/2）" loading="lazy" /><figcaption class="diagram-caption">图：Plan-and-Execute（1/2）</figcaption></figure>
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-16-4.png" alt="Plan-and-Execute（2/2）" loading="lazy" /><figcaption class="diagram-caption">图：Plan-and-Execute（2/2）</figcaption></figure>
+</div>
+        </article>
+        <article class="knowledge-card" id="agent-reasoning-cot">
+          <h3>Chain-of-Thought：思维链</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p><strong>Chain-of-Thought (CoT)</strong> 让 LLM 逐步写出中间推理过程。对多步推理任务，在 Prompt 中加入「let's think step by step」或提供推理示例，可显著提升准确率。</p>
+            <p><strong>三种实现</strong>：</p>
+            <ul>
+              <li><strong>Zero-shot CoT</strong>：在提问末尾加「请一步一步思考」</li>
+              <li><strong>Few-shot CoT</strong>：在 Prompt 中提供「问题 + 推理步骤 + 答案」示例</li>
+              <li><strong>Auto-CoT</strong>：让模型自动生成推理示例</li>
+            </ul>
+          </div>
+        </article>
+        <article class="knowledge-card" id="agent-reasoning-tot">
+          <h3>Tree of Thoughts：多分支探索与剪枝</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p><strong>Tree of Thoughts (ToT)</strong>：多分支探索 + 评估剪枝 + 最优路径搜索，擅长非结构化、强约束、需全局规划的任务；成本高、收敛慢，仅适合真正需要「试错」的场景。</p>
+          </div>
+          <div class="ppt-slide-figures">
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-18-3.png" alt="ToT（1/2）" loading="lazy" /><figcaption class="diagram-caption">图：ToT（1/2）</figcaption></figure>
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-18-4.png" alt="ToT（2/2）" loading="lazy" /><figcaption class="diagram-caption">图：ToT（2/2）</figcaption></figure>
+</div>
+        </article>
+      </section>
+      <section class="section" id="agent-tools">
+        <h2>Agent Tool</h2>
+        <article class="knowledge-card">
+          <h3>工具定义与 ReAct 范式</h3>
+                    <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p>Tool 给 LLM「大脑」接上可执行的外部世界接口，扩展能力边界。Agent 使用工具通常遵循 <strong>ReAct</strong> 范式：Thought → Action → Tool → Observation 循环。</p>
+            <p><strong>为什么需要 Tool？</strong>大模型存在四类典型短板：</p>
+            <ul>
+              <li><strong>时效性盲区</strong>：无法获取实时信息（天气、股价等）</li>
+              <li><strong>私有数据隔离</strong>：行业关键数据需受控接入推理链路</li>
+              <li><strong>计算能力差</strong>：高精度数学运算易出现幻觉</li>
+              <li><strong>无法直接执行操作</strong>：订票、发邮件、设备控制等需外部系统</li>
+            </ul>
+            <p><strong>Tool 类型</strong>：Function Calling、API 封装、系统能力封装、MCP 调用。每个工具需精准的 Name、Description 与 Parameters Schema；设计原则为清晰语义、可组合、低歧义参数。</p>
+          </div><div class="ppt-slide-figures">
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-19-3.png" alt="Agent Tool" loading="lazy" /><figcaption class="diagram-caption">图：Agent Tool</figcaption></figure>
+</div>
+        </article>
+      </section>
+      <section class="section" id="agent-mcp">
+        <h2>MCP（Model Context Protocol）</h2>
+        <article class="knowledge-card" id="agent-mcp-overview">
+          <h3>协议概览：架构与基本元素</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p><strong>MCP（模型上下文协议）</strong>像是 AI 应用的「USB-C 接口」——用标准化方式连接模型与数据源、工具，避免每个工具各写一套 adapter、Prompt 与 function calling 格式混乱、难以复用的问题。</p>
+            <p>参考：<a href="https://modelcontextprotocol.io/docs/getting-started/intro" target="_blank" rel="noopener noreferrer">MCP 介绍</a> · <a href="https://github.com/modelcontextprotocol/servers" target="_blank" rel="noopener noreferrer">MCP 开发</a></p>
+            <p><strong>架构组成</strong>：</p>
+            <ul>
+              <li><strong>MCP Hosts</strong>：发起请求的 LLM 应用（Claude Desktop、IDE 等）</li>
+              <li><strong>MCP Clients</strong>：Host 内与 Server 保持 1:1 连接</li>
+              <li><strong>MCP Servers</strong>：向 Client 提供上下文、工具与 Prompt</li>
+            </ul>
+            <p>通信基于 <strong>JSON-RPC 2.0</strong>。三类基本元素：<strong>Tools</strong>（可执行函数）、<strong>Resources</strong>（上下文数据）、<strong>Prompts</strong>（可复用模板）；各有 list/get 发现与检索方法，Tools 另有 <code>tools/call</code> 执行。</p>
+          </div>
+          <div class="ppt-slide-figures">
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-20-4.png" alt="MCP 概览" loading="lazy" /><figcaption class="diagram-caption">图：MCP 概览</figcaption></figure>
+</div>
+        </article>
+        <article class="knowledge-card" id="agent-mcp-lifecycle">
+          <h3>生命周期：初始化与工具发现</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p><strong>初始化（initialize）</strong>：客户端建立连接并协商能力——<code>protocolVersion</code> 对齐协议版本，<code>capabilities</code> 声明支持的工具/资源/提示及通知能力，<code>clientInfo</code> / <code>serverInfo</code> 交换标识与版本。</p>
+            <p><strong>工具发现（tools/list）</strong>：连接建立后枚举可用工具，返回 <code>name</code>（唯一标识）、<code>title</code>（展示名）、<code>description</code>（功能说明）等元数据。</p>
+          </div>
+          <div class="ppt-slide-figures">
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-21-3.png" alt="MCP 初始化与发现（1/4）" loading="lazy" /><figcaption class="diagram-caption">图：MCP 初始化与发现（1/4）</figcaption></figure>
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-21-4.png" alt="MCP 初始化与发现（2/4）" loading="lazy" /><figcaption class="diagram-caption">图：MCP 初始化与发现（2/4）</figcaption></figure>
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-21-6.png" alt="MCP 初始化与发现（3/4）" loading="lazy" /><figcaption class="diagram-caption">图：MCP 初始化与发现（3/4）</figcaption></figure>
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-21-7.png" alt="MCP 初始化与发现（4/4）" loading="lazy" /><figcaption class="diagram-caption">图：MCP 初始化与发现（4/4）</figcaption></figure>
+</div>
+        </article>
+        <article class="knowledge-card" id="agent-mcp-execution">
+          <h3>生命周期：工具执行与实时通知</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p><strong>工具执行（tools/call）</strong>：结构化调用，<code>name</code> 须与发现阶段一致，<code>arguments</code> 符合 <code>inputSchema</code>；请求-响应通过 JSON-RPC 的 <code>id</code> 关联。</p>
+            <p><strong>实时通知</strong>：Server 可在工具列表变更时主动推送通知，Client 收到后重新拉取 <code>tools/list</code>，保持连接与工具目录同步。</p>
+          </div>
+          <div class="ppt-slide-figures">
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-22-2.png" alt="MCP 执行与通知（1/4）" loading="lazy" /><figcaption class="diagram-caption">图：MCP 执行与通知（1/4）</figcaption></figure>
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-22-4.png" alt="MCP 执行与通知（2/4）" loading="lazy" /><figcaption class="diagram-caption">图：MCP 执行与通知（2/4）</figcaption></figure>
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-22-6.png" alt="MCP 执行与通知（3/4）" loading="lazy" /><figcaption class="diagram-caption">图：MCP 执行与通知（3/4）</figcaption></figure>
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-22-7.png" alt="MCP 执行与通知（4/4）" loading="lazy" /><figcaption class="diagram-caption">图：MCP 执行与通知（4/4）</figcaption></figure>
+</div>
+        </article>
+      </section>
+      <section class="section" id="agent-tool-flow">
+        <h2>Tool 完整交互流程</h2>
+        <article class="knowledge-card">
+          <h3>端到端调用链路</h3>
+          <div class="card-block block-explain"><p>从用户意图到 Tool 注册、调用、结果回注 LLM 的完整链路。要点见图示。</p></div>
+          <div class="ppt-slide-figures">
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-23-3.png" alt="Tool 交互流程" loading="lazy" /><figcaption class="diagram-caption">图：Tool 交互流程</figcaption></figure>
+</div>
+        </article>
+      </section>
+      <section class="section" id="agent-skill">
+        <h2>Agent Skill</h2>
+        <article class="knowledge-card">
+          <h3>能力封装与设计模式</h3>
+                    <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p><strong>Skill</strong> 是面向特定业务场景的高阶能力封装，由 Prompt、Workflow、RAG 与一个或多个 Tool 组合而成，把「通用推理」扩展为「领域专家能力」。</p>
+            <p><strong>Tool vs Skill</strong>：Tool 是原子化外部接口；Skill 是面向任务的复合型能力组合。</p>
+            <ul>
+              <li><strong>底层 (Tools)</strong>：ERP、MES、数据库、物联网等封装为 OpenAPI 或通用组件</li>
+              <li><strong>中层 (Skills)</strong>：业务专家将 Tools 与 System Prompt、SOP、向量库连接为岗位 Skill</li>
+              <li><strong>上层 (Agent)</strong>：挂载多 Skill，按指令调度，由 Skill 调用底层 Tools</li>
+            </ul>
+            <p>开放标准参考 <a href="https://agentskills.io/" target="_blank" rel="noopener noreferrer">agentskills.io</a>。</p>
+          </div>
+          <div class="ppt-slide-figures">
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-24-3.png" alt="Skill 与 Tool 分层" loading="lazy" /><figcaption class="diagram-caption">图：Skill 与 Tool 分层</figcaption></figure>
+
+
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-25-3.png" alt="Skill 标准参考" loading="lazy" /><figcaption class="diagram-caption">图：Skill 标准参考</figcaption></figure>
+
+
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-26-3.png" alt="五种设计模式" loading="lazy" /><figcaption class="diagram-caption">图：五种设计模式</figcaption></figure>
+
+
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-27-3.png" alt="领域专家 Skill 库" loading="lazy" /><figcaption class="diagram-caption">图：领域专家 Skill 库</figcaption></figure>
+</div>
+        </article>
+      </section>
+      <section class="section" id="agent-memory">
+        <h2>Agent Memory</h2>
+        <article class="knowledge-card">
+          <h3>Memory 总览</h3>
+          <div class="card-block block-memory">
+            <h4>概要</h4>
+            <p>LLM 本身无状态，无法跨会话积累经验。Agent Memory 是<strong>可检索、可更新、可压缩、可推理使用</strong>的外部认知层，由「短期 + 长期 + 工具性/知识记忆」三层构成，目标是跨时间一致性、经验积累与个性化决策。</p>
+          </div>
+        </article>
+        <article class="knowledge-card" id="agent-memory-short">
+          <h3>短期记忆：上下文窗口</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p>机制为<strong>上下文窗口（Context Window）</strong>，仅保留当前对话回合的有限信息；对话结束或超出 Token 上限后，早期细节会被挤掉。</p>
+            <p>常见做法：在对话结束或达到一定长度时，用 Prompt 将历史压缩为短摘要，沉淀到长期记忆，节省窗口并保留关键需求点。</p>
+          </div>
+        </article>
+        <article class="knowledge-card" id="agent-memory-long">
+          <h3>长期记忆：向量库与知识图谱</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p>机制为<strong>向量数据库 + 嵌入模型</strong>，存储对话历史、事实提取、用户偏好等，容量几乎无限，是实现持久化记忆的关键。典型工作流：</p>
+            <ol>
+              <li><strong>Embedding</strong>：将文本转为高维向量 V</li>
+              <li><strong>Storing</strong>：向量 V 与原文 T 存入向量库</li>
+              <li><strong>Retrieval</strong>：查询 Q 向量化后，用余弦相似度检索 Top-K 相关片段</li>
+              <li><strong>Augmentation</strong>：将检索结果注入 Prompt，供 LLM 基于「记忆碎片」回答</li>
+            </ol>
+            <p>进一步优化：周期性启动记忆总结任务，提炼关键事实与实体关系，存入<strong>知识图谱</strong>（如 <code>&lt;User&gt; --[Has Preference]--&gt; &lt;Dark Mode&gt;</code>），而不仅是堆叠原始对话。</p>
+          </div>
+          <div class="ppt-slide-figures">
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-29-4.png" alt="长期记忆" loading="lazy" /><figcaption class="diagram-caption">图：长期记忆</figcaption></figure>
+</div>
+        </article>
+        <article class="knowledge-card" id="agent-memory-rag">
+          <h3>工具性/知识记忆：Agentic RAG</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p>机制为 <strong>RAG（检索增强生成）</strong>，让 Agent 能「查阅资料」——接入天气、文档、企业规章等外部知识源。</p>
+            <p>目的：降低幻觉、支持知识实时更新、受控接入私域/敏感数据。企业级 Agentic RAG 通常采用混合技术栈（向量检索 + 重排序 + 工具调用等），要点见图示。</p>
+          </div>
+          <div class="ppt-slide-figures">
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-30-3.png" alt="知识记忆（1/2）" loading="lazy" /><figcaption class="diagram-caption">图：知识记忆（1/2）</figcaption></figure>
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-30-4.png" alt="知识记忆（2/2）" loading="lazy" /><figcaption class="diagram-caption">图：知识记忆（2/2）</figcaption></figure>
+</div>
+        </article>
+      </section>
+      <section class="section" id="agent-graph-rag">
+        <h2>Graph RAG</h2>
+        <article class="knowledge-card">
+          <h3>流程总览</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p>Graph RAG 的核心观点是：<strong>知识不是文档，而是图</strong>——(实体) —[关系]→ (实体)。典型链路为：关系数据 ETL 入图 → 自然语言查询重写为 Cypher → 用图查询结果增强 LLM 最终生成。</p>
+            <p>常用图数据库：Neo4j、TigerGraph、Neptune（AWS）。</p>
+          </div>
+        </article>
+        <article class="knowledge-card" id="agent-graph-rag-etl">
+          <h3>ETL 与构建：Schema 到图</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p>将 RDBMS 等结构化数据「翻译」为知识图谱，关键步骤：</p>
+            <ul>
+              <li><strong>Schema 分析与知识抽取</strong>：把表格键值转为语义三元组（Triples），可借助 LLM 扮演 Schema-to-Graph Mapper，根据 DDL 生成图模式定义，如 <code>(User)-[:PLACED]-&gt;(Order)</code></li>
+              <li><strong>Graph 加载与构建</strong>：将三元组实体化写入图库；除外键关联外，还可通过业务逻辑补充行为节点与关系，使用 ETL 工具或 Neo4j Driver 批量导入</li>
+            </ul>
+          </div>
+        </article>
+        <article class="knowledge-card" id="agent-graph-rag-query">
+          <h3>查询重写：Cypher 生成</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p>将模糊自然语言问题 Q 转为 Cypher 或结构化子任务，是把「问答」升级为「智能推理」的关键：</p>
+            <ol>
+              <li><strong>意图识别与拆解</strong>：LLM 分析问题中的时间、实体、聚合等知识点，拆成可执行子任务</li>
+              <li><strong>Cypher 生成</strong>：结合当前 Schema 生成一条或多条 Cypher Query</li>
+              <li><strong>执行与观察</strong>：将 Query 发往 Neo4j，获取结果集供下游使用</li>
+            </ol>
+          </div>
+        </article>
+        <article class="knowledge-card" id="agent-graph-rag-synthesis">
+          <h3>答案合成：证据整合</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p>将图库返回的结构化证据 Context(C) 融入 LLM 生成，产出符合语境的答案 A：</p>
+            <ul>
+              <li><strong>证据提取与优化</strong>：把 JSON 路径等结构化结果转为自然语言「事实链条」，比直接喂 JSON 效果更好</li>
+              <li><strong>最终生成</strong>：组合 [原始问题 Q] + [证据上下文 C]，引导 LLM 推理总结</li>
+            </ul>
+          </div>
+        </article>
+        <div class="ppt-slide-figures">
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-31-3.png" alt="Graph RAG 流程" loading="lazy" /><figcaption class="diagram-caption">图：Graph RAG 流程</figcaption></figure>
+</div>
+      </section>
+      <section class="section" id="agent-single-multi">
+        <h2>Single Agent 与 Multi-Agent</h2>
+        <article class="knowledge-card">
+          <h3>架构选型经验法则</h3>
+          <div class="card-block block-explain"><h4>概要</h4><ul><li>12.Single Agent 与 Multi-Agent 架构</li></ul>
+<p>Single Agent 是一条循环、一套工具、一个上下文,实现简单、调试容易、成本低,大部分任务够用了。</p>
+<p>Multi-Agent 是拆成几个职责单一的子Agent,各自管一小组工具。</p>
+<p>适合任务能清晰拆分成独立子任务、需要并行处理或需要权限隔离的场景,代价是token消耗会成倍上升(子Agent各自独立维护上下文),而且子Agent汇总结果给主控时容易丢细节,调试链路也更长。</p>
+<p>经验法则:</p>
+<p>默认先把单Agent做扎实,工具精简、指令聚焦;只有实测遇到工具选择出错率高、任务必须并行、或有明确权限隔离需求时,才值得拆成多Agent,不要为了&quot;看起来更高级&quot;提前上复杂架构。</p></div>
+        </article>
+      </section>
+      <section class="section" id="agent-frameworks">
+        <h2>Agent 框架对比</h2>
+        <article class="knowledge-card">
+          <h3>LangChain / LlamaIndex 等</h3>
+          <div class="card-block block-deliverable"><h4>主流框架对比</h4><div class="table-wrap"><table class="data-table"><thead><tr><th>框架</th><th>定位与核心能力</th><th>最适合的场景</th><th>学习难度</th></tr></thead><tbody>
+<tr><td>LangChain</td><td>LLM 应用基础组件框架：提供模型调用、Tool Calling、Memory、Chain、Agent abstraction，但更偏「组件拼装库」，需要配合 LangGraph 等做复杂编排。</td><td>快速构建 LLM 应用、工具调用系统、多 API 集成、原型开发。</td><td>中到高（API 多且碎片化）</td></tr>
+<tr><td>LlamaIndex</td><td>数据与 RAG 专业框架：强调数据 ingestion、indexing、retrieval、query pipeline，也支持 agent 与 workflow，但核心仍是「数据接入层」。</td><td>企业知识库、文档问答、RAG 系统、结构化/非结构化数据检索。</td><td>中等</td></tr>
+<tr><td>AutoGen</td><td>多智能体对话系统：以「Agent 之间的对话驱动协作」为核心，支持角色分工、代码执行、工具调用与自动协作。</td><td>多角色协作（分析+写代码+执行）、自动化研究、复杂任务分解。</td><td>中到高（抽象偏研究风格）</td></tr>
+<tr><td>CrewAI</td><td>角色驱动的多 Agent 编排框架：以 Role / Task / Process 为核心，强调结构化 workflow，而不是自由对话。</td><td>内容生成流水线（营销/报告）、业务流程自动化、多步骤任务执行。</td><td>低到中（比 AutoGen 更易上手）</td></tr>
+</tbody></table></div></div>
+        </article>
+      </section>
+      <section class="section" id="agent-presentation-modes">
+        <h2>Agent 呈现模式</h2>
+        <article class="knowledge-card">
+          <h3>八种落地形态</h3>
+          <div class="card-block block-deliverable"><h4>八种落地模式</h4><div class="table-wrap"><table class="data-table"><thead><tr><th>模式</th><th>简介</th><th>典型场景</th><th>实现难度</th><th>实现方式</th></tr></thead><tbody><tr><td>Chat Agent（对话式）</td><td>自然语言交互为主，内部流程对用户透明</td><td>问答助手、内容生成、通用分析</td><td>⭐</td><td>单轮/多轮 LLM + Prompt + 基础 Memory + 可选 RAG</td></tr><tr><td>Copilot（人机协同）</td><td>Agent 提供建议，人类确认后执行</td><td>IDE Copilot、SQL生成、运营分析</td><td>⭐⭐</td><td>LLM + Suggestion Layer + UI确认机制 + Tool API（human approval gate）</td></tr><tr><td>Workflow / Pipeline Agent</td><td>固定流程 DAG，每一步模块化执行</td><td>企业RAG、信息抽取、审核流</td><td>⭐⭐⭐</td><td>LangChain Chains / DAG Orchestrator / Airflow-like LLM pipeline</td></tr><tr><td>Autonomous Agent（自主式）</td><td>自主规划 + 执行 + 反思循环</td><td>AutoGPT任务执行、复杂调研</td><td>⭐⭐⭐⭐</td><td>ReAct / Plan-and-Execute / Tool Loop + Memory + Reflection loop</td></tr><tr><td>State Machine Agent（状态机）</td><td>状态驱动的确定性流程控制</td><td>MES、风控审批、工业控制</td><td>⭐⭐⭐⭐</td><td>LangGraph / FSM / State Transition Graph + Guardrails + deterministic routing</td></tr><tr><td>Event-driven Agent（事件驱动）</td><td>基于事件触发执行，而非用户请求</td><td>AIOps告警、订单处理、监控系统</td><td>⭐⭐⭐⭐</td><td>Event Bus（Kafka/Webhook）+ Agent Listener + Trigger-based Tool execution</td></tr><tr><td>UI-native Agent（界面嵌入式）</td><td>Agent 嵌入业务系统 UI 中输出结构化结果</td><td>CRM助手、Excel/BI Copilot</td><td>⭐⭐⭐</td><td>Frontend Widget + Backend Agent Service + Structured Output(JSON schema/function calling)</td></tr><tr><td>Multi-agent System（多智能体）</td><td>多个 Agent 分工协作形成组织结构</td><td>研究、复杂工程生成、自动开发系统</td><td>⭐⭐⭐⭐⭐</td><td>Agent orchestration framework（AutoGen / CrewAI / LangGraph multi-node graph）</td></tr></tbody></table></div></div>
+        </article>
+      </section>
+      <section class="section" id="agent-mes-demo">
+        <h2>MES Trace Agent Demo</h2>
+        <article class="knowledge-card">
+          <h3>追溯场景演示</h3>
+          <div class="card-block block-explain"><p>MES 追溯场景：通过 Agent 串联工单、批次、设备与质检数据，实现自然语言驱动的根因分析。要点见图示。</p></div><div class="ppt-slide-figures">
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/agent-ch25/slide-46-3.png" alt="MES Demo（1/2）" loading="lazy" /><figcaption class="diagram-caption">图：MES Demo（1/2）</figcaption></figure>
+</div>
+        </article>
+      </section>
+      <section class="section" id="agent-conclusion">
+        <h2>结语</h2>
+        <article class="knowledge-card">
+          <h3>认知与行动</h3>
+          <div class="card-block block-explain"><h4>概要</h4><p>大模型解决了 AI 的“认知能力”，Agent 则进一步解决了 AI 的“行动能力”。通过结合企业知识库、业务系统、工具接口和流程规则，Agent 能够将 AI 能力真正融入企业运营，实现从信息辅助到业务执行的转变。</p>
+<p>未来，企业竞争的关键，不只是拥有 AI 模型，而是能否构建面向自身业务场景的智能 Agent 体系。</p></div>
+        </article>
+      </section>
+      <nav class="chapter-nav">
+        <a href="24-palantir-aip.html">← 上一章：Palantir AIP 架构</a>
+        <a href="glossary.html">下一章：术语字典 →</a>
+      </nav>
+    </main>
+  </div>
+  <script src="assets/diagram.js" defer></script>
+  <script src="assets/explain-format.js" defer></script>
+  <script src="assets/chapter-toc.js" defer></script>
+</body>
+</html>

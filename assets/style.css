@@ -1376,3 +1376,22 @@ code {
   color: var(--text-muted, #64748b);
   font-size: 0.95rem;
 }
+
+.ppt-slide-figures {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
+.ppt-slide-figure img {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  border: 1px solid var(--border, #e2e8f0);
+}
+
+.ppt-slide-figure .diagram-caption {
+  margin-top: 0.5rem;
+}

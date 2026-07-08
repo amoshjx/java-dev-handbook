@@ -40,6 +40,7 @@
             <li><a href="22-ai-development.html">22 AI 辅助开发</a></li>
             <li><a href="23-business-intelligence.html">23 业务智能化</a></li>
             <li><a href="24-palantir-aip.html">24 Palantir AIP 架构</a></li>
+            <li><a href="25-agent-development.html">25 Agent 开发</a></li>
             <li><a href="glossary.html">术语字典</a></li>
           </ul>
         </div>
@@ -85,6 +86,7 @@
               <li><a href="#aip-capabilities">理解 AIP 工具链</a>：AIP Logic、Chatbot Studio、Evals、Threads、OSDK、MCP。</li>
               <li><a href="#agentic-workflow">学习 Agentic Workflow</a>：如何从问答走向可审批、可执行、可回滚的行动。</li>
               <li><a href="#security-governance">最后做治理</a>：权限、用途、安全标记、血缘、发布门禁和运行监控。</li>
+              <li><a href="#aip-ppt-overview">附录 A</a>：分享材料图文（概述、产品截图、架构矩阵）。</li>
             </ol>
           </div>
           <div class="card-block block-memory">
@@ -309,7 +311,7 @@
           <h3>3.1 AIP 应用全景</h3>
           <div class="card-block block-explain">
             <h4>概要</h4>
-            <p>AIP 不是单个应用，而是一组围绕 LLM 工作流的构建能力。不同角色会使用不同入口：业务人员可能从 AIP Threads 和 Workshop 进入，低代码构建者使用 AIP Logic 和 Chatbot Studio，工程师则通过 OSDK、Functions、Code Workspaces、MCP 和平台 API 构建更复杂的应用。</p>
+            <p>AIP 不是单个应用，而是一组围绕 LLM 工作流的构建能力。不同角色会使用不同入口：业务人员可能从 AIP Threads 和 Workshop 进入，低代码构建者使用 AIP Logic 和 Chatbot Studio，工程师则通过 OSDK、Functions、Code Workspaces、MCP 和平台 API 构建更复杂的应用。分享材料中的产品截图与架构矩阵见<a href="#aip-ppt-overview">附录 A</a>。</p>
           </div>
           <div class="card-block block-example">
             <h4>主要能力</h4>
@@ -816,6 +818,107 @@ public class AipOrderFacade {
         </article>
       </section>
 
+      <section class="section" id="aip-ppt-overview">
+        <h2>附录 A：分享材料 — AIP 概述</h2>
+        <article class="knowledge-card">
+          <h3>Ontology + LLM</h3>
+          <div class="card-block block-explain"><h4>原文要点</h4><p>五、Palantir AIP</p>
+<p>1.概述</p>
+<p>Palantir 是一家美国全球领先大数据分析与人工智能软件公司。它以帮助政府、金融和医疗等大型组织打通“数据孤岛”、构建企业级数字孪生并实现 AI 决策落地而闻名。</p>
+<p>Palantir AIP（人工智能平台）：其最新增长引擎，将大语言模型（LLM）与企业的“本体（Ontology）”深度结合，帮助企业实现 AI Agent 的构建、调度与业务流程自动化（使 AI 能在真实的业务里跑出结果）。它不仅是一个简单的AI聊天助手，更是一个面向Agent时代的开发与执行环境，包含AIP Assist（界面聊天助手）、AIP Logic（无代码开发环境）和AIP Agent Studio（快速创建智能代理）等核心模块。</p>
+<p>AIP 的核心设计：Ontology + LLM 。 本体论，指的是将数据系统性地映射到有意义的语义概念上的过程。</p>
+<p>一个有效的本体框架不嵌入数据本身，而是作为一种外部结构，支撑数据集成、应用构建、用户协作及其他各种功能。</p>
+<p>FDE（Forward Deployed Engineering）模式壁垒：Palantir独创的交付模式是其区别于传统软件公司的另一大壁垒。</p>
+<p>公司独创“FDE（前线部署工程师）+咨询”的交付模式，将高阶工程师作为核心资产派驻客户现场，深度解决业务问题。</p>
+<p>这种模式远超传统软件销售，实现了7天极速POC（概念验证），将获客周期缩短6-12个月，交付效率极高。</p>
+<p>通过跨行业的项目交付，Palantir积累了大量可复用的数据、产品模块和行业知识，形成了强大的复利效应。</p></div></article>
+      </section>
+      <section class="section" id="aip-ppt-ontology">
+        <h2>附录 A：分享材料 — 本体论</h2>
+        <article class="knowledge-card">
+          <h3>数字结构建模</h3>
+          <div class="card-block block-explain"><h4>原文要点</h4><p>五、Palantir AIP</p>
+<p>2. 本体论的核心功能是：将复杂、分散的“现实世界”数据流，强制性地模型化为一套标准化的、可推理的、机器可以理解的“数字结构”（Digital Structure），从而实现从“数据堆积”到“知识洞察”的范式转换。它连接的是真实世界的“实体”与“决策”，而非冰冷的“数据库表”。</p></div><div class="ppt-slide-figures">
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/palantir-aip-ppt/slide-38-3.png" alt="PPT 第 38 页配图：本体论" loading="lazy" /><figcaption class="diagram-caption">图：PPT 第 38 页 — 本体论</figcaption></figure>
+</div>
+        </article>
+      </section>
+      <section class="section" id="aip-ppt-products">
+        <h2>附录 A：分享材料 — 产品与功能</h2>
+        <article class="knowledge-card">
+          <h3>Assist / Logic / Studio</h3>
+          <div class="card-block block-explain"><h4>原文要点</h4><p>五、Palantir AIP</p>
+<p>工具，它通过提供实时、安全的自然语言帮助，引导用户轻松驾驭 Palantir 平台。</p>
+<p>用户可以通过向 AIP Assist 提问，并以其首选语言接收上下文相关的解答，从而加快工作流程，提高工作效率。</p>
+<p>您可以使用 AIP Logic 轻松简化和自动化复杂的流程，例如调度或优化问题，同时保持强大的安全控制。</p>
+<p>您可以部署由 LLM 提供支持的 AIP 聊天机器人，以实现手动操作的自动化、编辑本体数据、简化工作流程并增强应用程序交互。</p>
+<p>创建专用Agent</p>
+<p>通过使用 AIP 评估来测试和评估基于 LLM 的功能和提示，您可以增强对 LLM 支持的工作流的信心。</p>
+<p>通过在 AIP 评估中设置测试用例和评估标准，您可以系统地调试、迭代和改进您的实现，比较不同的模型，并检查不同运行之间的差异。</p>
+<p>3. AIP 的功能</p></div><div class="card-block block-deliverable"><h4>表格</h4><div class="table-wrap"><table class="data-table"><thead><tr><th>应用</th><th>描述</th></tr></thead><tbody><tr><td>AIP Assist</td><td>AIP Assist 是一款基于 LLM 的辅助问答器</td></tr><tr><td>AIP Logic</td><td>AIP Logic 是一个无需编写代码的开发环境，用于创建、测试和部署 AI 驱动的功能，让您只需点击几下即可利用本体数据支持的 LLM 的强大功能。AIP Logic 提供直观的界面，方便您进行工程提示、设置自动化流程以及集成结构化或非结构化的本体数据。</td></tr><tr><td>AIP Chatbot Studio</td><td>AIP Chatbot Studio 使您能够创建交互式聊天机器人，这些机器人可以利用本体中的企业特定数据和一系列工具来完成任务并实现目标。</td></tr><tr><td>AIP Evals</td><td>AIP Evals 是生产环境中稳定可靠的 AIP 工作流的基础；</td></tr><tr><td>AIP Threads</td><td>AIP Threads 提供了一种简单的方法来使用 LLM 执行任务和临时分析，无需任何技术设置即可与文档和 AIP 聊天机器人进行交互 - 只需将文档拖放到 AIP Threads 中，或从一系列现有资源和聊天机器人中进行选择，然后向 LLM 提出您的请求即可。</td></tr><tr><td>Palantir MCP</td><td>Palantir MCP 使外部 AI IDE 和代理能够连接到 Palantir 平台，并获取有关您的本体和 Foundry 工具的上下文信息。使用 Palantir MCP，外部 AI 系统可以更高效地查询数据、访问文档和构建应用程序。</td></tr></tbody></table></div></div></article>
+      </section>
+      <section class="section" id="aip-ppt-assist-logic">
+        <h2>附录 A：分享材料 — Assist 与 Logic</h2>
+        <article class="knowledge-card">
+          <h3>问答与流程定义</h3>
+          <div class="card-block block-explain"><h4>原文要点</h4><p>五、Palantir AIP</p>
+<p>AIP Assist（问答器）</p>
+<p>AIP Logic（流程定义）</p></div><div class="ppt-slide-figures">
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/palantir-aip-ppt/slide-40-2.png" alt="PPT 第 40 页配图：Assist &amp; Logic" loading="lazy" /><figcaption class="diagram-caption">图：PPT 第 40 页 — Assist &amp; Logic</figcaption></figure>
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/palantir-aip-ppt/slide-40-3.png" alt="PPT 第 40 页配图：Assist &amp; Logic" loading="lazy" /><figcaption class="diagram-caption">图：PPT 第 40 页 — Assist &amp; Logic</figcaption></figure>
+</div>
+        </article>
+      </section>
+      <section class="section" id="aip-ppt-studio">
+        <h2>附录 A：分享材料 — Chatbot Studio</h2>
+        <article class="knowledge-card">
+          <h3>Agent 自定义</h3>
+          <div class="card-block block-explain"><h4>原文要点</h4><p>五、Palantir AIP</p>
+<p>AIP Chatbot Studio</p>
+<p>（Agent 自定义）</p></div><div class="ppt-slide-figures">
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/palantir-aip-ppt/slide-41-3.png" alt="PPT 第 41 页配图：Chatbot Studio" loading="lazy" /><figcaption class="diagram-caption">图：PPT 第 41 页 — Chatbot Studio</figcaption></figure>
+</div>
+        </article>
+      </section>
+      <section class="section" id="aip-ppt-evals">
+        <h2>附录 A：分享材料 — AIP Evals</h2>
+        <article class="knowledge-card">
+          <h3>测试集与评估</h3>
+          <div class="card-block block-explain"><h4>原文要点</h4><p>五、Palantir AIP</p>
+<p>AIP Evals</p>
+<p>测试集</p></div><div class="ppt-slide-figures">
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/palantir-aip-ppt/slide-42-3.png" alt="PPT 第 42 页配图：AIP Evals" loading="lazy" /><figcaption class="diagram-caption">图：PPT 第 42 页 — AIP Evals</figcaption></figure>
+</div>
+        </article>
+      </section>
+      <section class="section" id="aip-ppt-threads">
+        <h2>附录 A：分享材料 — AIP Threads</h2>
+        <article class="knowledge-card">
+          <h3>临时文档分析</h3>
+          <div class="card-block block-explain"><h4>原文要点</h4><p>五、Palantir AIP</p>
+<p>AIP Threads</p>
+<p>临时文档分析任务</p></div><div class="ppt-slide-figures">
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/palantir-aip-ppt/slide-43-3.png" alt="PPT 第 43 页配图：AIP Threads" loading="lazy" /><figcaption class="diagram-caption">图：PPT 第 43 页 — AIP Threads</figcaption></figure>
+</div>
+        </article>
+      </section>
+      <section class="section" id="aip-ppt-architecture">
+        <h2>附录 A：分享材料 — 架构总览</h2>
+        <article class="knowledge-card">
+          <h3>架构能力模块</h3>
+          <div class="card-block block-explain"><h4>原文要点</h4><p>五、Palantir AIP</p>
+<p>3. AIP 的架构</p></div><div class="ppt-slide-figures">
+<figure class="diagram-block diagram-image ppt-slide-figure"><img src="assets/palantir-aip-ppt/slide-44-2.png" alt="PPT 第 44 页配图：AIP 架构" loading="lazy" /><figcaption class="diagram-caption">图：PPT 第 44 页 — AIP 架构</figcaption></figure>
+</div>
+        </article>
+      </section>
+      <section class="section" id="aip-ppt-architecture-detail">
+        <h2>附录 A：分享材料 — 架构能力详解</h2>
+        <article class="knowledge-card">
+          <h3>十层能力矩阵</h3>
+          <div class="card-block block-explain"><h4>原文要点</h4><p>五、Palantir AIP</p>
+<p>3. AIP 的架构</p></div><div class="card-block block-deliverable"><h4>表格</h4><div class="table-wrap"><table class="data-table"><thead><tr><th>架构能力模块</th><th>核心功能</th><th>本质一句话</th><th>关键作用</th></tr></thead><tbody><tr><td>安全 LLM 集成与访问</td><td>多模型接入（GPT / Claude / Gemini / Llama / 自建模型）+ 数据不留存 + 不训练</td><td>企业级“模型安全网关”</td><td>安全调用任意 LLM，同时保证数据不外泄</td></tr><tr><td>端到端可观测性</td><td>追踪 agent / workflow 全链路 + token / 资源 / 操作日志</td><td>AI 系统“黑匣子透明化”</td><td>让每一步 AI 行为可审计、可回放</td></tr><tr><td>上下文工程（Context Engineering）</td><td>多方式数据接入（batch / streaming / CDC）+ 多引擎执行（Spark/Flink/Polars）</td><td>“让 LLM 看懂企业世界”</td><td>构建 AI 可用的实时业务上下文</td></tr><tr><td>本体系统（Ontology System）</td><td>将企业对象（名词）+ 操作（动词）建模成统一语义系统</td><td>企业“数字世界模型层”</td><td>统一数据、逻辑、操作与权限语义</td></tr><tr><td>向量 / 计算 / 工具服务</td><td>embedding 服务 + 多计算引擎 + 工具编排工厂</td><td>“AI 数据与算力底座”</td><td>支撑检索、分析、工具执行的统一基础设施</td></tr><tr><td>安全与治理</td><td>RBAC/ABAC + tag-based policy + 审计日志</td><td>“AI 行为的法律系统”</td><td>控制所有 AI/人类操作的权限与合规</td></tr><tr><td>代理生命周期管理</td><td>Agent 构建、编排、评估（AIP Evals）</td><td>“AI Agent DevOps 系统”</td><td>管理 agent 从开发到生产全生命周期</td></tr><tr><td>运维自动化（Automation）</td><td>event / schedule / API 驱动自动化</td><td>“企业流程自动执行引擎”</td><td>将数据与 AI 转化为自动业务动作</td></tr><tr><td>开发环境</td><td>VS Code / Jupyter / SDK / MCP</td><td>“AI 原生开发工具链”</td><td>让开发者在熟悉环境构建 AIP 应用</td></tr><tr><td>人机协作应用</td><td>面向不同角色的 AI 应用（分析 / 合规 / 工程 / 运营）</td><td>“AI + 企业工作台”</td><td>AI 嵌入真实业务工作流</td></tr><tr><td>打包发布部署</td><td>AI 应用/流水线/ontology 可版本化部署</td><td>“AI 产品化 DevOps”</td><td>支持跨环境发布与持续演进</td></tr><tr><td>企业自动化</td><td>AI FDE / Analyst agent + 端到端业务构建</td><td>“AI 员工体系”</td><td>让 AI 直接参与建模、开发、分析与决策</td></tr></tbody></table></div></div></article>
+      </section>
       <section class="section" id="aip-conclusion">
         <h2>结语</h2>
         <article class="knowledge-card">
@@ -840,7 +943,7 @@ public class AipOrderFacade {
 
       <nav class="chapter-nav">
         <a href="23-business-intelligence.html">← 上一章：业务智能化</a>
-        <a href="glossary.html">下一章：术语字典 →</a>
+        <a href="25-agent-development.html">下一章：Agent 开发 →</a>
       </nav>
     </main>
   </div>
