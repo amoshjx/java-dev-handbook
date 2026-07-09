@@ -67,6 +67,7 @@
               <li><a href="#agent-preface-trends">前言</a>：趋势、选型与企业级架构</li>
               <li><a href="#agent-llm">LLM 基础</a>：Transformer、训练与推理</li>
               <li><a href="#agent-concepts">Agent 详解</a>：概念、<a href="#agent-reasoning-modes">推理模式</a>、Tool、<a href="#agent-mcp">MCP</a>、Skill、<a href="#agent-memory">Memory</a>、<a href="#agent-graph-rag">Graph RAG</a></li>
+              <li><a href="#agent-spring-ai">使用 Spring AI 开发 Agent</a>：ChatClient、Tool、Memory、RAG 与企业级架构</li>
               <li><a href="#agent-mes-demo">MES Demo</a>：工业追溯场景演示</li>
             </ol>
           </div>
@@ -482,6 +483,196 @@
 <tr><td>AutoGen</td><td>多智能体对话系统：以「Agent 之间的对话驱动协作」为核心，支持角色分工、代码执行、工具调用与自动协作。</td><td>多角色协作（分析+写代码+执行）、自动化研究、复杂任务分解。</td><td>中到高（抽象偏研究风格）</td></tr>
 <tr><td>CrewAI</td><td>角色驱动的多 Agent 编排框架：以 Role / Task / Process 为核心，强调结构化 workflow，而不是自由对话。</td><td>内容生成流水线（营销/报告）、业务流程自动化、多步骤任务执行。</td><td>低到中（比 AutoGen 更易上手）</td></tr>
 </tbody></table></div></div>
+        </article>
+      </section>
+      <section class="section" id="agent-spring-ai">
+        <h2>使用 Spring AI 开发 Agent</h2>
+        <article class="knowledge-card" id="agent-spring-ai-overview">
+          <h3>Spring AI Agent 概述</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p><strong>Spring AI</strong> 是 Spring 生态用于构建 AI 应用的框架，提供 LLM 调用、Tool Calling、Memory、RAG、Embedding、Vector Store 与 Prompt 管理等能力。</p>
+            <p>典型架构：</p>
+            <pre><code>用户
+ |
+Controller
+ |
+Agent Orchestrator
+ |
++-- LLM
++-- Memory
++-- Tools
++-- RAG
+ |
+企业系统</code></pre>
+          </div>
+        </article>
+        <article class="knowledge-card" id="agent-spring-ai-modules">
+          <h3>Agent 五大核心模块</h3>
+          <div class="card-block block-deliverable">
+            <h4>模块与 Spring AI 实现对照</h4>
+            <div class="table-wrap"><table class="data-table"><thead><tr><th>模块</th><th>Spring AI 实现</th></tr></thead><tbody>
+<tr><td>Reasoning 推理</td><td>ChatClient + LLM</td></tr>
+<tr><td>Planning 规划</td><td>Prompt + 状态机</td></tr>
+<tr><td>Memory 记忆</td><td>ChatMemory</td></tr>
+<tr><td>Tools 工具</td><td>@Tool</td></tr>
+<tr><td>Knowledge 知识</td><td>RAG + VectorStore</td></tr>
+</tbody></table></div>
+          </div>
+        </article>
+        <article class="knowledge-card" id="agent-spring-ai-chatclient">
+          <h3>ChatClient</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p>Spring AI 核心入口是 <strong>ChatClient</strong>，最简用法仅完成「用户 → LLM → 回答」，此时只是 ChatBot，尚未具备 Agent 的行动能力。</p>
+            <pre><code>用户
+ |
+LLM
+ |
+回答</code></pre>
+          </div>
+          <div class="card-block block-example">
+            <h4>代码示例</h4>
+            <pre><code>ChatClient client = builder.build();
+
+client.prompt()
+    .user(question)
+    .call()
+    .content();</code></pre>
+          </div>
+        </article>
+        <article class="knowledge-card" id="agent-spring-ai-tool">
+          <h3>Tool Calling</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p>Agent 与 ChatBot 的最大区别：<strong>Agent 可以调用工具执行真实动作</strong>。</p>
+            <pre><code>用户请求
+ |
+LLM 分析
+ |
+调用 Tool
+ |
+Java 方法执行
+ |
+返回结果
+ |
+LLM 总结</code></pre>
+            <p>工具可连接数据库、MES、ERP、REST API、文件系统等企业系统。</p>
+          </div>
+          <div class="card-block block-example">
+            <h4>代码示例</h4>
+            <pre><code>@Tool
+public String queryInventory(String material) {
+    return "库存信息";
+}</code></pre>
+          </div>
+        </article>
+        <article class="knowledge-card" id="agent-spring-ai-memory">
+          <h3>Memory</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p>Memory 保存对话历史、用户偏好与任务上下文，常见实现包括 InMemory、Redis、PostgreSQL 与 Vector Database。</p>
+          </div>
+        </article>
+        <article class="knowledge-card" id="agent-spring-ai-rag">
+          <h3>RAG</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p>RAG 让 Agent 使用企业私有知识，典型流程为：用户问题 → Embedding → Vector DB → 知识检索 → 上下文增强 → LLM 回答。</p>
+            <p>适用于 MES 文档、SECS/GEM 规范、产品手册与企业知识库等场景。</p>
+          </div>
+        </article>
+        <article class="knowledge-card" id="agent-spring-ai-react">
+          <h3>ReAct Agent</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p>简单 ReAct 模式：LLM → Tool → LLM → Answer。复杂 Agent 则循环执行 Thought、判断是否需要工具、执行 Tool、获取结果、继续推理，直至完成任务。</p>
+            <pre><code>循环:
+
+Thought
+判断是否需要工具
+执行 Tool
+获取结果
+继续推理
+完成任务</code></pre>
+          </div>
+        </article>
+        <article class="knowledge-card" id="agent-spring-ai-enterprise">
+          <h3>企业级 Agent 架构</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <pre><code>用户
+ |
+Agent Controller
+ |
+Planner / Executor
+ |
++-----------+-----------+
+|           |           |
+LLM      Memory       RAG
+           |            |
+         Redis      Vector DB
+             |
+           Tools
+             |
+   MES / ERP / API / SQL</code></pre>
+          </div>
+        </article>
+        <article class="knowledge-card" id="agent-spring-ai-statemachine">
+          <h3>Spring AI + 状态机</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p>复杂 Agent 推荐将 Spring AI 与状态机组合：Spring AI 负责 LLM、Tool、Memory、RAG；状态机负责流程控制、多步骤任务与 Agent 状态管理。</p>
+            <pre><code>START
+ |
+任务分析
+ |
+需要工具?
+ /       \
+Tool    Answer
+ |
+结果验证
+ |
+Finish</code></pre>
+          </div>
+        </article>
+        <article class="knowledge-card" id="agent-spring-ai-stack">
+          <h3>推荐技术栈</h3>
+          <div class="card-block block-deliverable">
+            <h4>能力与技术选型</h4>
+            <div class="table-wrap"><table class="data-table"><thead><tr><th>能力</th><th>技术</th></tr></thead><tbody>
+<tr><td>LLM</td><td>OpenAI / Claude / Gemini / Ollama</td></tr>
+<tr><td>Agent</td><td>Spring AI</td></tr>
+<tr><td>Workflow</td><td>Spring State Machine</td></tr>
+<tr><td>Memory</td><td>Redis</td></tr>
+<tr><td>RAG</td><td>Milvus / PGVector / Elasticsearch</td></tr>
+<tr><td>Backend</td><td>Spring Boot</td></tr>
+<tr><td>监控</td><td>Prometheus + Grafana</td></tr>
+</tbody></table></div>
+          </div>
+        </article>
+        <article class="knowledge-card" id="agent-spring-ai-mes-example">
+          <h3>制造业 MES Agent 示例</h3>
+          <div class="card-block block-explain">
+            <h4>概要</h4>
+            <p>用户提问：「查询光刻机异常原因」。Agent 执行步骤：</p>
+            <ol>
+              <li>查询 MES Lot 状态</li>
+              <li>调用 EAP 接口</li>
+              <li>查询 SPC 数据</li>
+              <li>检索设备规范</li>
+              <li>输出分析报告</li>
+            </ol>
+            <p>对应关系：LLM 负责推理，RAG 提供知识，Tool 执行动作，Memory 维护上下文，Workflow 控制任务流程。</p>
+          </div>
+        </article>
+        <article class="knowledge-card" id="agent-spring-ai-summary">
+          <h3>总结</h3>
+          <div class="card-block block-memory">
+            <h4>速记</h4>
+            <p>企业级 Spring AI Agent 推荐组合：Spring Boot + Spring AI + Tool Calling + Memory + RAG + State Machine。</p>
+            <p>适用于 MES Agent、运维 Agent、数据分析 Agent、企业知识助手与自动化决策系统。</p>
+          </div>
         </article>
       </section>
       <section class="section" id="agent-presentation-modes">
